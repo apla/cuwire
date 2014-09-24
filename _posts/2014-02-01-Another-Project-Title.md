@@ -2,11 +2,13 @@
 layout: post
 title: Another Project Title
 desc: Another excerpt or project description goes here
-proj-url: https://github.com/barryclark/jekyll-now
+proj-url: https://github.com/femmebot/jekyll-grid
 proj-num: 02
 ---
 
 ## Set up instructions
+
+Fork this Jekyll-Grid on Github: [https://github.com/femmebot/jekyll-grid](https://github.com/femmebot/jekyll-grid)
 
 This theme is based on [Jekyll Now](https://github.com/barryclark/jekyll-now). Refer to the following for help with the setup:
 

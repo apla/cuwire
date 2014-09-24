@@ -2,11 +2,13 @@
 layout: post
 title: Lorem Ipsum Quid Nostrud
 desc: Te nec mundi mandamus voluptatum. Adhuc nostro id sit, at erat liberavisse eum
-proj-url: https://github.com/barryclark/jekyll-now
+proj-url: https://github.com/femmebot/jekyll-grid
 proj-num: 03
 ---
 
 ## Set up instructions
+
+Fork this Jekyll-Grid on Github: [https://github.com/femmebot/jekyll-grid](https://github.com/femmebot/jekyll-grid)
 
 This theme is based on [Jekyll Now](https://github.com/barryclark/jekyll-now). Refer to the following for help with the setup:
 
