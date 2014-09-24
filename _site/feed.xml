@@ -3,8 +3,8 @@
   <channel>
     <title>jekyll-grid</title>
     <description>A jekyll theme ideal for showcasing projects</description>
-    <link></link>
-    <atom:link href="/feed.xml" rel="self" type="application/rss+xml" />
+    <link>http://femmebot.github.io</link>
+    <atom:link href="http://femmebot.github.io/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
         <title>Mollis Offendit In Mea</title>
@@ -17,7 +17,7 @@
 &lt;/blockquote&gt;
 
 &lt;blockquote&gt;
-  &lt;p&gt;&lt;img src=&quot;/images/config.png&quot; alt=&quot;_config.yml&quot; /&gt;&lt;/p&gt;
+  &lt;p&gt;&lt;img src=&quot;/jekyll-grid/images/config.png&quot; alt=&quot;_config.yml&quot; /&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 
 &lt;blockquote&gt;
@@ -25,8 +25,8 @@
 &lt;/blockquote&gt;
 </description>
         <pubDate>Sat, 01 Mar 2014 00:00:00 -0500</pubDate>
-        <link>/Mollis-offendit-in-mea/</link>
-        <guid isPermaLink="true">/Mollis-offendit-in-mea/</guid>
+        <link>http://femmebot.github.io/Mollis-offendit-in-mea/</link>
+        <guid isPermaLink="true">http://femmebot.github.io/Mollis-offendit-in-mea/</guid>
       </item>
     
       <item>
@@ -40,7 +40,7 @@
 &lt;/blockquote&gt;
 
 &lt;blockquote&gt;
-  &lt;p&gt;&lt;img src=&quot;/images/config.png&quot; alt=&quot;_config.yml&quot; /&gt;&lt;/p&gt;
+  &lt;p&gt;&lt;img src=&quot;/jekyll-grid/images/config.png&quot; alt=&quot;_config.yml&quot; /&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 
 &lt;blockquote&gt;
@@ -48,8 +48,8 @@
 &lt;/blockquote&gt;
 </description>
         <pubDate>Sat, 01 Mar 2014 00:00:00 -0500</pubDate>
-        <link>/Lorem-Ipsum-Dolor/</link>
-        <guid isPermaLink="true">/Lorem-Ipsum-Dolor/</guid>
+        <link>http://femmebot.github.io/Lorem-Ipsum-Dolor/</link>
+        <guid isPermaLink="true">http://femmebot.github.io/Lorem-Ipsum-Dolor/</guid>
       </item>
     
       <item>
@@ -63,7 +63,7 @@
 &lt;/blockquote&gt;
 
 &lt;blockquote&gt;
-  &lt;p&gt;&lt;img src=&quot;/images/config.png&quot; alt=&quot;_config.yml&quot; /&gt;&lt;/p&gt;
+  &lt;p&gt;&lt;img src=&quot;/jekyll-grid/images/config.png&quot; alt=&quot;_config.yml&quot; /&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 
 &lt;blockquote&gt;
@@ -71,8 +71,8 @@
 &lt;/blockquote&gt;
 </description>
         <pubDate>Sat, 01 Feb 2014 00:00:00 -0500</pubDate>
-        <link>/Another-Project-Title/</link>
-        <guid isPermaLink="true">/Another-Project-Title/</guid>
+        <link>http://femmebot.github.io/Another-Project-Title/</link>
+        <guid isPermaLink="true">http://femmebot.github.io/Another-Project-Title/</guid>
       </item>
     
       <item>
@@ -86,7 +86,7 @@
 &lt;/blockquote&gt;
 
 &lt;blockquote&gt;
-  &lt;p&gt;&lt;img src=&quot;/images/config.png&quot; alt=&quot;_config.yml&quot; /&gt;&lt;/p&gt;
+  &lt;p&gt;&lt;img src=&quot;/jekyll-grid/images/config.png&quot; alt=&quot;_config.yml&quot; /&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 
 &lt;blockquote&gt;
@@ -94,8 +94,8 @@
 &lt;/blockquote&gt;
 </description>
         <pubDate>Wed, 01 Jan 2014 00:00:00 -0500</pubDate>
-        <link>/Hello-World/</link>
-        <guid isPermaLink="true">/Hello-World/</guid>
+        <link>http://femmebot.github.io/Hello-World/</link>
+        <guid isPermaLink="true">http://femmebot.github.io/Hello-World/</guid>
       </item>
     
   </channel>
