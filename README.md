@@ -1,4 +1,4 @@
-jekyll-grid
-===========
+project-grid-jekyll-theme
+=========================
 
-jekyll theme ideal for projects; displays posts in a grid
+Jekyll theme ideal for projects; displays posts in a grid
