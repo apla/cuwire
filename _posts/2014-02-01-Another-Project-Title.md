@@ -6,14 +6,24 @@ proj-url: https://github.com/femmebot/jekyll-grid
 proj-num: 02
 ---
 
-## Set up instructions
 
-Fork this Jekyll-Grid on Github: [https://github.com/femmebot/jekyll-grid](https://github.com/femmebot/jekyll-grid)
 
-This theme is based on [Jekyll Now](https://github.com/barryclark/jekyll-now). Refer to the following for help with the setup:
+## H2 Heading Looks Like This
 
-> Next you can update your site name, avatar and other options using the _config.yml file in the root of your repository (shown below :point_down:).
+Sample paragraph goes here and looks like this. Bacon ipsum dolor sit amet turducken meatloaf boudin pork loin meatball biltong, fatback capicola turkey pork chop. Short ribs boudin landjaeger kevin brisket ground round. 
 
-> ![_config.yml]({{ site.baseurl }}/images/config.png)
+### H3 Heading Looks Like This
 
-> The easiest way to make your first post is to edit this one. Go into /_posts/ and update the Hello World markdown file. For more instructions head over to the [Jekyll Now repository](https://github.com/barryclark/jekyll-now) on GitHub.
+Spare ribs strip steak pastrami corned beef bresaola porchetta. Cow fatback tongue prosciutto, short ribs hamburger drumstick beef ribs swine t-bone pancetta meatball strip steak ground round tenderloin.
+
+1. Sample ordered list
+2. List item 
+3. Another list item
+
+#### H4 Heading Looks Like This
+
+Corned beef pig pancetta drumstick tail, andouille spare ribs jowl prosciutto biltong hamburger short loin pork brisket. Frankfurter kielbasa brisket meatloaf pastrami fatback. Cow t-bone pork chop chuck short ribs spare ribs. Pancetta flank porchetta, turkey tail ball tip tri-tip leberkas beef.
+
+> This is a sample blockquote. Landjaeger shoulder ham capicola. 
+> Pork shoulder fatback, flank pork belly rump short loin meatloaf filet mignon kevin turducken spare ribs sirloin short ribs ham hock.
+
