@@ -1,0 +1,11 @@
+#arduino-panel {}
+#arduino-panel .toolbar {
+	overflow: visible;
+}
+#arduino-panel span.title {
+	margin-right: 5em;
+}
+#arduino-sidebar-icon {
+	background-image: url(plugin.svg);
+	background-size: 24px;
+}
