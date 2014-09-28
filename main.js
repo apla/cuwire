@@ -5,8 +5,23 @@ maxerr: 50, browser: true */
 define(function (require, exports, module) {
 	"use strict";
 
+	var moduleId = "me.apla.brackets-arduino";
+
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
-		NodeDomain     = brackets.getModule("utils/NodeDomain");
+		NodeDomain     = brackets.getModule("utils/NodeDomain"),
+		PreferencesManager = brackets.getModule("preferences/PreferencesManager");
+
+	var prefs = PreferencesManager.getExtensionPrefs (moduleId);
+
+//	prefs.definePreference ("board", "object", {});
+//	prefs.definePreference ("port", "string", null);
+
+	var stateManager = PreferencesManager.stateManager.getPrefixedSystem (moduleId);
+
+//	prefs.definePreference ("panelVisible", "boolean", false);
+
+//	prefs.definePreference ("patterns", "array", []).on("change", function () {
+//	});
 
 	var arduinoDomain = new NodeDomain("arduino", ExtensionUtils.getModulePath(module, "node/ArduinoDomain"));
 	ExtensionUtils.loadStyleSheet(module, "style.css");
@@ -132,12 +147,24 @@ define(function (require, exports, module) {
 		myIcon.appendTo($("#main-toolbar .buttons"));
 
 		var PanelManager = brackets.getModule('view/PanelManager');
-		this.panel = PanelManager.createBottomPanel("Arduino", $(require('text!bottom-panel.html')));
+		this.panel = PanelManager.createBottomPanel(moduleId+".panel", $(require('text!bottom-panel.html')));
 
 		this.enumerateSerialPorts ();
 		this.getBoardMeta ();
 
-		myIcon.on ("click", this.panel.show.bind (this.panel));
+		this.panel.toggle = function () {
+			if (this.isVisible ()) {
+				this.hide ();
+			} else {
+				this.show ();
+			}
+			stateManager.set ('panelVisibility', this.isVisible());
+		}
+
+		var lastPanelState = stateManager.get ('panelVisibility');
+		this.panel.setVisible (lastPanelState);
+
+		myIcon.on ("click", this.panel.toggle.bind (this.panel));
 		$('#arduino-panel .close').on('click', this.panel.hide.bind (this.panel));
 
 	}
