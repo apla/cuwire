@@ -25,6 +25,8 @@ define(function (require, exports, module) {
 	ArduinoExt.prototype.enumerateSerialPorts = function () {
 		// TODO: show spinner indicator
 
+		var self = this;
+
 		this.domain.exec("enumerateSerialPorts")
 		.done(function (ports) {
 			// TODO: get last used port from preference manager
@@ -39,7 +41,9 @@ define(function (require, exports, module) {
 			var arduinoPortDD = $('#arduino-panel ul.arduino-port');
 
 			ports.forEach (function (portName) {
-				$('<li><a href="#">'+portName+"</a></li>").appendTo(arduinoPortDD);
+				$('<li><a href="#">'+portName+"</a></li>")
+				.on ('click', self.setPort.bind (self, portName))
+				.appendTo(arduinoPortDD);
 			});
 
 			//		$('<td />').text(err.message).appendTo(tr);
@@ -51,41 +55,65 @@ define(function (require, exports, module) {
 
 	}
 
+	ArduinoExt.prototype.setPort = function (portName) {
+		// TODO: set port in preferences
+		$('#arduino-panel button.arduino-port').text (portName.replace (/^\/dev\/cu\./, ""));
+	}
+
+	ArduinoExt.prototype.setBoard = function (boardId, platformName) {
+		// TODO: set board in preferences
+		$('#arduino-panel button.arduino-board').text (this.platforms[platformName].boards[boardId].name);
+	}
+
 	ArduinoExt.prototype.getBoardMeta = function () {
 		// TODO: show spinner indicator
+
+		var self = this;
 
 		this.domain.exec("getBoardsMeta", ["/Users/apla/Documents/Arduino"])
 		.done(function (platforms) {
 			console.log("[brackets-arduino-node] Available boards:");
 
+			self.platforms = platforms;
+
 			$('#arduino-panel ul.arduino-board li').remove();
 			// tr = $('<tr />').appendTo('#arduino-panel tbody');
 			var arduinoBoardDD = $('#arduino-panel ul.arduino-board');
 
-			Object.keys (platforms).forEach (function (platform) {
-				console.log (platform);
+			Object.keys (platforms).forEach (function (platformName) {
+				console.log (platformName);
 				$('<li class="dropdown-header">'
-				  + platforms[platform].platform.name + " "
-				  + platforms[platform].platform.version
+				  + platforms[platformName].platform.name + " "
+				  + platforms[platformName].platform.version
 				  + "</li>").appendTo(arduinoBoardDD);
 
-				var boards = platforms[platform].boards;
+				var boards = platforms[platformName].boards;
 				Object.keys (boards).map (function (boardId) {
 					var boardMeta = boards[boardId];
+
+					var boardItem = $('<li><a href="#">'+boardMeta.name+"</a></li>");
+					boardItem.appendTo(arduinoBoardDD);
+					boardItem.on ('click', self.setBoard.bind (self, boardId, platformName))
+
 					var boardDesc = boardMeta.name + ' (' + boardId
 					if ("menu" in boardMeta) {
 						boardDesc += ', variants: ';
 						var variants = [];
+						boardItem.addClass ('dropdown-submenu');
+						var submenu = $("<ul class=\"dropdown-menu\">");
 						for (var cpuVariant in boardMeta.menu.cpu) {
 							variants.push (boardMeta.menu.cpu[cpuVariant].cpu_variant_name);
+							submenu.append ($("<li><a href=\"#\">" + boardMeta.menu.cpu[cpuVariant].cpu_variant_name + "</a></li>"));
 						}
+
+						boardItem.append (submenu);
+
 						boardDesc += variants.join (",");
 
 					}
 					boardDesc += ')';
 					console.log (boardDesc);
 
-					$('<li><a href="#">'+boardMeta.name+"</a></li>").appendTo(arduinoBoardDD);
 
 				});
 			});

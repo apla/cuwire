@@ -1,3 +1,8 @@
+#arduino-sidebar-icon {
+	background-image: url(logo.svg);
+	background-size: 24px;
+}
+
 #arduino-panel {}
 #arduino-panel .toolbar {
 	overflow: visible;
@@ -5,7 +10,31 @@
 #arduino-panel span.title {
 	margin-right: 5em;
 }
-#arduino-sidebar-icon {
-	background-image: url(plugin.svg);
-	background-size: 24px;
+
+#arduino-panel ul.dropdown-menu {
+	height: auto;
+	max-height: 300px;
+	overflow-x: hidden;
 }
+
+#arduino-panel ul.dropdown-menu .dropdown-header {
+	padding: 5px 10px;
+	background-color: #f3f3f3;
+}
+
+#arduino-panel button.with-chip {
+	padding-left: 24px;
+	background: url(chip.svg) 4px 4px no-repeat;
+}
+
+#arduino-panel button.with-plug {
+	padding-left: 24px;
+	background: url(plug.svg) 4px 4px no-repeat;
+}
+
+#arduino-panel .dropdown-submenu{position:relative;}
+#arduino-panel .dropdown-submenu>.dropdown-menu{top:0;left:100%;margin-top:-6px;margin-left:-1px;-webkit-border-radius:0 6px 6px 6px;-moz-border-radius:0 6px 6px 6px;border-radius:0 6px 6px 6px;}
+#arduino-panel .dropdown-submenu:hover>.dropdown-menu{display:block;}
+#arduino-panel .dropdown-submenu>a:after{display:block;content:" ";float:right;width:0;height:0;border-color:transparent;border-style:solid;border-width:5px 0 5px 5px;border-left-color:#cccccc;margin-top:5px;margin-right:-10px;}
+#arduino-panel .dropdown-submenu:hover>a:after{border-left-color:#ffffff;}
+#arduino-panel .dropdown-submenu.pull-left{float:none;}.dropdown-submenu.pull-left>.dropdown-menu{left:-100%;margin-left:10px;-webkit-border-radius:6px 0 6px 6px;-moz-border-radius:6px 0 6px 6px;border-radius:6px 0 6px 6px;}
