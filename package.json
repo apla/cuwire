@@ -1,10 +1,10 @@
 {
 	"name": "arduino",
-	"version": "0.1.0",
+	"version": "0.1.1",
 
 	"title": "Arduino Brackets integration",
-	"homepage": "https://github.com/apla/brackets/arduino",
-	"description": "",
+	"homepage": "https://github.com/apla/brackets-arduino",
+	"description": "Arduino IDE alternative for Brackets",
 
 	"author": "Ivan Baktsheev <dot.and.thing@gmail.com>",
 	"license": "MIT",

@@ -7,9 +7,11 @@ define(function (require, exports, module) {
 
 	var moduleId = "me.apla.brackets-arduino";
 
-	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
-		NodeDomain     = brackets.getModule("utils/NodeDomain"),
-		PreferencesManager = brackets.getModule("preferences/PreferencesManager");
+	var ExtensionUtils     = brackets.getModule("utils/ExtensionUtils"),
+		NodeDomain         = brackets.getModule("utils/NodeDomain"),
+		PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
+		PopUpManager       = brackets.getModule("widgets/PopUpManager");
+
 
 	var prefs = PreferencesManager.getExtensionPrefs (moduleId);
 
@@ -37,10 +39,28 @@ define(function (require, exports, module) {
 
 	}
 
+
 	ArduinoExt.prototype.enumerateSerialPorts = function () {
 		// TODO: show spinner indicator
 
 		var self = this;
+
+		var arduinoPortDD = $('#arduino-panel ul.arduino-port');
+		if (!this.portsDDSubscribed) {
+			// can't find the working API for this
+			var buttonDD = arduinoPortDD.prev("*[data-toggle=\"dropdown\"]");
+			buttonDD.on ('click', function () {
+				if (!buttonDD.parent ().hasClass ('open')) {
+					self.enumerateSerialPorts ();
+				}
+			});
+//			arduinoPortDD.prev().on ('show.bs.dropdown', function () {
+//				console.log (123);
+//			});
+			this.portsDDSubscribed = true;
+		}
+
+		$('<li><a href="#">Updating</a></li>').appendTo(arduinoPortDD);
 
 		this.domain.exec("enumerateSerialPorts")
 		.done(function (ports) {
@@ -51,9 +71,9 @@ define(function (require, exports, module) {
 				"[brackets-arduino-node] Available ports:",
 				ports.join (", ")
 			);
-			$('#arduino-panel ul.arduino-port li').remove();
+			arduinoPortDD.empty ();
 			// tr = $('<tr />').appendTo('#arduino-panel tbody');
-			var arduinoPortDD = $('#arduino-panel ul.arduino-port');
+
 
 			ports.forEach (function (portName) {
 				$('<li><a href="#">'+portName+"</a></li>")
@@ -63,6 +83,7 @@ define(function (require, exports, module) {
 
 			//		$('<td />').text(err.message).appendTo(tr);
 			//		$('<td />').text(err.filename).appendTo(tr);
+			self.setPort ();
 		}).fail(function (err) {
 			// TODO: show error indicator
 			console.error("[brackets-arduino-node] failed to run arduino.enumerateSerialPorts, error:", err);
@@ -72,12 +93,87 @@ define(function (require, exports, module) {
 
 	ArduinoExt.prototype.setPort = function (portName) {
 		// TODO: set port in preferences
+		if (!portName) {
+			portName = prefs.get ('port');
+			// no preference, first launch
+			if (!portName)
+				return;
+		} else {
+			prefs.set ('port', portName);
+		}
 		$('#arduino-panel button.arduino-port').text (portName.replace (/^\/dev\/cu\./, ""));
+	}
+
+	ArduinoExt.prototype.showBoardImage = function (boardId, platformName) {
+		console.log ("board image", boardId, platformName, this.boardImage);
+		if (boardId) {
+			throw "unexpected boardId, not implemented yet";
+		}
+
+		// TODO: use template
+		if (this.boardImage) {
+			this.boardImagePopUp = $(
+				'<div id="arduino-board-image" class="modal"><div class="modal-header">'
+				+ '<h1 class="dialog-title">{{Strings.AUTHORS_OF}} {{file}}</h1>'
+				+ '</div><div class="modal-body"></div><div class="modal-footer">'
+				+ '<button data-button-id="close" class="dialog-button btn btn-80">Close</button></div></div>'
+			);
+			// this.boardImageJ = $(this.boardImage);
+			$("body").append (this.boardImagePopUp);
+
+			PopUpManager.addPopUp(this.boardImagePopUp, function () {
+				console.log ("popup closed?");
+			}, true);
+		}
+
+	}
+
+	ArduinoExt.prototype.hideBoardImage = function () {
+		if (this.boardImage) {
+			PopUpManager.removePopUp (this.boardImagePopUp);
+		}
 	}
 
 	ArduinoExt.prototype.setBoard = function (boardId, platformName) {
 		// TODO: set board in preferences
-		$('#arduino-panel button.arduino-board').text (this.platforms[platformName].boards[boardId].name);
+		if (!boardId) {
+			var boardPref = prefs.get ('board');
+			// no preference, first launch
+			if (!boardPref)
+				return;
+			boardId = boardPref[0];
+			platformName = boardPref[1];
+		} else {
+			prefs.set ('board', [boardId, platformName]);
+		}
+
+		var self = this;
+		this.boardImage = null;
+
+		var titleButton = $('#arduino-panel button.arduino-board');
+		titleButton.text (this.platforms[platformName].boards[boardId].name);
+
+		var fs = brackets.getModule("filesystem/FileSystem");
+		var boardImageUrl = require.toUrl ('./boards/'+boardId+'.jpg');
+		var fileObj = fs.getFileForPath (boardImageUrl);
+		fileObj.exists (function (err, exists) {
+			if (err || !exists)
+				return;
+			var bi = new Image ();
+			bi.addEventListener ('load',  function () {
+				console.log ('load done', arguments);
+				self.boardImage = bi;
+				titleButton.on ('click', self.showBoardImage.bind (self, null, null));
+			}, false);
+			bi.addEventListener ('error', function () {
+				console.log ('load error', arguments);
+			}, false);
+			bi.addEventListener ('abort', function () {
+				console.log ('load abort', arguments);
+			}, false);
+			bi.src = encodeURI (boardImageUrl);
+		})
+
 	}
 
 	ArduinoExt.prototype.getBoardMeta = function () {
@@ -95,7 +191,7 @@ define(function (require, exports, module) {
 			// tr = $('<tr />').appendTo('#arduino-panel tbody');
 			var arduinoBoardDD = $('#arduino-panel ul.arduino-board');
 
-			Object.keys (platforms).forEach (function (platformName) {
+			Object.keys (platforms).sort().forEach (function (platformName) {
 				console.log (platformName);
 				$('<li class="dropdown-header">'
 				  + platforms[platformName].platform.name + " "
@@ -103,7 +199,7 @@ define(function (require, exports, module) {
 				  + "</li>").appendTo(arduinoBoardDD);
 
 				var boards = platforms[platformName].boards;
-				Object.keys (boards).map (function (boardId) {
+				Object.keys (boards).sort().map (function (boardId) {
 					var boardMeta = boards[boardId];
 
 					var boardItem = $('<li><a href="#">'+boardMeta.name+"</a></li>");
@@ -132,7 +228,7 @@ define(function (require, exports, module) {
 
 				});
 			});
-
+			self.setBoard();
 		}).fail(function (err) {
 			// TODO: show error indicator
 			console.error("[brackets-arduino-node] failed to run arduino.getBoardMeta, error:", err);
