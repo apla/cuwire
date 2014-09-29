@@ -1,6 +1,6 @@
 {
 	"name": "arduino",
-	"version": "0.1.1",
+	"version": "0.1.2",
 
 	"title": "Arduino Brackets integration",
 	"homepage": "https://github.com/apla/brackets-arduino",
