@@ -10,7 +10,7 @@ define(function (require, exports, module) {
 	var ExtensionUtils     = brackets.getModule("utils/ExtensionUtils"),
 		NodeDomain         = brackets.getModule("utils/NodeDomain"),
 		PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
-		PopUpManager       = brackets.getModule("widgets/PopUpManager");
+		Dialogs            = brackets.getModule("widgets/Dialogs");
 
 
 	var prefs = PreferencesManager.getExtensionPrefs (moduleId);
@@ -111,27 +111,28 @@ define(function (require, exports, module) {
 		}
 
 		// TODO: use template
+		this.boardImagePopUp = $(
+			'<div id="arduino-board-image" class="modal">'
+			//				+ '<div class="modal-header">'
+			//				+ '<h1 class="dialog-title">{{Strings.AUTHORS_OF}} {{file}}</h1>'
+			//				+ '</div>'
+			+ '<div class="modal-body"></div><div class="modal-footer">'
+			+ '<button data-button-id="close" class="dialog-button btn btn-80">Close</button></div></div>'
+		);
+
 		if (this.boardImage) {
-			this.boardImagePopUp = $(
-				'<div id="arduino-board-image" class="modal"><div class="modal-header">'
-				+ '<h1 class="dialog-title">{{Strings.AUTHORS_OF}} {{file}}</h1>'
-				+ '</div><div class="modal-body"></div><div class="modal-footer">'
-				+ '<button data-button-id="close" class="dialog-button btn btn-80">Close</button></div></div>'
+			$(".modal-body", this.boardImagePopUp).append (this.boardImage);
+		} else {
+			$(".modal-body", this.boardImagePopUp).append (
+				'<h3>No board image found</h3>'
 			);
-			// this.boardImageJ = $(this.boardImage);
-			$("body").append (this.boardImagePopUp);
-
-			PopUpManager.addPopUp(this.boardImagePopUp, function () {
-				console.log ("popup closed?");
-			}, true);
 		}
+		Dialogs.showModalDialogUsingTemplate(this.boardImagePopUp).done(function (buttonId) {
+			if (buttonId === "ok") {
+				// CommandManager.execute("debug.refreshWindow");
+			}
+		});
 
-	}
-
-	ArduinoExt.prototype.hideBoardImage = function () {
-		if (this.boardImage) {
-			PopUpManager.removePopUp (this.boardImagePopUp);
-		}
 	}
 
 	ArduinoExt.prototype.setBoard = function (boardId, platformName) {
@@ -163,7 +164,6 @@ define(function (require, exports, module) {
 			bi.addEventListener ('load',  function () {
 				console.log ('load done', arguments);
 				self.boardImage = bi;
-				titleButton.on ('click', self.showBoardImage.bind (self, null, null));
 			}, false);
 			bi.addEventListener ('error', function () {
 				console.log ('load error', arguments);
@@ -236,6 +236,46 @@ define(function (require, exports, module) {
 
 	}
 
+	ArduinoExt.prototype.compile = function () {
+		// TODO: use template
+		var dialogHtml = $(
+			'<div id="arduino-board-alert" class="modal">'
+			//				+ '<div class="modal-header">'
+			//				+ '<h1 class="dialog-title">{{Strings.AUTHORS_OF}} {{file}}</h1>'
+			//				+ '</div>'
+			+ '<div class="modal-body"></div><div class="modal-footer">'
+			+ '<button data-button-id="close" class="dialog-button btn btn-80">Close</button></div></div>'
+		);
+
+		$(".modal-body", dialogHtml).append ("<h3>Not implemented yet!</h3>");
+
+		Dialogs.showModalDialogUsingTemplate(dialogHtml).done(function (buttonId) {
+			if (buttonId === "ok") {
+				// CommandManager.execute("debug.refreshWindow");
+			}
+		});
+	}
+
+	ArduinoExt.prototype.run = function () {
+		// TODO: use template
+		var dialogHtml = $(
+			'<div id="arduino-board-alert" class="modal">'
+			//				+ '<div class="modal-header">'
+			//				+ '<h1 class="dialog-title">{{Strings.AUTHORS_OF}} {{file}}</h1>'
+			//				+ '</div>'
+			+ '<div class="modal-body"></div><div class="modal-footer">'
+			+ '<button data-button-id="close" class="dialog-button btn btn-80">Close</button></div></div>'
+		);
+
+		$(".modal-body", dialogHtml).append ("<h3>Not implemented yet!</h3>");
+
+		Dialogs.showModalDialogUsingTemplate(dialogHtml).done(function (buttonId) {
+			if (buttonId === "ok") {
+				// CommandManager.execute("debug.refreshWindow");
+			}
+		});
+	}
+
 	ArduinoExt.prototype.createUI = function (require) {
 
 		var myIcon = $("<a href=\"#\" id=\"arduino-sidebar-icon\"></a>");
@@ -263,6 +303,14 @@ define(function (require, exports, module) {
 		myIcon.on ("click", this.panel.toggle.bind (this.panel));
 		$('#arduino-panel .close').on('click', this.panel.hide.bind (this.panel));
 
+		var titleButton = $('#arduino-panel button.arduino-board');
+		titleButton.on ('click', this.showBoardImage.bind (this, null, null));
+
+		var compileButton = $('#arduino-panel button.arduino-compile');
+		compileButton.on ('click', this.compile.bind (this, null, null));
+
+		var runButton = $('#arduino-panel button.arduino-run');
+		runButton.on ('click', this.run.bind (this, null, null));
 	}
 
 
