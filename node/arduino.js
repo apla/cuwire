@@ -33,18 +33,18 @@ Arduino.prototype.init = function (runtimeDirs, userDirs) {
 	this.processDirs ('user',    userDirs);
 }
 
-var dirsToProcess = 0;
-Arduino.prototype.ioDone = function () {
+var ioWait = 0;
+Arduino.prototype.ioDone = function (tag) {
 	var self = this;
-	dirsToProcess++;
-//	console.log ('dirsToProcess++', dirsToProcess);
+	ioWait++;
+	//console.log ('ioWait++', dirsToProcess);
 	return function () {
-		dirsToProcess --;
-//		console.log ('dirsToProcess--', dirsToProcess);
-		if (!dirsToProcess)
+		ioWait --;
+		//console.log ('ioWait--', dirsToProcess);
+		if (!ioWait)
 			setTimeout (function () {
-				if (!dirsToProcess)
-					self.emit ('done');
+				if (!ioWait)
+					self.emit (tag || 'done');
 			}, 100);
 	}.bind (this);
 }
@@ -336,21 +336,9 @@ Arduino.prototype.compile = function (platformId, boardId, cpuId) {
 		})
 	}
 
-
 	// build stage
 	var currentStage = "build";
 
-	// TODO: enumerate libraries
-	///Applications/devel/Arduino.app/Contents/Java/hardware/tools/avr/bin/avr-g++
-	//-c -g -Os -w -fno-exceptions -ffunction-sections -fdata-sections -MMD -mmcu=atmega328p
-	//-DF_CPU=16000000L -DARDUINO=157 -DARDUINO_AVR_PRO -DARDUINO_ARCH_AVR
-	//-I/Applications/devel/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino
-	//-I/Applications/devel/Arduino.app/Contents/Java/hardware/arduino/avr/variants/eightanaloginputs
-	//-I/Applications/devel/Arduino.app/Contents/Java/hardware/arduino/avr/libraries/SPI
-	//-I/Users/apla/Documents/Arduino/libraries/RF24
-	//-I/Users/apla/Documents/Arduino/libraries/BTLE
-	///var/folders/r4/d4l8c_ts4rsdc670pdkbtr0m0000gn/T/build4558466746462003224.tmp/btle_send.cpp
-	//-o /var/folders/r4/d4l8c_ts4rsdc670pdkbtr0m0000gn/T/build4558466746462003224.tmp/btle_send.cpp.o
 
 	// TODO: use located runtime dir
 	var conf = platform;
@@ -375,6 +363,13 @@ Arduino.prototype.compile = function (platformId, boardId, cpuId) {
 		}
 		cppCompile += ' -I' + libDir.root
 	});
+
+	// TODO
+	// cppCompile += [path to build folder]/project.cpp
+	// cppCompile += -o [path to build folder]/project.cpp.o
+
+	// original arduino compile routine
+	// https://github.com/arduino/Arduino/blob/3a8ad75bcef5932cfc81c4746a87ddbdbd7e6402/app/src/processing/app/debug/Compiler.java
 
 	console.log (cppCompile);
 
