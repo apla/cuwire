@@ -125,10 +125,9 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 		if(line.indexOf("#") == 0) return;
 		if(line.length == 0) return;
 		// console.log (line);
-		var parts = line.split('=');
-		var ref = parts[0];
+		var ref = line.substring (0, line.indexOf ('='));
 		if (ref === "menu.cpu") return;
-		var value = parts[1];
+		var value = line.substring (line.indexOf ('=')+1);
 		var refs = ref.split('.');
 
 		var root = boards;
