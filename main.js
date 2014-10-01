@@ -152,7 +152,8 @@ define(function (require, exports, module) {
 		this.boardImage = null;
 
 		var titleButton = $('#arduino-panel button.arduino-board');
-		titleButton.text (this.platforms[platformName].boards[boardId].name);
+		if (this.platforms[platformName])
+			titleButton.text (this.platforms[platformName].boards[boardId].name);
 
 		var fs = brackets.getModule("filesystem/FileSystem");
 		var boardImageUrl = require.toUrl ('./boards/'+boardId+'.jpg');
@@ -181,7 +182,9 @@ define(function (require, exports, module) {
 
 		var self = this;
 
-		this.domain.exec("getBoardsMeta", ["/Users/apla/Documents/Arduino"])
+		// TODO: author's module location - use preferences for this
+		// TODO: when we can't find arduino ide in default locations gracefully degrade
+		this.domain.exec("getBoardsMeta", ["/Applications/devel/Arduino.app"])
 		.done(function (platforms) {
 			console.log("[brackets-arduino-node] Available boards:");
 
