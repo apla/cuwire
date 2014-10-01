@@ -7,30 +7,30 @@ var util = require ('util');
 
 var EventEmitter = require('events').EventEmitter;
 
-var Arduino = function (runtimeDirs, userDirs) {
+var Arduino = function (userDirs) {
 
 	// useful for reloading
-	this.init (runtimeDirs, userDirs);
+	this.init (userDirs);
 
 	this.boardData = {};
 	this.libraryData = {};
 
 	this.on ('done', this.storeBoardsData.bind (this));
 	this.on ('done', this.storeLibraryData.bind (this));
+
 }
 
 util.inherits (Arduino, EventEmitter);
 
-Arduino.prototype.init = function (runtimeDirs, userDirs) {
-	runtimeDirs = appendStandardLocations ('runtime', runtimeDirs);
-	userDirs    = appendStandardLocations ('user',    userDirs);
+Arduino.prototype.init = function (userDirs) {
+	userDirs = appendStandardLocations ('runtime', userDirs);
+	userDirs = appendStandardLocations ('user',    userDirs);
 
 	// we must find correct arduino ide location.
 	// we assume [arduino ide]/hardware/tools contains avr-gcc and so on
 	// TODO: linux path resolve
 
-	this.processDirs ('runtime', runtimeDirs);
-	this.processDirs ('user',    userDirs);
+	this.processDirs ('all', userDirs);
 }
 
 var ioWait = 0;
@@ -305,6 +305,21 @@ Arduino.prototype.storeBoardsData = function () {
 	);
 }
 
+Arduino.prototype.loadBoardsData = function () {
+	fs.readFile (path.join (__dirname, "../arduino.json"), (function (err, data) {
+		if (err) {
+			this.emit ('error', err);
+			return;
+		}
+		try {
+			this.boardData = JSON.parse (data.toString());
+		} catch (e) {
+			this.emit ('error', e);
+		}
+	}).bind (this));
+}
+
+
 Arduino.prototype.storeLibraryData = function () {
 	fs.writeFile (
 		path.join (__dirname, "../libraries.json"),
@@ -313,7 +328,50 @@ Arduino.prototype.storeLibraryData = function () {
 	);
 }
 
-Arduino.prototype.compile = function (platformId, boardId, cpuId) {
+Arduino.prototype.loadLibraryData = function () {
+	fs.readFile (path.join (__dirname, "../libraries.json"), (function (err, data) {
+		if (err) {
+			this.emit ('error', err);
+			return;
+		}
+		try {
+			this.boardData = JSON.parse (data.toString());
+		} catch (e) {
+			this.emit ('error', e);
+		}
+	}).bind (this));
+}
+
+function createTempFile (fileName) {
+
+	var temp = require('temp'),
+		exec = require('child_process').exec;
+
+	// Automatically track and cleanup files at exit
+	temp.track();
+
+	// For use with ConTeXt, http://wiki.contextgarden.net
+	var myData = "\\starttext\nHello World\n\\stoptext";
+
+	temp.mkdir('pdfcreator', function(err, dirPath) {
+		var inputPath = path.join(dirPath, 'input.tex')
+		fs.writeFile(inputPath, myData, function(err) {
+			if (err) throw err;
+			process.chdir(dirPath);
+			exec("texexec '" + inputPath + "'", function(err) {
+				if (err) throw err;
+				fs.readFile(path.join(dirPath, 'input.pdf'), function(err, data) {
+					if (err) throw err;
+					sys.print(data);
+				});
+			});
+		});
+	});
+}
+
+
+
+Arduino.prototype.compile = function (sketchFolder, platformId, boardId, cpuId) {
 
 	var platform = this.boardData[platformId].platform;
 	var board = this.boardData[platformId].boards[boardId];
@@ -332,46 +390,129 @@ Arduino.prototype.compile = function (platformId, boardId, cpuId) {
 	String.prototype.replaceDict = function (conf) {
 		return this.replace (/{(\w+\.)*\w+}/g, function (match) {
 			var varPath = match.substring (1, match.length - 1);
-			return pathToVar (conf, varPath);
+			var result = pathToVar (conf, varPath);
+			if (result === undefined)
+				throw "no interpolation found for "+varPath
+			return result;
 		})
 	}
 
 	// build stage
 	var currentStage = "build";
 
-
-	// TODO: use located runtime dir
-	var conf = platform;
+	var conf = JSON.parse (JSON.stringify (platform));
 	pathToVar (conf, 'runtime.ide.path', this.runtimeDir);
+	pathToVar (conf, 'runtime.ide.version', "1.5.7");
 
 	platform.compiler.path = platform.compiler.path.replaceDict (conf);
 
-	var cppCompile = platform.recipe.cpp.o.pattern.replaceDict (conf)
-	+ '=' + board.build.mcu
-	+ ' -DF_CPU=' + board.build.f_cpu
-	+ ' -DARDUINO=157' // version?
-	+ ' -DARDUINO_'+ board.build.board
-	+ ' -DARDUINO_ARCH_' + 'AVR' // TODO: extract from folder name
-	+ ' -I' + this.boardData[platformId].folders.root + '/cores/' + board.build.core
-	+ ' -I' + this.boardData[platformId].folders.root + '/variants/' + board.build.variant;
+	for (var buildK in board.build) {
+		conf.build[buildK] = board.build[buildK];
+	}
 
+	pathToVar (conf, 'build.arch', platformId.split ('/')[1].toUpperCase ());
+
+//	console.log ('BUILD', conf.build, platform.recipe.cpp.o.pattern);
+
+//	The uno.build.board property is used to set a compile-time variable ARDUINO_{build.board}
+//	to allow use of conditional code between #ifdefs. The Arduino IDE automatically generate
+//	a build.board value if not defined. In this case the variable defined at compile time will
+//	be ARDUINO_AVR_UNO.
+
+	var coreIncludes =
+		' -I' + this.boardData[platformId].folders.root + '/cores/' + board.build.core
+		+ ' -I' + this.boardData[platformId].folders.root + '/variants/' + board.build.variant;
+
+	var includes = coreIncludes;
+	var libCompile = {};
+	// TODO: analyse source
 	var self = this;
 	"SPI RF24 BTLE".split (" ").forEach (function (libName) {
 		var libDir = self.libraryData[libName] || self.boardData[platformId].libraryData[libName];
 		if (!libDir || !libDir.root) {
 			console.log ('cannot find library', libName);
 		}
-		cppCompile += ' -I' + libDir.root
+		libCompile[libName] = libDir;
+		includes += ' -I' + libDir.root
 	});
 
-	// TODO
-	// cppCompile += [path to build folder]/project.cpp
-	// cppCompile += -o [path to build folder]/project.cpp.o
+	// we can compile libs, core and current sources at same time
+	// in a ideal case this is 3x speedup
+	// also, core do not need a rebuild
+
+	for (var libName in libCompile) {
+		var libIncludes = includes + ' -I' + libCompile[libName].root + '/utility';
+		for (var libSrcFile in libCompile[libName].files) {
+			if (!libSrcFile.match (/\.c(pp)?$/))
+				return;
+			var ext = libSrcFile.substring (libSrcFile.lastIndexOf ('.')+1);
+			conf.source_file = libSrcFile;
+			// TODO: build dir
+			conf.object_file = libSrcFile + '.o';
+			conf.includes    = libIncludes;
+			var compileCmd   = platform.recipe[ext].o.pattern.replaceDict (conf);
+		}
+	}
+
+	walk (sketchFolder, foundProjectFile, {
+		nameMatch: /[^\/]+\.c(pp)?$/i
+	});
+
+	walk (this.boardData[platformId].folders.root + '/cores/' + board.build.core, foundCoreFile, {
+		nameMatch: /[^\/]+\.c(pp)?$/i
+	});
+
+	function foundProjectFile (err, files) {
+		if (err) {
+			console.log (err);
+			return;
+		}
+
+		files.forEach (function (srcFile) {
+			var ext = srcFile.substring (srcFile.lastIndexOf ('.')+1);
+			conf.source_file = srcFile;
+			// TODO: build dir
+			conf.object_file = srcFile + '.o';
+			conf.includes    = includes;
+			var compileCmd   = platform.recipe[ext].o.pattern.replaceDict (conf);
+			console.log (compileCmd);
+		});
+	}
+
+	function foundCoreFile (err, files) {
+		if (err) {
+			console.log (err);
+			return;
+		}
+
+		files.forEach (function (srcFile) {
+			var ext = srcFile.substring (srcFile.lastIndexOf ('.')+1);
+			conf.source_file = srcFile;
+			// TODO: build dir
+			conf.object_file = srcFile + '.o';
+			conf.includes = coreIncludes;
+			var compileCmd = platform.recipe[ext].o.pattern.replaceDict (conf);
+			console.log (compileCmd);
+		});
+
+		// after all, we need to make core.a file
+	}
+
+	// for each library add [lib folder]/utility
+
+//	var cppCompile = platform.recipe.cpp.o.pattern.replaceDict (conf);
 
 	// original arduino compile routine
 	// https://github.com/arduino/Arduino/blob/3a8ad75bcef5932cfc81c4746a87ddbdbd7e6402/app/src/processing/app/debug/Compiler.java
 
-	console.log (cppCompile);
+	// docs
+	// https://github.com/arduino/Arduino/wiki/Arduino-IDE-1.5---3rd-party-Hardware-specification
+
+//	console.log (cppCompile);
+
+}
+
+Arduino.prototype.compile.executeShell = function () {
 
 }
 
