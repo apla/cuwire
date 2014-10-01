@@ -304,7 +304,8 @@ define(function (require, exports, module) {
 		this.panel.setVisible (lastPanelState);
 
 		myIcon.on ("click", this.panel.toggle.bind (this.panel));
-		$('#arduino-panel .close').on('click', this.panel.hide.bind (this.panel));
+		// we call toggle because you cannot click on close button on hidden panel
+		$('#arduino-panel .close').on('click', this.panel.toggle.bind (this.panel));
 
 		var titleButton = $('#arduino-panel button.arduino-board');
 		titleButton.on ('click', this.showBoardImage.bind (this, null, null));
