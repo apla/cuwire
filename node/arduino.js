@@ -7,6 +7,8 @@ var util = require ('util');
 
 var EventEmitter = require('events').EventEmitter;
 
+var ArduinoCompiler = require ('./compiler');
+
 var Arduino = function (userDirs) {
 
 	// useful for reloading
@@ -18,6 +20,9 @@ var Arduino = function (userDirs) {
 	this.on ('done', this.storeBoardsData.bind (this));
 	this.on ('done', this.storeLibraryData.bind (this));
 
+	this.on ('done', (function () {
+		Arduino.instance = this;
+	}).bind (this));
 }
 
 util.inherits (Arduino, EventEmitter);
@@ -206,9 +211,9 @@ Arduino.prototype.enumerateLibraries = function (fullPath, done, err, data) {
 			}
 			var relativePath = fileName.substr (fullPath.length + 1);
 //			console.log (relativePath.match (/[^\/]+/));
-			var libName = relativePath.match (/[^\/]+/)[0];
+			var libName = relativePath.match (/[^\/]+/)[0].toLowerCase();
 //			console.log ('found lib', libName);
-			// TODO: user and runtime can have librarieswith same name. prefer user ones
+			// TODO: user and runtime can have libraries with same name. prefer user ones
 			if (!self.libraryData[libName])
 				self.libraryData[libName] = {
 					files: {},
@@ -371,7 +376,51 @@ function createTempFile (fileName) {
 
 
 
-Arduino.prototype.compile = function (sketchFolder, platformId, boardId, cpuId) {
+function processIno (sketchFolder, compiler) {
+	var sketchName = sketchFolder.substring (sketchFolder.lastIndexOf ('/') + 1);
+	var inoFile = path.join (sketchFolder, sketchName + '.ino');
+
+//	console.log (inoFile);
+
+	fs.readFile (inoFile, (function (err, data) {
+		if (err) {
+			console.log ('ino parsing failed');
+			cb (err);
+			return;
+		}
+
+		var inoContents = data.toString ();
+
+		// let's find all #includes
+		var includeRe = /^#include <([^>]+)\.h>/gm;
+		var matchArray;
+		var libNames = [];
+
+		while ((matchArray = includeRe.exec(inoContents)) !== null) {
+			libNames.push (matchArray[1]);
+		}
+
+		// var firstStatementRe = /(\s*(\/\*[^*]*\*\/|\/\/.*?$|#([^#])*)\n)*/gm;
+
+//		console.log (inoContents.split (firstStatementRe));
+
+		fs.writeFile (inoFile+'.cpp', "#include <Arduino.h>\n" + inoContents, function (err, done) {
+			compiler.setProjectFiles (null, [inoFile+'.cpp'], true);
+			compiler.setLibNames (libNames);
+		});
+
+		// TODO: process ino at compiler
+
+	}).bind (this));
+}
+
+Arduino.prototype.findLib = function (platformId, libName) {
+//	console.log (this.libraryData, this.boardData[platformId].libraryData, platformId, libName);
+	libName = libName.toLowerCase();
+	return this.libraryData[libName] || this.boardData[platformId].libraryData[libName];
+}
+
+Arduino.prototype.compile = function (sketchFolder, buildFolder, platformId, boardId, cpuId) {
 
 	var platform = this.boardData[platformId].platform;
 	var board = this.boardData[platformId].boards[boardId];
@@ -379,124 +428,17 @@ Arduino.prototype.compile = function (sketchFolder, platformId, boardId, cpuId) 
 	var boardBuild = board.build;
 	var cpu = board.menu.cpu[cpuId];
 
-	"upload bootloader build".split (" ").forEach (function (stageName) {
-		if (!cpu[stageName])
-			return;
-		for (var stageKey in cpu[stageName]) {
-			board[stageName][stageKey] = cpu[stageName][stageKey];
-		}
-	});
+	var compiler = this.compiler = new ArduinoCompiler (this.boardData[platformId], platformId, boardId, cpuId);
 
-	String.prototype.replaceDict = function (conf) {
-		return this.replace (/{(\w+\.)*\w+}/g, function (match) {
-			var varPath = match.substring (1, match.length - 1);
-			var result = pathToVar (conf, varPath);
-			if (result === undefined)
-				throw "no interpolation found for "+varPath
-			return result;
-		})
-	}
+	processIno (sketchFolder, compiler);
 
-	// build stage
-	var currentStage = "build";
-
-	var conf = JSON.parse (JSON.stringify (platform));
-	pathToVar (conf, 'runtime.ide.path', this.runtimeDir);
-	pathToVar (conf, 'runtime.ide.version', "1.5.7");
-
-	platform.compiler.path = platform.compiler.path.replaceDict (conf);
-
-	for (var buildK in board.build) {
-		conf.build[buildK] = board.build[buildK];
-	}
-
-	pathToVar (conf, 'build.arch', platformId.split ('/')[1].toUpperCase ());
-
-//	console.log ('BUILD', conf.build, platform.recipe.cpp.o.pattern);
-
-//	The uno.build.board property is used to set a compile-time variable ARDUINO_{build.board}
-//	to allow use of conditional code between #ifdefs. The Arduino IDE automatically generate
-//	a build.board value if not defined. In this case the variable defined at compile time will
-//	be ARDUINO_AVR_UNO.
-
-	var coreIncludes =
-		' -I' + this.boardData[platformId].folders.root + '/cores/' + board.build.core
-		+ ' -I' + this.boardData[platformId].folders.root + '/variants/' + board.build.variant;
-
-	var includes = coreIncludes;
-	var libCompile = {};
-	// TODO: analyse source
-	var self = this;
-	"SPI RF24 BTLE".split (" ").forEach (function (libName) {
-		var libDir = self.libraryData[libName] || self.boardData[platformId].libraryData[libName];
-		if (!libDir || !libDir.root) {
-			console.log ('cannot find library', libName);
-		}
-		libCompile[libName] = libDir;
-		includes += ' -I' + libDir.root
-	});
-
-	// we can compile libs, core and current sources at same time
-	// in a ideal case this is 3x speedup
-	// also, core do not need a rebuild
-
-	for (var libName in libCompile) {
-		var libIncludes = includes + ' -I' + libCompile[libName].root + '/utility';
-		for (var libSrcFile in libCompile[libName].files) {
-			if (!libSrcFile.match (/\.c(pp)?$/))
-				return;
-			var ext = libSrcFile.substring (libSrcFile.lastIndexOf ('.')+1);
-			conf.source_file = libSrcFile;
-			// TODO: build dir
-			conf.object_file = libSrcFile + '.o';
-			conf.includes    = libIncludes;
-			var compileCmd   = platform.recipe[ext].o.pattern.replaceDict (conf);
-		}
-	}
-
-	walk (sketchFolder, foundProjectFile, {
+	walk (sketchFolder, compiler.setProjectFiles.bind (compiler), {
 		nameMatch: /[^\/]+\.c(pp)?$/i
 	});
 
-	walk (this.boardData[platformId].folders.root + '/cores/' + board.build.core, foundCoreFile, {
+	walk (this.boardData[platformId].folders.root + '/cores/' + board.build.core, compiler.setCoreFiles.bind (compiler), {
 		nameMatch: /[^\/]+\.c(pp)?$/i
 	});
-
-	function foundProjectFile (err, files) {
-		if (err) {
-			console.log (err);
-			return;
-		}
-
-		files.forEach (function (srcFile) {
-			var ext = srcFile.substring (srcFile.lastIndexOf ('.')+1);
-			conf.source_file = srcFile;
-			// TODO: build dir
-			conf.object_file = srcFile + '.o';
-			conf.includes    = includes;
-			var compileCmd   = platform.recipe[ext].o.pattern.replaceDict (conf);
-			console.log (compileCmd);
-		});
-	}
-
-	function foundCoreFile (err, files) {
-		if (err) {
-			console.log (err);
-			return;
-		}
-
-		files.forEach (function (srcFile) {
-			var ext = srcFile.substring (srcFile.lastIndexOf ('.')+1);
-			conf.source_file = srcFile;
-			// TODO: build dir
-			conf.object_file = srcFile + '.o';
-			conf.includes = coreIncludes;
-			var compileCmd = platform.recipe[ext].o.pattern.replaceDict (conf);
-			console.log (compileCmd);
-		});
-
-		// after all, we need to make core.a file
-	}
 
 	// for each library add [lib folder]/utility
 
@@ -514,25 +456,6 @@ Arduino.prototype.compile = function (sketchFolder, platformId, boardId, cpuId) 
 
 Arduino.prototype.compile.executeShell = function () {
 
-}
-
-function pathToVar (root, varPath, value) {
-	varPath.split ('.').forEach (function (chunk, index, chunks) {
-		// pathChunks[index] = chunk;
-		var newRoot = root[chunk];
-		if (index === chunks.length - 1) {
-			if (value !== undefined) {
-				root[chunk] = value;
-			} else {
-				root[chunk];
-			}
-		} else if (!newRoot) {
-			root[chunk] = {};
-			newRoot = root[chunk];
-		}
-		root = newRoot;
-	});
-	return root;
 }
 
 module.exports = Arduino;
