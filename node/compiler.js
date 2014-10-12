@@ -28,6 +28,8 @@ function ArduinoCompiler (buildDir, boardsData, platformId, boardId, cpuId) {
 
 	this.platform = platform;
 
+	this.objectFiles = [];
+
 	this.coreIncludes = [
 		boardsData.folders.root + '/cores/' + board.build.core,
 		boardsData.folders.root + '/variants/' + board.build.variant
@@ -48,6 +50,7 @@ function ArduinoCompiler (buildDir, boardsData, platformId, boardId, cpuId) {
 	var conf = JSON.parse (JSON.stringify (platform));
 	pathToVar (conf, 'runtime.ide.path', Arduino.instance.runtimeDir);
 	pathToVar (conf, 'runtime.ide.version', "158");
+	pathToVar (conf, 'build.path', this.buildDir);
 
 	conf.compiler.path = conf.compiler.path.replaceDict (conf);
 
@@ -78,11 +81,28 @@ function ArduinoCompiler (buildDir, boardsData, platformId, boardId, cpuId) {
 
 util.inherits (ArduinoCompiler, EventEmitter);
 
+ArduinoCompiler.prototype.setProjectName = function (name) {
+	pathToVar (this.config, 'build.project_name', name);
+	this.projectName = name;
+
+}
+
 ArduinoCompiler.prototype.runNext = function (scope) {
-	console.log (scope, 'completed');
+	console.log ('['+scope+']', 'done');
 	this.runNext.done[scope] = true;
-	if (this.runNext.done['core'] && this.runNext.done['libs'] && this.runNext.done['project']) {
+
+	if (scope === 'size') {
+		console.log ('COMPILATION COMPLETE!');
+	} else if (scope === 'obj-eep' || scope === 'obj-hex') {
+		// whe we achieved obj-* stage, no more steps remaining
+		if (this.runNext.done['obj-eep'] && this.runNext.done['obj-hex']) {
+			this.checkSize ();
+		}
+	} else if (this.runNext.done['link']) {
+		this.objCopy ();
+	} else if (this.runNext.done['core'] && this.runNext.done['libs'] && this.runNext.done['project']) {
 		// TODO: anything else
+		this.linkAll ();
 	}
 }
 
@@ -121,11 +141,11 @@ ArduinoCompiler.prototype.ioMkdir = function (folder) {
 	return result;
 }
 
-ArduinoCompiler.prototype.enqueueCmd = function (scope, cmdLine) {
+ArduinoCompiler.prototype.enqueueCmd = function (scope, cmdLine, cb) {
 	if (!this.enqueueCmd.queue[scope])
 		this.enqueueCmd.queue[scope] = {length: 0, pos: -1, running: false};
 	var thisQueue = this.enqueueCmd.queue[scope];
-	thisQueue[thisQueue.length++] = cmdLine;
+	thisQueue[thisQueue.length++] = [cmdLine, cb];
 	this.runCmd (scope);
 //	console.log (cmdLine);
 }
@@ -153,7 +173,8 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 		}).bind (this);
 
 
-		var cmd = thisQueue[thisQueue.pos + 1];
+		var cmdDesc = thisQueue[thisQueue.pos + 1];
+		var cmd = cmdDesc[0];
 
 		// assume shell command
 		if (cmd.constructor === String) {
@@ -169,6 +190,9 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 					console.log ('******************', scope.toUpperCase(), 'exec error: ', error, 'stderr', stderr);
 				}
 				cb (error);
+				if (cmdDesc[1]) {
+					cmdDesc[1] (error, stdout, stderr);
+				}
 			});
 
 		} else if (cmd.io) {
@@ -190,7 +214,6 @@ ArduinoCompiler.prototype.getConfig = function () {
 
 ArduinoCompiler.prototype.setLibNames = function (libNames) {
 	this.libNames = libNames;
-	// TODO: start lib compilation
 	if (!this.libIncludes)
 		this.libIncludes = [];
 	if (!this.libCompile)
@@ -238,6 +261,9 @@ ArduinoCompiler.prototype.setLibNames = function (libNames) {
 			console.log ('[libs]', libName, '>', path.join (libName, libSrcFile));
 			this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildDir, libName)));
 			this.enqueueCmd ('libs', compileCmd);
+
+			this.objectFiles.push (conf.object_file);
+
 			if (Arduino.instance.verbose)
 				console.log (compileCmd);
 
@@ -256,6 +282,8 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 
 	var conf = this.getConfig ();
 
+	var archiveCmds = [];
+
 	coreFileList.forEach ((function (srcFile) {
 		var ext = srcFile.substring (srcFile.lastIndexOf ('.')+1);
 		var localName = srcFile.substring (srcFile.lastIndexOf ('/') + 1, srcFile.lastIndexOf ('.'));
@@ -267,9 +295,21 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 		console.log ('[core]', srcFile);
 		this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildDir, 'core')));
 		this.enqueueCmd ('core', compileCmd);
+
+		conf.archive_file = 'core.a';
+		var archiveCmd = this.platform.recipe.ar.pattern.replaceDict (conf);
+		archiveCmds.push (archiveCmd);
+
 		if (Arduino.instance.verbose)
 			console.log (compileCmd);
 	}).bind (this));
+
+	archiveCmds.forEach ((function (archiveCmd) {
+		this.enqueueCmd ('core', archiveCmd);
+
+		if (Arduino.instance.verbose)
+			console.log (archiveCmd);
+	}).bind(this));
 
 	// after all, we need to make core.a file
 }
@@ -278,12 +318,17 @@ ArduinoCompiler.prototype.processProjectFiles = function () {
 
 	var conf = this.getConfig ();
 
-	this.projectFiles.forEach ((function (srcFile) {
+	var uniqueProjectFiles = [];
+	this.projectFiles.sort ().forEach (function (item, pos) {
+		if (uniqueProjectFiles[uniqueProjectFiles.length - 1] !== item)
+			uniqueProjectFiles.push (item);
+	})
+
+	uniqueProjectFiles.forEach ((function (srcFile) {
 
 		var ext = srcFile.substring (srcFile.lastIndexOf ('.') + 1);
 		var localName = srcFile.substring (srcFile.lastIndexOf ('/') + 1, srcFile.lastIndexOf ('.'));
 		conf.source_file = srcFile;
-		// TODO: build dir
 		conf.object_file = path.join (this.buildDir, localName + '.o');
 		var includes = [""].concat (this.coreIncludes, this.libIncludes).join (" -I");
 		conf.includes = includes;
@@ -292,6 +337,9 @@ ArduinoCompiler.prototype.processProjectFiles = function () {
 		console.log ('[project]', srcFile);
 		this.enqueueCmd ('mkdir', this.ioMkdir (this.buildDir));
 		this.enqueueCmd ('project', compileCmd);
+
+		this.objectFiles.push (conf.object_file);
+
 		if (Arduino.instance.verbose)
 			console.log (compileCmd);
 	}).bind (this));
@@ -317,6 +365,63 @@ ArduinoCompiler.prototype.setProjectFiles = function (err, files, dontCompile) {
 		this.processProjectFiles();
 	}
 }
+
+ArduinoCompiler.prototype.linkAll = function () {
+
+	var conf = this.getConfig ();
+
+	this.objectFiles.forEach ((function (fileName) {
+
+		/*
+
+		// Java Compiler version 1.5.7
+
+		// TODO: Make the --relax thing in configuration files.
+
+		// For atmega2560, need --relax linker option to link larger
+		// programs correctly.
+		String optRelax = "";
+		if (prefs.get("build.mcu").equals("atmega2560"))
+			optRelax = ",--relax";
+
+		String flags = dict.get("compiler.c.elf.flags") + optRelax;
+		dict.put("compiler.c.elf.flags", flags);
+		*/
+
+		var conf = this.getConfig ();
+
+		conf.archive_file = 'core.a';
+		conf.object_files = '"' + this.objectFiles.join ("\" \"") + '"';
+//		dict.put("ide_version", "" + Base.REVISION);
+
+		var linkCmd = this.platform.recipe.c.combine.pattern.replaceDict (conf);
+		this.enqueueCmd ('link', linkCmd);
+
+		if (Arduino.instance.verbose)
+			console.log (linkCmd);
+	}).bind (this));
+}
+
+ArduinoCompiler.prototype.objCopy = function () {
+	var conf = this.getConfig ();
+
+	var eepCmd = this.platform.recipe.objcopy.eep.pattern.replaceDict (conf);
+	this.enqueueCmd ('obj-eep', eepCmd);
+
+	var hexCmd = this.platform.recipe.objcopy.hex.pattern.replaceDict (conf);
+	this.enqueueCmd ('obj-hex', hexCmd);
+}
+
+ArduinoCompiler.prototype.checkSize = function () {
+	var conf = this.getConfig ();
+
+	var sizeCmd = this.platform.recipe.size.pattern.replaceDict (conf);
+	this.enqueueCmd ('size', sizeCmd, function (error, stdout, stderr) {
+		console.log ('[size]', stdout);
+	});
+
+}
+
 
 fs.mkdirParent = function(dirPath, mode, callback) {
 	//Call the standard fs.mkdir

@@ -413,10 +413,12 @@ function processIno (sketchFolder, compiler) {
 		}
 
 		var projectFile = inoFile.replace (/\.ino$/, '.cpp');
-		fs.writeFile (projectFile, "#include <Arduino.h>\n" + functions.join (";\n") + ";\n" + inoContents, function (err, done) {
+		fs.writeFile (projectFile, "#include \"Arduino.h\"\n" + functions.join (";\n") + ";\n" + inoContents, function (err, done) {
 			compiler.setProjectFiles (null, [projectFile], true);
 			compiler.setLibNames (libNames);
 		});
+
+		compiler.setProjectName (sketchName);
 
 		// TODO: process ino at compiler
 
