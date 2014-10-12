@@ -404,8 +404,17 @@ function processIno (sketchFolder, compiler) {
 
 //		console.log (inoContents.split (firstStatementRe));
 
-		fs.writeFile (inoFile+'.cpp', "#include <Arduino.h>\n" + inoContents, function (err, done) {
-			compiler.setProjectFiles (null, [inoFile+'.cpp'], true);
+		var functions = [];
+
+		var functionRe = /^[\s\n\r]*((unsigned|signed|static)[\s\n\r]+)?(void|int|char|short|long|float|double|word)[\s\n\r]+(\w+)[\s\n\r]*\(([^\)]*)\)[\s\n\r]*\{/gm;
+		while ((matchArray = functionRe.exec(inoContents)) !== null) {
+			functions.push ([matchArray[1] || "", matchArray[3], matchArray[4], '('+matchArray[5]+')'].join (" "));
+//			console.log (matchArray[1] || "", matchArray[3], matchArray[4], '(', matchArray[5], ');');
+		}
+
+		var projectFile = inoFile.replace (/\.ino$/, '.cpp');
+		fs.writeFile (projectFile, "#include <Arduino.h>\n" + functions.join (";\n") + ";\n" + inoContents, function (err, done) {
+			compiler.setProjectFiles (null, [projectFile], true);
 			compiler.setLibNames (libNames);
 		});
 
@@ -428,7 +437,7 @@ Arduino.prototype.compile = function (sketchFolder, buildFolder, platformId, boa
 	var boardBuild = board.build;
 	var cpu = board.menu.cpu[cpuId];
 
-	var compiler = this.compiler = new ArduinoCompiler (this.boardData[platformId], platformId, boardId, cpuId);
+	var compiler = this.compiler = new ArduinoCompiler (buildFolder, this.boardData[platformId], platformId, boardId, cpuId);
 
 	processIno (sketchFolder, compiler);
 

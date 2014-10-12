@@ -2,10 +2,13 @@ var Arduino;
 
 var path = require ('path');
 var util = require ('util');
+var fs   = require ('fs');
 
-var EventEmitter = require('events').EventEmitter;
+var exec = require ('child_process').exec;
 
-function ArduinoCompiler (boardsData, platformId, boardId, cpuId) {
+var EventEmitter = require ('events').EventEmitter;
+
+function ArduinoCompiler (buildDir, boardsData, platformId, boardId, cpuId) {
 
 	if (!Arduino)
 		Arduino = require ('./arduino');
@@ -20,7 +23,8 @@ function ArduinoCompiler (boardsData, platformId, boardId, cpuId) {
 
 	this.platformId = platformId;
 
-	this.buildDir = '';
+	// TODO: replace by temporary folder
+	this.buildDir = buildDir || '';
 
 	this.platform = platform;
 
@@ -43,7 +47,7 @@ function ArduinoCompiler (boardsData, platformId, boardId, cpuId) {
 
 	var conf = JSON.parse (JSON.stringify (platform));
 	pathToVar (conf, 'runtime.ide.path', Arduino.instance.runtimeDir);
-	pathToVar (conf, 'runtime.ide.version', "1.5.7");
+	pathToVar (conf, 'runtime.ide.version', "158");
 
 	conf.compiler.path = conf.compiler.path.replaceDict (conf);
 
@@ -64,12 +68,18 @@ function ArduinoCompiler (boardsData, platformId, boardId, cpuId) {
 
 	this.on ('queue-completed', this.runNext.bind (this));
 	// TODO: emit something to arduino
-//	this.on ('queue-failed');
+	this.on ('queue-progress', function (scope, pos, length) {
+//		console.log (scope, pos + '/' + length);
+	});
+	this.on ('queue-failed', function (scope, err) {
+		console.log (scope, 'failed:', err);
+	});
 }
 
 util.inherits (ArduinoCompiler, EventEmitter);
 
 ArduinoCompiler.prototype.runNext = function (scope) {
+	console.log (scope, 'completed');
 	this.runNext.done[scope] = true;
 	if (this.runNext.done['core'] && this.runNext.done['libs'] && this.runNext.done['project']) {
 		// TODO: anything else
@@ -78,13 +88,46 @@ ArduinoCompiler.prototype.runNext = function (scope) {
 
 ArduinoCompiler.prototype.runNext.done = {};
 
+ArduinoCompiler.prototype.ioMkdir = function (folder) {
+
+	var result = {
+		io: true,
+		cb: [],
+		done: function (cb) {
+			if (cb)
+				this.cb.push (cb);
+			if (!this.ready) {
+				return;
+			}
+			var allCb = this.cb;
+			this.cb = [];
+			allCb.forEach ((function (theCb) {
+				theCb (this.error);
+			}).bind(this));
+		}
+	};
+
+	function callback (err, done) {
+		result.error = err;
+		if (err && err.code === 'EEXIST') {
+			result.error = null;
+		}
+		result.ready = true;
+		result.done ();
+	}
+
+	fs.mkdirParent (folder, null, callback);
+
+	return result;
+}
+
 ArduinoCompiler.prototype.enqueueCmd = function (scope, cmdLine) {
 	if (!this.enqueueCmd.queue[scope])
 		this.enqueueCmd.queue[scope] = {length: 0, pos: -1, running: false};
 	var thisQueue = this.enqueueCmd.queue[scope];
 	thisQueue[thisQueue.length++] = cmdLine;
 	this.runCmd (scope);
-	console.log (cmdLine);
+//	console.log (cmdLine);
 }
 
 ArduinoCompiler.prototype.enqueueCmd.queue = {};
@@ -98,16 +141,44 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 	}
 	if (!thisQueue.running && thisQueue.pos + 1 < thisQueue.length) {
 		thisQueue.running = true;
-		(function cb (err, done) {
+		var cb = (function (err, done) {
 			if (err) {
 				this.emit ('queue-failed', scope, err);
 				return;
 			}
 			thisQueue.pos ++;
+			thisQueue.running = false;
 			this.emit ('queue-progress', scope, thisQueue.pos, thisQueue.length);
 			this.runCmd (scope);
 		}).bind (this);
-		// TODO: actual run
+
+
+		var cmd = thisQueue[thisQueue.pos + 1];
+
+		// assume shell command
+		if (cmd.constructor === String) {
+			var child = exec(cmd, function (error, stdout, stderr) {
+				// The callback gets the arguments (error, stdout, stderr).
+				// On success, error will be null. On error, error will be an instance
+				// of Error and error.code will be the exit code of the child process,
+				// and error.signal will be set to the signal that terminated the process.
+				// console.log('stdout: ' + stdout);
+				// console.log('stderr: ' + stderr);
+				if (error !== null) {
+					console.log ('******************', scope.toUpperCase(), cmd);
+					console.log ('******************', scope.toUpperCase(), 'exec error: ', error, 'stderr', stderr);
+				}
+				cb (error);
+			});
+
+		} else if (cmd.io) {
+			cmd.done (function (err) {
+				if (err !== null) {
+					console.log('!!!!!!!!!!!!!!!!!!!!!!!!!', 'exec error: ', err);
+				}
+				cb (err);
+			});
+		}
 	}
 
 }
@@ -143,23 +214,29 @@ ArduinoCompiler.prototype.setLibNames = function (libNames) {
 
 	// console.log (Object.keys (this.libCompile));
 
+	// TODO: add any library found in included source files
+	for (var libName in this.libCompile) {
+		this.libIncludes.push (this.libCompile[libName].root);
+	}
+
 	for (var libName in this.libCompile) {
 		var libMeta = this.libCompile[libName];
-		this.libIncludes.push (libMeta.root);
-		var libIncludes = [""].concat (this.coreIncludes).join (" -I")
+		var libIncludes = [""].concat (this.coreIncludes, this.libIncludes).join (" -I")
 		+ ' -I' + libMeta.root
 		+ ' -I' + libMeta.root + '/utility';
 		for (var libSrcFile in libMeta.files) {
 			if (!libSrcFile.match (/\.c(pp)?$/))
 				continue;
 			var ext = libSrcFile.substring (libSrcFile.lastIndexOf ('.')+1);
+			var localName = libSrcFile.substring (libSrcFile.lastIndexOf ('/') + 1, libSrcFile.lastIndexOf ('.'));
 			conf.source_file = path.join (libMeta.root, libSrcFile);
 			// TODO: build dir
 //			console.log (libSrcFile);
-			conf.object_file = path.join (this.buildDir, libName, libSrcFile + '.o');
+			conf.object_file = path.join (this.buildDir, libName, localName + '.o');
 			conf.includes    = libIncludes;
 			var compileCmd   = this.platform.recipe[ext].o.pattern.replaceDict (conf);
 			console.log ('[libs]', libName, '>', path.join (libName, libSrcFile));
+			this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildDir, libName)));
 			this.enqueueCmd ('libs', compileCmd);
 			if (Arduino.instance.verbose)
 				console.log (compileCmd);
@@ -181,13 +258,14 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 
 	coreFileList.forEach ((function (srcFile) {
 		var ext = srcFile.substring (srcFile.lastIndexOf ('.')+1);
-		var localName = srcFile.substring (srcFile.lastIndexOf ('/')+1);
+		var localName = srcFile.substring (srcFile.lastIndexOf ('/') + 1, srcFile.lastIndexOf ('.'));
 		conf.source_file = srcFile;
 		// TODO: build dir
-		conf.object_file = path.join (this.buildDir, localName + '.o');
+		conf.object_file = path.join (this.buildDir, 'core', localName + '.o');
 		conf.includes = [""].concat (this.coreIncludes).join (" -I");
 		var compileCmd = this.platform.recipe[ext].o.pattern.replaceDict (conf);
 		console.log ('[core]', srcFile);
+		this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildDir, 'core')));
 		this.enqueueCmd ('core', compileCmd);
 		if (Arduino.instance.verbose)
 			console.log (compileCmd);
@@ -203,14 +281,16 @@ ArduinoCompiler.prototype.processProjectFiles = function () {
 	this.projectFiles.forEach ((function (srcFile) {
 
 		var ext = srcFile.substring (srcFile.lastIndexOf ('.') + 1);
+		var localName = srcFile.substring (srcFile.lastIndexOf ('/') + 1, srcFile.lastIndexOf ('.'));
 		conf.source_file = srcFile;
 		// TODO: build dir
-		conf.object_file = srcFile + '.o';
+		conf.object_file = path.join (this.buildDir, localName + '.o');
 		var includes = [""].concat (this.coreIncludes, this.libIncludes).join (" -I");
 		conf.includes = includes;
 
 		var compileCmd = this.platform.recipe[ext].o.pattern.replaceDict (conf);
 		console.log ('[project]', srcFile);
+		this.enqueueCmd ('mkdir', this.ioMkdir (this.buildDir));
 		this.enqueueCmd ('project', compileCmd);
 		if (Arduino.instance.verbose)
 			console.log (compileCmd);
@@ -238,12 +318,33 @@ ArduinoCompiler.prototype.setProjectFiles = function (err, files, dontCompile) {
 	}
 }
 
+fs.mkdirParent = function(dirPath, mode, callback) {
+	//Call the standard fs.mkdir
+	fs.mkdir(dirPath, mode, function(error) {
+		//When it fail in this way, do the custom steps
+		if (error && error.code === 'ENOENT') {
+			//Create all the parents recursively
+			fs.mkdirParent(path.dirname(dirPath), mode, callback);
+			//And then the directory
+			fs.mkdirParent(dirPath, mode, callback);
+		}
+		//Manually run the callback since we used our own callback to do all these
+		callback && callback(error);
+	});
+};
+
+
+// TODO: remove method for core object
 String.prototype.replaceDict = function (conf) {
 	return this.replace (/{(\w+\.)*\w+}/g, function (match) {
 		var varPath = match.substring (1, match.length - 1);
 		var result = pathToVar (conf, varPath);
-		if (result === undefined)
+		if (result === undefined) {
 			throw "no interpolation found for "+varPath
+		} else if (result.constructor !== String && result.constructor !== Number) {
+			throw "bad type for interpolate \'"+varPath + '\': ' + util.inspect (result)
+		}
+
 			return result;
 	})
 }
@@ -252,8 +353,9 @@ function pathToVar (root, varPath, value) {
 	varPath.split ('.').forEach (function (chunk, index, chunks) {
 		// pathChunks[index] = chunk;
 		var newRoot = root[chunk];
-		if (index === chunks.length - 1 && value !== undefined) {
-			root[chunk] = value;
+		if (index === chunks.length - 1) {
+			if (value !== undefined)
+				root[chunk] = value;
 		} else if (!newRoot) {
 			root[chunk] = {};
 			newRoot = root[chunk];
