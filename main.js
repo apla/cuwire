@@ -10,7 +10,8 @@ define(function (require, exports, module) {
 	var ExtensionUtils     = brackets.getModule("utils/ExtensionUtils"),
 		NodeDomain         = brackets.getModule("utils/NodeDomain"),
 		PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
-		Dialogs            = brackets.getModule("widgets/Dialogs");
+		Dialogs            = brackets.getModule("widgets/Dialogs"),
+	    DocumentManager    = brackets.getModule("document/DocumentManager");
 
 
 	var prefs = PreferencesManager.getExtensionPrefs (moduleId);
@@ -244,8 +245,8 @@ define(function (require, exports, module) {
 		var boardId = boardMeta[0];
 		var platformName = boardMeta[1];
 		var boardVariation = prefs.get ('boardVariation');
+		var options = {};
 
-		var DocumentManager = brackets.getModule("document/DocumentManager");
 		var currentDoc = DocumentManager.getCurrentDocument();
 
 		var fullPath = currentDoc.file.fullPath;
@@ -254,7 +255,8 @@ define(function (require, exports, module) {
 			fullPath,
 			platformName,
 			boardId,
-			boardVariation || {}
+			boardVariation || {},
+			options || {}
 		])
 		.done(function (size) {
 			console.log (size);
@@ -320,6 +322,11 @@ define(function (require, exports, module) {
 
 		var runButton = $('#arduino-panel button.arduino-run');
 		runButton.on ('click', this.run.bind (this, null, null));
+
+		$(this.domain).on ('log', function (event, message) {
+//			console.log (message);
+			$('#arduino-panel .table-container table tbody').append ("<tr><td>"+message+"</td></tr>");
+		});
 	}
 
 

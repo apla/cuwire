@@ -425,21 +425,25 @@ Arduino.prototype.findLib = function (platformId, libName) {
 	return this.libraryData[libName] || this.boardData[platformId].libraryData[libName];
 }
 
-Arduino.prototype.compile = function (sketchFolder, platformId, boardId, menus, options) {
+Arduino.prototype.compile = function (sketchFolder, platformName, boardType, boardVariant, options) {
 
 	// TODO: if buildFolder is undefined, use system TMP
 	var buildFolder = options.buildFolder;
 
-	var platform = this.boardData[platformId].platform;
-	var board = this.boardData[platformId].boards[boardId];
+	var platform = this.boardData[platformName].platform;
+	var board = this.boardData[platformName].boards[boardType];
 
 //	var boardBuild = board.build;
 //	var cpu = board.menu.cpu[cpuId];
 
-	var compiler = this.compiler = new ArduinoCompiler (buildFolder, this.boardData[platformId], platformId, boardId, menus);
+	var compiler = this.compiler = new ArduinoCompiler (buildFolder, this.boardData[platformName], platformName, boardType, boardVariant);
 
 	compiler.on ('compiled', (function (size) {
 		this.emit ('compiled', size);
+	}).bind (this));
+
+	compiler.on ('log', (function (message) {
+		this.emit ('log', message);
 	}).bind (this));
 
 	processIno (sketchFolder, buildFolder, compiler);
@@ -448,7 +452,7 @@ Arduino.prototype.compile = function (sketchFolder, platformId, boardId, menus, 
 		nameMatch: /[^\/]+\.c(pp)?$/i
 	});
 
-	walk (this.boardData[platformId].folders.root + '/cores/' + board.build.core, compiler.setCoreFiles.bind (compiler), {
+	walk (this.boardData[platformName].folders.root + '/cores/' + board.build.core, compiler.setCoreFiles.bind (compiler), {
 		nameMatch: /[^\/]+\.c(pp)?$/i
 	});
 

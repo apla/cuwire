@@ -9,6 +9,7 @@ maxerr: 50, node: true */
 	var fs   = require('fs');
 	var path = require ('path');
 
+	var _domainManager;
 
 	var Arduino = require ('./arduino');
 
@@ -41,9 +42,10 @@ maxerr: 50, node: true */
 
 	function compile (params) {
 		var currentFilePath = params.shift ();
-		var platformName = params.shift ();
-		var boardId = params.shift ();
-		var variations = params.shift ();
+		var platformName    = params.shift ();
+		var boardId         = params.shift ();
+		var boardVariation  = params.shift ();
+		var options         = params.shift ();
 
 		var cb = arguments[arguments.length-1];
 
@@ -60,7 +62,7 @@ maxerr: 50, node: true */
 			platformName,
 			// board id
 			boardId,
-			// menus (e.g. cpu menu selection)
+			// boardVariation (e.g. cpu menu selection)
 			{
 				cpu: '16MHzatmega328'
 			},
@@ -71,7 +73,12 @@ maxerr: 50, node: true */
 			}
 		);
 		theArduino.on ('compiled', function (size) {
+			console.log ('arduino domain: compiled', arguments);
 			cb (null, size);
+		});
+		theArduino.on ('log', function (message) {
+			console.log (message);
+			_domainManager.emitEvent ('arduino', 'log', message);
 		});
 	}
 
@@ -124,6 +131,7 @@ maxerr: 50, node: true */
 		if (!domainManager.hasDomain("arduino")) {
 			domainManager.registerDomain("arduino", {major: 0, minor: 1});
 		}
+		_domainManager = domainManager;
 		domainManager.registerCommand(
 			"arduino",       // domain name
 			"enumerateSerialPorts",    // command name
@@ -177,6 +185,15 @@ maxerr: 50, node: true */
 			[{name: "size", // return values
 			  type: "object",
 			  description: "compiled code size"}]
+		);
+		domainManager.registerEvent(
+			"arduino",     // domain name
+			"log",         // event name
+			[{
+				name: "string",
+				type: "string",
+				description: "log string"
+			}]
 		);
 	}
 

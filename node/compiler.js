@@ -8,7 +8,7 @@ var exec = require ('child_process').exec;
 
 var EventEmitter = require ('events').EventEmitter;
 
-function ArduinoCompiler (buildDir, boardsData, platformId, boardId, menus) {
+function ArduinoCompiler (buildDir, boardsData, platformId, boardId, boardVariant) {
 
 	if (!Arduino)
 		Arduino = require ('./arduino');
@@ -35,8 +35,8 @@ function ArduinoCompiler (buildDir, boardsData, platformId, boardId, menus) {
 	];
 
 	"upload bootloader build".split (" ").forEach (function (stageName) {
-		for (var menuKey in menus) {
-			var fixup = board.menu[menuKey][menus[menuKey]];
+		for (var variantKey in boardVariant) {
+			var fixup = board.menu[variantKey][boardVariant[variantKey]];
 			if (!fixup[stageName])
 				return;
 			for (var stageKey in fixup[stageName]) {
@@ -51,6 +51,7 @@ function ArduinoCompiler (buildDir, boardsData, platformId, boardId, menus) {
 
 	var conf = JSON.parse (JSON.stringify (platform));
 	pathToVar (conf, 'runtime.ide.path', Arduino.instance.runtimeDir);
+	// TODO: get version from mac os x bundle or from windows revisions.txt
 	pathToVar (conf, 'runtime.ide.version', "158");
 	pathToVar (conf, 'build.path', this.buildDir);
 
@@ -147,11 +148,11 @@ ArduinoCompiler.prototype.ioMkdir = function (folder) {
 	return result;
 }
 
-ArduinoCompiler.prototype.enqueueCmd = function (scope, cmdLine, cb) {
+ArduinoCompiler.prototype.enqueueCmd = function (scope, cmdLine, cb, description) {
 	if (!this.enqueueCmd.queue[scope])
 		this.enqueueCmd.queue[scope] = {length: 0, pos: -1, running: false};
 	var thisQueue = this.enqueueCmd.queue[scope];
-	thisQueue[thisQueue.length++] = [cmdLine, cb];
+	thisQueue[thisQueue.length++] = [cmdLine, cb, description];
 	this.runCmd (scope);
 //	console.log (cmdLine);
 }
@@ -179,11 +180,17 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 		}).bind (this);
 
 
-		var cmdDesc = thisQueue[thisQueue.pos + 1];
-		var cmd = cmdDesc[0];
+		var cmdMeta = thisQueue[thisQueue.pos + 1];
+		var cmd     = cmdMeta[0];
+		var cmdCb   = cmdMeta[1];
+		var cmdDesc = cmdMeta[2];
 
 		// assume shell command
 		if (cmd.constructor === String) {
+			if (cmdDesc) {
+				this.emit ('log', cmdDesc);
+			}
+
 			var child = exec(cmd, function (error, stdout, stderr) {
 				// The callback gets the arguments (error, stdout, stderr).
 				// On success, error will be null. On error, error will be an instance
@@ -195,10 +202,10 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 					console.log ('******************', scope.toUpperCase(), cmd);
 					console.log ('******************', scope.toUpperCase(), 'exec error: ', error, 'stderr', stderr);
 				}
-				cb (error);
-				if (cmdDesc[1]) {
-					cmdDesc[1] (error, stdout, stderr);
+				if (cmdCb) {
+					cmdCb (error, stdout, stderr);
 				}
+				cb (error);
 			});
 
 		} else if (cmd.io) {
@@ -264,9 +271,11 @@ ArduinoCompiler.prototype.setLibNames = function (libNames) {
 			conf.object_file = path.join (this.buildDir, libName, localName + '.o');
 			conf.includes    = libIncludes;
 			var compileCmd   = this.platform.recipe[ext].o.pattern.replaceDict (conf);
-			console.log ('[libs]', libName, '>', path.join (libName, libSrcFile));
+
 			this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildDir, libName)));
-			this.enqueueCmd ('libs', compileCmd);
+
+			var cmdDesc = ['[libs]', libName, '>', path.join (libName, libSrcFile)].join (" ");
+			this.enqueueCmd ('libs', compileCmd, null, cmdDesc);
 
 			this.objectFiles.push (conf.object_file);
 
@@ -298,9 +307,11 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 		conf.object_file = path.join (this.buildDir, 'core', localName + '.o');
 		conf.includes = [""].concat (this.coreIncludes).join (" -I");
 		var compileCmd = this.platform.recipe[ext].o.pattern.replaceDict (conf);
-		console.log ('[core]', srcFile);
+
 		this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildDir, 'core')));
-		this.enqueueCmd ('core', compileCmd);
+
+		var cmdDesc = ['[core]', srcFile].join (" ");
+		this.enqueueCmd ('core', compileCmd, null, cmdDesc);
 
 		conf.archive_file = 'core.a';
 		var archiveCmd = this.platform.recipe.ar.pattern.replaceDict (conf);
@@ -340,9 +351,11 @@ ArduinoCompiler.prototype.processProjectFiles = function () {
 		conf.includes = includes;
 
 		var compileCmd = this.platform.recipe[ext].o.pattern.replaceDict (conf);
-		console.log ('[project]', srcFile);
+
 		this.enqueueCmd ('mkdir', this.ioMkdir (this.buildDir));
-		this.enqueueCmd ('project', compileCmd);
+
+		var cmdDesc = ['[project]', srcFile].join (" ");
+		this.enqueueCmd ('project', compileCmd, null, cmdDesc);
 
 		this.objectFiles.push (conf.object_file);
 
@@ -444,18 +457,13 @@ ArduinoCompiler.prototype.checkSize = function () {
 				sizeEeprom += parseInt (matches[1]);
 			}
 		// console.log (sizeRegexp.exec (stdout));
-		console.log ('[size]', 'text', size);
-		console.log ('[size]', 'data', sizeData);
-		console.log ('[size]', 'eeprom', sizeEeprom);
+		console.log ('[size]', 'text', size, 'data', sizeData, 'eeprom', sizeEeprom);
 		this.compiledSize = {
 			text: size,
 			data: sizeData,
 			eeprom: sizeEeprom
 		};
 	}).bind(this));
-
-	console.log (this.platform.recipe.size.regex.data.toString ());
-	console.log (this.platform.recipe.size.regex.eeprom.toString ());
 
 }
 
