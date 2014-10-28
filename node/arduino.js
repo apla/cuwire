@@ -437,15 +437,22 @@ Arduino.prototype.findLib = function (platformId, libName) {
 	return this.libraryData[libName] || this.boardData[platformId].libraryData[libName];
 }
 
-Arduino.prototype.compile = function (sketchFolder, buildFolder, platformId, boardId, cpuId) {
+Arduino.prototype.compile = function (sketchFolder, platformId, boardId, menus, options) {
+
+	// TODO: if buildFolder is undefined, use system TMP
+	var buildFolder = options.buildFolder;
 
 	var platform = this.boardData[platformId].platform;
 	var board = this.boardData[platformId].boards[boardId];
 
-	var boardBuild = board.build;
-	var cpu = board.menu.cpu[cpuId];
+//	var boardBuild = board.build;
+//	var cpu = board.menu.cpu[cpuId];
 
-	var compiler = this.compiler = new ArduinoCompiler (buildFolder, this.boardData[platformId], platformId, boardId, cpuId);
+	var compiler = this.compiler = new ArduinoCompiler (buildFolder, this.boardData[platformId], platformId, boardId, menus);
+
+	compiler.on ('compiled', (function (size) {
+		this.emit ('compiled', size);
+	}).bind (this));
 
 	processIno (sketchFolder, buildFolder, compiler);
 

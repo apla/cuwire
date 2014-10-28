@@ -8,16 +8,15 @@ var exec = require ('child_process').exec;
 
 var EventEmitter = require ('events').EventEmitter;
 
-function ArduinoCompiler (buildDir, boardsData, platformId, boardId, cpuId) {
+function ArduinoCompiler (buildDir, boardsData, platformId, boardId, menus) {
 
 	if (!Arduino)
 		Arduino = require ('./arduino');
 
 	var platform = boardsData.platform;
-	var board = boardsData.boards[boardId];
+	var board = JSON.parse (JSON.stringify (boardsData.boards[boardId]));
 
 	var boardBuild = board.build;
-	var cpu = board.menu.cpu[cpuId];
 
 	this.boardsData = boardsData;
 
@@ -36,10 +35,13 @@ function ArduinoCompiler (buildDir, boardsData, platformId, boardId, cpuId) {
 	];
 
 	"upload bootloader build".split (" ").forEach (function (stageName) {
-		if (!cpu[stageName])
-			return;
-		for (var stageKey in cpu[stageName]) {
-			board[stageName][stageKey] = cpu[stageName][stageKey];
+		for (var menuKey in menus) {
+			var fixup = board.menu[menuKey][menus[menuKey]];
+			if (!fixup[stageName])
+				return;
+			for (var stageKey in fixup[stageName]) {
+				board[stageName][stageKey] = fixup[stageName][stageKey];
+			}
 		}
 	});
 

@@ -11,7 +11,11 @@ arduino.on ('done', function () {
 
 	arduino.compile (
 		"/Users/apla/work/com.domtale/arduino/Sensor", // sketch folder
-		"/Users/apla/Library/Application Support/Brackets/extensions/user/brackets-arduino/build", // build folder
-		platformName, boardId, cpuId
+		platformName, boardId, {
+			cpu: cpuId
+		}, {
+			// build folder
+			buildFolder: "/Users/apla/Library/Application Support/Brackets/extensions/user/brackets-arduino/build"
+		}
 	);
 });
