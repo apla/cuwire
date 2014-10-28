@@ -39,6 +39,43 @@ maxerr: 50, node: true */
 			});
 	}
 
+	function compile (params) {
+		var currentFilePath = params.shift ();
+		var platformName = params.shift ();
+		var boardId = params.shift ();
+		var variations = params.shift ();
+
+		var cb = arguments[arguments.length-1];
+
+		if (!theArduino) {
+			// show error
+			// cb
+			return;
+		}
+
+		theArduino.compile (
+			// "sketch" folder
+			"/Users/apla/work/com.domtale/arduino/Sensor",
+			// platform name
+			platformName,
+			// board id
+			boardId,
+			// menus (e.g. cpu menu selection)
+			{
+				cpu: '16MHzatmega328'
+			},
+			// options (e.g. custom build folder)
+			{
+				// build folder
+				buildFolder: "/Users/apla/Library/Application Support/Brackets/extensions/user/brackets-arduino/build"
+			}
+		);
+		theArduino.on ('compiled', function (size) {
+			cb (null, size);
+		});
+	}
+
+
 	/**
 	 * function to enumerate serial ports
 	 * @return {array} path names
@@ -112,6 +149,34 @@ maxerr: 50, node: true */
 			[{name: "boards", // return values
 			  type: "object",
 			  description: "board data"}]
+		);
+		domainManager.registerCommand(
+			"arduino",     // domain name
+			"compile",     // command name
+			compile,       // command handler function
+			true,          // this command is asynchronous in Node
+			"compile current sketch",
+			[{
+				name: "currentFilePath",
+				type: "string",
+				description: "current file path — to find a ino sketch"
+			}, {
+				name: "platformName",
+				type: "string",
+				description: "arduino platform name"
+			}, {
+				name: "boardId",
+				type: "string",
+				description: "board identifier"
+			}, {
+				name: "menus",
+				type: "object",
+				description: "menus"
+
+			}],
+			[{name: "size", // return values
+			  type: "object",
+			  description: "compiled code size"}]
 		);
 	}
 

@@ -240,23 +240,28 @@ define(function (require, exports, module) {
 	}
 
 	ArduinoExt.prototype.compile = function () {
-		// TODO: use template
-		var dialogHtml = $(
-			'<div id="arduino-board-alert" class="modal">'
-			//				+ '<div class="modal-header">'
-			//				+ '<h1 class="dialog-title">{{Strings.AUTHORS_OF}} {{file}}</h1>'
-			//				+ '</div>'
-			+ '<div class="modal-body"></div><div class="modal-footer">'
-			+ '<button data-button-id="close" class="dialog-button btn btn-80">Close</button></div></div>'
-		);
+		var boardMeta = prefs.get ('board');
+		var boardId = boardMeta[0];
+		var platformName = boardMeta[1];
+		var boardVariation = prefs.get ('boardVariation');
 
-		$(".modal-body", dialogHtml).append ("<h3>Not implemented yet!</h3>");
+		var DocumentManager = brackets.getModule("document/DocumentManager");
+		var currentDoc = DocumentManager.getCurrentDocument();
 
-		Dialogs.showModalDialogUsingTemplate(dialogHtml).done(function (buttonId) {
-			if (buttonId === "ok") {
-				// CommandManager.execute("debug.refreshWindow");
-			}
+		var fullPath = currentDoc.file.fullPath;
+
+		this.domain.exec ("compile", [
+			fullPath,
+			platformName,
+			boardId,
+			boardVariation || {}
+		])
+		.done(function (size) {
+			console.log (size);
+		}).fail (function (error) {
+			console.log (error);
 		});
+
 	}
 
 	ArduinoExt.prototype.run = function () {
