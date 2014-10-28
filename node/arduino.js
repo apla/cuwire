@@ -131,24 +131,30 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 		if(line.length == 0) return;
 		// console.log (line);
 		var ref = line.substring (0, line.indexOf ('='));
-		if (ref === "menu.cpu") return;
+		// TODO: menu handling
+		if (ref.match (/^menu/)) return;
 		var value = line.substring (line.indexOf ('=')+1);
 		var refs = ref.split('.');
 
 		var root = boards;
-		if (refs.length === 4 && refs[1] === "menu" && refs[2] === "cpu")
+		if (refs.length === 4 && refs[1] === "menu" && refs[2] === "cpu") {
 			refs.push ("cpu_variant_name");
-		for(var i=0; i<refs.length; i++) {
+		}
+		for (var i = 0; i < refs.length; i ++) {
 			var sec = refs[i];
-			if(!root[sec]) {
+			if (!root[sec]) {
 				root[sec] = {};
 			}
-			if(i == refs.length-1) {
-				root[sec] = value;
+			if (i === refs.length - 1) {
+				root[sec] = new String (value);
+			}
+			if (root.constructor === String) {
+				console.log ("bad config for:", ref, root[sec].toString ());
 			}
 			root = root[sec];
 		}
 	});
+//	console.log (Object.keys (boards));
 	cb (null, section, boards);
 }
 
