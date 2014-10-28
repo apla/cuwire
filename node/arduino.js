@@ -382,7 +382,7 @@ function createTempFile (fileName) {
 
 
 
-function processIno (sketchFolder, compiler) {
+function processIno (sketchFolder, buildFolder, compiler) {
 	var sketchName = sketchFolder.substring (sketchFolder.lastIndexOf ('/') + 1);
 	var inoFile = path.join (sketchFolder, sketchName + '.ino');
 
@@ -418,7 +418,7 @@ function processIno (sketchFolder, compiler) {
 //			console.log (matchArray[1] || "", matchArray[3], matchArray[4], '(', matchArray[5], ');');
 		}
 
-		var projectFile = inoFile.replace (/\.ino$/, '.cpp');
+		var projectFile = path.join (sketchFolder, sketchName + '.cpp');
 		fs.writeFile (projectFile, "#include \"Arduino.h\"\n" + functions.join (";\n") + ";\n" + inoContents, function (err, done) {
 			compiler.setProjectFiles (null, [projectFile], true);
 			compiler.setLibNames (libNames);
@@ -447,7 +447,7 @@ Arduino.prototype.compile = function (sketchFolder, buildFolder, platformId, boa
 
 	var compiler = this.compiler = new ArduinoCompiler (buildFolder, this.boardData[platformId], platformId, boardId, cpuId);
 
-	processIno (sketchFolder, compiler);
+	processIno (sketchFolder, buildFolder, compiler);
 
 	walk (sketchFolder, compiler.setProjectFiles.bind (compiler), {
 		nameMatch: /[^\/]+\.c(pp)?$/i
