@@ -89,12 +89,15 @@ ArduinoCompiler.prototype.setProjectName = function (name) {
 
 }
 
-ArduinoCompiler.prototype.runNext = function (scope) {
-	console.log ('['+scope+']', 'done');
+ArduinoCompiler.prototype.runNext = function (scope, pos, length) {
+	console.log ('['+scope+']', 'done', (pos+1)+'/'+length);
 	this.runNext.done[scope] = true;
 
 	if (scope === 'size') {
 		console.log ('COMPILATION COMPLETE!');
+//		console.log (this.platform.recipe.size.regex.data.toString ());
+//		console.log (this.platform.recipe.size.regex.eeprom.toString ());
+		this.emit ('compiled', this.compiledSize);
 	} else if (scope === 'obj-eep' || scope === 'obj-hex') {
 		// whe we achieved obj-* stage, no more steps remaining
 		if (this.runNext.done['obj-eep'] && this.runNext.done['obj-hex']) {
@@ -418,9 +421,40 @@ ArduinoCompiler.prototype.checkSize = function () {
 	var conf = this.getConfig ();
 
 	var sizeCmd = this.platform.recipe.size.pattern.replaceDict (conf);
-	this.enqueueCmd ('size', sizeCmd, function (error, stdout, stderr) {
-		console.log ('[size]', stdout);
-	});
+	var sizeRegexp = new RegExp (this.platform.recipe.size.regex.toString (), 'gm');
+	var sizeDataRegexp, sizeEepromRegexp;
+	if (this.platform.recipe.size.regex.data)
+		sizeDataRegexp = new RegExp (this.platform.recipe.size.regex.data.toString (), 'gm');
+	if (this.platform.recipe.size.regex.eeprom)
+		sizeEepromRegexp = new RegExp (this.platform.recipe.size.regex.eeprom.toString (), 'gm');
+	this.enqueueCmd ('size', sizeCmd, (function (error, stdout, stderr) {
+		// console.log ('[size]', stdout);
+		var size = 0, sizeData = 0, sizeEeprom = 0;
+		var matches;
+		while ((matches = sizeRegexp.exec (stdout)) !== null) {
+			size += parseInt (matches[1]);
+		}
+		if (sizeDataRegexp)
+			while ((matches = sizeDataRegexp.exec (stdout)) !== null) {
+				sizeData += parseInt (matches[1]);
+			}
+		if (sizeEepromRegexp)
+			while ((matches = sizeEepromRegexp.exec (stdout)) !== null) {
+				sizeEeprom += parseInt (matches[1]);
+			}
+		// console.log (sizeRegexp.exec (stdout));
+		console.log ('[size]', 'text', size);
+		console.log ('[size]', 'data', sizeData);
+		console.log ('[size]', 'eeprom', sizeEeprom);
+		this.compiledSize = {
+			text: size,
+			data: sizeData,
+			eeprom: sizeEeprom
+		};
+	}).bind(this));
+
+	console.log (this.platform.recipe.size.regex.data.toString ());
+	console.log (this.platform.recipe.size.regex.eeprom.toString ());
 
 }
 
