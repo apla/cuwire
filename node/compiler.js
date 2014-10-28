@@ -60,6 +60,7 @@ function ArduinoCompiler (buildDir, boardsData, platformId, boardId, menus) {
 		conf.build[buildK] = board.build[buildK];
 	}
 
+//	pathToVar (conf, 'build.arch', platformId.split ('/')[1]);
 	pathToVar (conf, 'build.arch', platformId.split ('/')[1].toUpperCase ());
 
 	//	console.log ('BUILD', conf.build, platform.recipe.cpp.o.pattern);
@@ -161,7 +162,7 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 	var thisQueue = this.enqueueCmd.queue[scope];
 	if (thisQueue.pos + 1 === thisQueue.length) {
 		// TODO: emit done
-		this.emit ('queue-completed', scope);
+		this.emit ('queue-completed', scope, thisQueue.pos, thisQueue.length);
 		return;
 	}
 	if (!thisQueue.running && thisQueue.pos + 1 < thisQueue.length) {
