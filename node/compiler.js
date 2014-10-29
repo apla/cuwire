@@ -91,6 +91,9 @@ function ArduinoCompiler (buildDir, boardsData, platformId, boardId, boardVarian
 	this.on ('queue-failed', function (scope, err) {
 		console.log (scope, 'failed:', err);
 	});
+
+	this._done = {};
+	this._queue = {};
 }
 
 util.inherits (ArduinoCompiler, EventEmitter);
@@ -103,7 +106,7 @@ ArduinoCompiler.prototype.setProjectName = function (name) {
 
 ArduinoCompiler.prototype.runNext = function (scope, pos, length) {
 	console.log ('['+scope+']', 'done', (pos+1)+'/'+length);
-	this.runNext.done[scope] = true;
+	this._done[scope] = true;
 
 	if (scope === 'size') {
 		console.log ('COMPILATION COMPLETE!');
@@ -112,18 +115,16 @@ ArduinoCompiler.prototype.runNext = function (scope, pos, length) {
 		this.emit ('compiled', this.compiledSize);
 	} else if (scope === 'obj-eep' || scope === 'obj-hex') {
 		// whe we achieved obj-* stage, no more steps remaining
-		if (this.runNext.done['obj-eep'] && this.runNext.done['obj-hex']) {
+		if (this._done['obj-eep'] && this._done['obj-hex']) {
 			this.checkSize ();
 		}
-	} else if (this.runNext.done['link']) {
+	} else if (this._done['link']) {
 		this.objCopy ();
-	} else if (this.runNext.done['core'] && this.runNext.done['libs'] && this.runNext.done['project']) {
+	} else if (this._done['core'] && this._done['libs'] && this._done['project']) {
 		// TODO: anything else
 		this.linkAll ();
 	}
 }
-
-ArduinoCompiler.prototype.runNext.done = {};
 
 ArduinoCompiler.prototype.ioMkdir = function (folder) {
 
@@ -159,18 +160,16 @@ ArduinoCompiler.prototype.ioMkdir = function (folder) {
 }
 
 ArduinoCompiler.prototype.enqueueCmd = function (scope, cmdLine, cb, description) {
-	if (!this.enqueueCmd.queue[scope])
-		this.enqueueCmd.queue[scope] = {length: 0, pos: -1, running: false};
-	var thisQueue = this.enqueueCmd.queue[scope];
+	if (!this._queue[scope])
+		this._queue[scope] = {length: 0, pos: -1, running: false};
+	var thisQueue = this._queue[scope];
 	thisQueue[thisQueue.length++] = [cmdLine, cb, description];
 	this.runCmd (scope);
 //	console.log (cmdLine);
 }
 
-ArduinoCompiler.prototype.enqueueCmd.queue = {};
-
 ArduinoCompiler.prototype.runCmd = function (scope) {
-	var thisQueue = this.enqueueCmd.queue[scope];
+	var thisQueue = this._queue[scope];
 	if (thisQueue.pos + 1 === thisQueue.length) {
 		// TODO: emit done
 		this.emit ('queue-completed', scope, thisQueue.pos, thisQueue.length);
