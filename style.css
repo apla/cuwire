@@ -74,3 +74,23 @@
 	-webkit-transform-origin: left top 0;
 	float: left;
 }
+
+#arduino-panel .process-state .label {
+	display: none;
+	color: white;
+	font-size: 1rem;
+	margin-top: 1em;
+	width: 100%;
+}
+
+#arduino-panel .process-state.success .label-success {
+	display: inherit;
+}
+
+#arduino-panel .process-state.failure .label-important {
+	display: inherit;
+}
+
+#arduino-panel .process-state.running .label-info {
+	display: inherit;
+}

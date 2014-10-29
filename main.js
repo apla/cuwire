@@ -253,6 +253,11 @@ define(function (require, exports, module) {
 
 		var fullPath = currentDoc.file.fullPath;
 
+		var processStateDiv = $('#arduino-panel .process-state');
+		processStateDiv.removeClass ();
+		processStateDiv.addClass ('process-state span1 running');
+
+
 		this.domain.exec ("compile", [
 			fullPath,
 			platformName,
@@ -262,6 +267,10 @@ define(function (require, exports, module) {
 		])
 		.done(function (size) {
 			console.log (size);
+
+			processStateDiv.removeClass ();
+			processStateDiv.addClass ('process-state span1 success');
+
 			var percentageDegrees = function( p ) {
 				p = ( p >= 100 ? 100 : p );
 				var d = 3.6 * p;
@@ -288,6 +297,8 @@ define(function (require, exports, module) {
 
 
 		}).fail (function (error) {
+			processStateDiv.removeClass ();
+			processStateDiv.addClass ('process-state span1 failure');
 			console.log (error);
 		});
 
