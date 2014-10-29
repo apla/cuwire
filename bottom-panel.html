@@ -36,18 +36,26 @@
 			</ul>
 
 		</div>
-		<div class="">
+		<div class="btn-group">
 			<button type="button" onclick="return false;" class="btn small arduino-compile">Compile</button>
 		</div>
-		<div class="">
-			<button type="button" onclick="return false;" class="btn small arduino-run">Run</button>
+		<div class="btn-group">
+			<button type="button" onclick="return false;" class="btn small arduino-upload">Upload</button>
 		</div>
 		<a href="#" class="close">&times;</a>
 	</div>
 
-	<div class="table-container resizable-content">
+	<div class="row"><!--  resizable-content -->
+	<div class="span1" stylex="float: left; width: 4rem;">
+		<div class="pie-label">code</div><div class="pie pie-text" data-percentage="80">80%</div>
+		<div class="pie-label">vars</div><div class="pie pie-data" data-percentage="13">13%</div>
+		<!--div class="pie-label">eeprom</div><div class="pie pie-eeprom" data-percentage="58">58%</div-->
+	</div>
+
+	<div class="table-container span11">
 		<table class="bottom-panel-table table table-striped row-highlight table-condensed">
 			<tbody></tbody>
 		</table>
+	</div>
 	</div>
 </div>

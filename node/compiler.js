@@ -36,6 +36,12 @@ function ArduinoCompiler (buildDir, boardsData, platformId, boardId, boardVarian
 
 	"upload bootloader build".split (" ").forEach (function (stageName) {
 		for (var variantKey in boardVariant) {
+			if (!board.menu[variantKey]) {
+				// TODO: probably it is a program error, no need to say something to user
+				console.log ('brackets-arduino error:', boardId, 'doesn\'t have a', variantKey, 'variants');
+				console.log ('ignored for now, can continue');
+				continue;
+			}
 			var fixup = board.menu[variantKey][boardVariant[variantKey]];
 			if (!fixup[stageName])
 				return;
@@ -57,9 +63,13 @@ function ArduinoCompiler (buildDir, boardsData, platformId, boardId, boardVarian
 
 	conf.compiler.path = conf.compiler.path.replaceDict (conf);
 
-	for (var buildK in board.build) {
-		conf.build[buildK] = board.build[buildK];
-	}
+	"upload bootloader build".split (" ").forEach (function (stageName) {
+		for (var buildK in board[stageName]) {
+			if (!conf[stageName])
+				conf[stageName] = {};
+			conf[stageName][buildK] = board[stageName][buildK];
+		}
+	});
 
 //	pathToVar (conf, 'build.arch', platformId.split ('/')[1]);
 	pathToVar (conf, 'build.arch', platformId.split ('/')[1].toUpperCase ());
@@ -458,9 +468,12 @@ ArduinoCompiler.prototype.checkSize = function () {
 			}
 		// console.log (sizeRegexp.exec (stdout));
 		console.log ('[size]', 'text', size, 'data', sizeData, 'eeprom', sizeEeprom);
+
 		this.compiledSize = {
 			text: size,
+			maxText: parseInt (conf.upload.maximum_size.toString ()),
 			data: sizeData,
+			maxData: parseInt (conf.upload.maximum_data_size.toString ()),
 			eeprom: sizeEeprom
 		};
 	}).bind(this));

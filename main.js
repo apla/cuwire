@@ -195,6 +195,8 @@ define(function (require, exports, module) {
 			// tr = $('<tr />').appendTo('#arduino-panel tbody');
 			var arduinoBoardDD = $('#arduino-panel ul.arduino-board');
 
+			console.log (Object.keys (platforms));
+
 			Object.keys (platforms).sort().forEach (function (platformName) {
 				console.log (platformName);
 				$('<li class="dropdown-header">'
@@ -260,13 +262,38 @@ define(function (require, exports, module) {
 		])
 		.done(function (size) {
 			console.log (size);
+			var percentageDegrees = function( p ) {
+				p = ( p >= 100 ? 100 : p );
+				var d = 3.6 * p;
+				return d;
+			};
+
+			var createGradient = function ( elem, d, p ) {
+				if ( d <= 180 ) {
+					d = 90 + d;
+					elem.css( 'background', 'linear-gradient(90deg, #2c3e50 50%, transparent 50%), linear-gradient('+ d +'deg, #2ecc71 50%, #2c3e50 50%)' );
+				} else {
+					d = d - 90;
+					elem.css( 'background', 'linear-gradient(-90deg, #2ecc71 50%, transparent 50%), linear-gradient('+ d +'deg, #2c3e50 50%, #2ecc71 50%)' );
+				}
+				elem.attr ('data-percentage', p);
+				elem.text (p + '%');
+			}
+
+			var textSizeP = Math.round (size.text / size.maxText * 100);
+			createGradient ($('.pie-text'), percentageDegrees (textSizeP), textSizeP);
+			var dataSizeP = Math.round (size.data / (size.maxData || size.data) * 100);
+			createGradient ($('.pie-data'), percentageDegrees (dataSizeP), dataSizeP);
+			// createGradient ($('.pie-eeprom'), percentageDegrees (0), 0);
+
+
 		}).fail (function (error) {
 			console.log (error);
 		});
 
 	}
 
-	ArduinoExt.prototype.run = function () {
+	ArduinoExt.prototype.upload = function () {
 		// TODO: use template
 		var dialogHtml = $(
 			'<div id="arduino-board-alert" class="modal">'
@@ -320,8 +347,8 @@ define(function (require, exports, module) {
 		var compileButton = $('#arduino-panel button.arduino-compile');
 		compileButton.on ('click', this.compile.bind (this, null, null));
 
-		var runButton = $('#arduino-panel button.arduino-run');
-		runButton.on ('click', this.run.bind (this, null, null));
+		var uploadButton = $('#arduino-panel button.arduino-upload');
+		uploadButton.on ('click', this.upload.bind (this, null, null));
 
 		$(this.domain).on ('log', function (event, message) {
 //			console.log (message);
