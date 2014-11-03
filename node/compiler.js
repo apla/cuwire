@@ -62,7 +62,7 @@ function ArduinoCompiler (buildDir, boardsData, platformId, boardId, boardVarian
 	pathToVar (conf, 'runtime.ide.version', "158");
 	pathToVar (conf, 'build.path', this.buildDir);
 
-	conf.compiler.path = conf.compiler.path.replaceDict (conf);
+	conf.compiler.path = replaceDict (conf.compiler.path, conf);
 
 	"upload bootloader build".split (" ").forEach (function (stageName) {
 		for (var buildK in board[stageName]) {
@@ -280,7 +280,7 @@ ArduinoCompiler.prototype.setLibNames = function (libNames) {
 //			console.log (libSrcFile);
 			conf.object_file = path.join (this.buildDir, libName, localName + '.o');
 			conf.includes    = libIncludes;
-			var compileCmd   = this.platform.recipe[ext].o.pattern.replaceDict (conf);
+			var compileCmd   = replaceDict (this.platform.recipe[ext].o.pattern, conf);
 
 			this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildDir, libName)));
 
@@ -316,7 +316,7 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 		// TODO: build dir
 		conf.object_file = path.join (this.buildDir, 'core', localName + '.o');
 		conf.includes = [""].concat (this.coreIncludes).join (" -I");
-		var compileCmd = this.platform.recipe[ext].o.pattern.replaceDict (conf);
+		var compileCmd = replaceDict (this.platform.recipe[ext].o.pattern, conf);
 
 		this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildDir, 'core')));
 
@@ -324,7 +324,7 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 		this.enqueueCmd ('core', compileCmd, null, cmdDesc);
 
 		conf.archive_file = 'core.a';
-		var archiveCmd = this.platform.recipe.ar.pattern.replaceDict (conf);
+		var archiveCmd = replaceDict (this.platform.recipe.ar.pattern, conf);
 
 		cmdDesc = ['archiving', srcFile].join (" ");
 		this.enqueueCmd ('core', archiveCmd, null, cmdDesc);
@@ -365,7 +365,7 @@ ArduinoCompiler.prototype.processProjectFiles = function () {
 		var includes = [""].concat (this.coreIncludes, this.libIncludes).join (" -I");
 		conf.includes = includes;
 
-		var compileCmd = this.platform.recipe[ext].o.pattern.replaceDict (conf);
+		var compileCmd = replaceDict (this.platform.recipe[ext].o.pattern, conf);
 
 		this.enqueueCmd ('mkdir', this.ioMkdir (this.buildDir));
 
@@ -426,7 +426,7 @@ ArduinoCompiler.prototype.linkAll = function () {
 	conf.object_files = '"' + this.objectFiles.join ("\" \"") + '"';
 	//		dict.put("ide_version", "" + Base.REVISION);
 
-	var linkCmd = this.platform.recipe.c.combine.pattern.replaceDict (conf);
+	var linkCmd = replaceDict (this.platform.recipe.c.combine.pattern, conf);
 	this.enqueueCmd ('link', linkCmd, null, 'all together');
 
 	if (Arduino.instance.verbose)
@@ -437,17 +437,17 @@ ArduinoCompiler.prototype.linkAll = function () {
 ArduinoCompiler.prototype.objCopy = function () {
 	var conf = this.getConfig ();
 
-	var eepCmd = this.platform.recipe.objcopy.eep.pattern.replaceDict (conf);
+	var eepCmd = replaceDict (this.platform.recipe.objcopy.eep.pattern, conf);
 	this.enqueueCmd ('obj-eep', eepCmd, null, 'objcopy eep');
 
-	var hexCmd = this.platform.recipe.objcopy.hex.pattern.replaceDict (conf);
+	var hexCmd = replaceDict (this.platform.recipe.objcopy.hex.pattern, conf);
 	this.enqueueCmd ('obj-hex', hexCmd, null, 'objcopy hex');
 }
 
 ArduinoCompiler.prototype.checkSize = function () {
 	var conf = this.getConfig ();
 
-	var sizeCmd = this.platform.recipe.size.pattern.replaceDict (conf);
+	var sizeCmd = replaceDict (this.platform.recipe.size.pattern, conf);
 	var sizeRegexp = new RegExp (this.platform.recipe.size.regex.toString (), 'gm');
 	var sizeDataRegexp, sizeEepromRegexp;
 	if (this.platform.recipe.size.regex.data)
@@ -499,10 +499,12 @@ fs.mkdirParent = function(dirPath, mode, callback) {
 	});
 };
 
-
-// TODO: remove method for core object
-String.prototype.replaceDict = function (conf) {
-	return this.replace (/{(\w+\.)*\w+}/g, function (match) {
+function replaceDict (str, conf, count) {
+	if (count !== undefined && count > 2) {
+		throw "command still needs interpolation after 3 replacements:" + str;
+	}
+	var replacementRe = /{(\w+\.)*\w+}/g;
+	var replacement = str.replace (replacementRe, function (match) {
 		var varPath = match.substring (1, match.length - 1);
 		var result = pathToVar (conf, varPath);
 		if (result === undefined) {
@@ -511,8 +513,14 @@ String.prototype.replaceDict = function (conf) {
 			throw "bad type for interpolate \'"+varPath + '\': ' + util.inspect (result)
 		}
 
-			return result;
-	})
+		return result;
+	});
+
+	if (replacement.match (replacementRe)) {
+		replacement = replaceDict (replacement, conf, count === undefined ? 1 : count + 1)
+	}
+
+	return replacement;
 }
 
 // TODO: copypasted from arduino#parseConfig
