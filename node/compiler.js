@@ -51,6 +51,7 @@ function ArduinoCompiler (buildDir, boardsData, platformId, boardId, boardVarian
 		}
 	});
 
+	delete (board.menu);
 
 	// build stage
 	var currentStage = "build";
@@ -197,7 +198,7 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 		// assume shell command
 		if (cmd.constructor === String) {
 			if (cmdDesc) {
-				this.emit ('log', cmdDesc);
+				this.emit ('log', '[' + scope + '] ' + cmdDesc);
 			}
 
 			var child = exec(cmd, function (error, stdout, stderr) {
@@ -283,7 +284,7 @@ ArduinoCompiler.prototype.setLibNames = function (libNames) {
 
 			this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildDir, libName)));
 
-			var cmdDesc = ['[libs]', libName, '>', path.join (libName, libSrcFile)].join (" ");
+			var cmdDesc = [libName, '>', path.join (libName, libSrcFile)].join (" ");
 			this.enqueueCmd ('libs', compileCmd, null, cmdDesc);
 
 			this.objectFiles.push (conf.object_file);
@@ -319,19 +320,24 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 
 		this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildDir, 'core')));
 
-		var cmdDesc = ['[core]', srcFile].join (" ");
+		var cmdDesc = ['compile', srcFile].join (" ");
 		this.enqueueCmd ('core', compileCmd, null, cmdDesc);
 
 		conf.archive_file = 'core.a';
 		var archiveCmd = this.platform.recipe.ar.pattern.replaceDict (conf);
-		archiveCmds.push (archiveCmd);
+
+		cmdDesc = ['archiving', srcFile].join (" ");
+		this.enqueueCmd ('core', archiveCmd, null, cmdDesc);
+//		archiveCmds.push (archiveCmd);
 
 		if (Arduino.instance.verbose)
 			console.log (compileCmd);
 	}).bind (this));
 
+	console.log (archiveCmds);
+
 	archiveCmds.forEach ((function (archiveCmd) {
-		this.enqueueCmd ('core', archiveCmd);
+//		this.enqueueCmd ('core', archiveCmd, null, 'archiving core');
 
 		if (Arduino.instance.verbose)
 			console.log (archiveCmd);
@@ -363,7 +369,7 @@ ArduinoCompiler.prototype.processProjectFiles = function () {
 
 		this.enqueueCmd ('mkdir', this.ioMkdir (this.buildDir));
 
-		var cmdDesc = ['[project]', srcFile].join (" ");
+		var cmdDesc = [srcFile].join (" ");
 		this.enqueueCmd ('project', compileCmd, null, cmdDesc);
 
 		this.objectFiles.push (conf.object_file);
@@ -394,13 +400,7 @@ ArduinoCompiler.prototype.setProjectFiles = function (err, files, dontCompile) {
 	}
 }
 
-ArduinoCompiler.prototype.linkAll = function () {
-
-	var conf = this.getConfig ();
-
-	this.objectFiles.forEach ((function (fileName) {
-
-		/*
+/*
 
 		// Java Compiler version 1.5.7
 
@@ -416,28 +416,32 @@ ArduinoCompiler.prototype.linkAll = function () {
 		dict.put("compiler.c.elf.flags", flags);
 		*/
 
-		var conf = this.getConfig ();
 
-		conf.archive_file = 'core.a';
-		conf.object_files = '"' + this.objectFiles.join ("\" \"") + '"';
-//		dict.put("ide_version", "" + Base.REVISION);
+ArduinoCompiler.prototype.linkAll = function () {
 
-		var linkCmd = this.platform.recipe.c.combine.pattern.replaceDict (conf);
-		this.enqueueCmd ('link', linkCmd);
+	var conf = this.getConfig ();
 
-		if (Arduino.instance.verbose)
-			console.log (linkCmd);
-	}).bind (this));
+	conf.archive_file = 'core.a';
+
+	conf.object_files = '"' + this.objectFiles.join ("\" \"") + '"';
+	//		dict.put("ide_version", "" + Base.REVISION);
+
+	var linkCmd = this.platform.recipe.c.combine.pattern.replaceDict (conf);
+	this.enqueueCmd ('link', linkCmd, null, 'all together');
+
+	if (Arduino.instance.verbose)
+		console.log (linkCmd);
+
 }
 
 ArduinoCompiler.prototype.objCopy = function () {
 	var conf = this.getConfig ();
 
 	var eepCmd = this.platform.recipe.objcopy.eep.pattern.replaceDict (conf);
-	this.enqueueCmd ('obj-eep', eepCmd);
+	this.enqueueCmd ('obj-eep', eepCmd, null, 'objcopy eep');
 
 	var hexCmd = this.platform.recipe.objcopy.hex.pattern.replaceDict (conf);
-	this.enqueueCmd ('obj-hex', hexCmd);
+	this.enqueueCmd ('obj-hex', hexCmd, null, 'objcopy hex');
 }
 
 ArduinoCompiler.prototype.checkSize = function () {
@@ -475,7 +479,7 @@ ArduinoCompiler.prototype.checkSize = function () {
 			maxData: parseInt (conf.upload.maximum_data_size.toString ()),
 			eeprom: sizeEeprom
 		};
-	}).bind(this));
+	}).bind(this), 'determine compiled size');
 
 }
 
