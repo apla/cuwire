@@ -283,6 +283,24 @@ Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
 
 				self.boardData[platformId][type] = fileData;
 
+				if (type === 'platform') {
+					common.pathToVar (
+						self.boardData[platformId][type],
+						"build.system.path",
+						path.join (fullPath, platformId, 'system')
+					);
+					common.pathToVar (
+						self.boardData[platformId][type],
+						"build.core.path",
+						path.join (fullPath, platformId, 'cores')
+					);
+					common.pathToVar (
+						self.boardData[platformId][type],
+						"build.variant.path",
+						path.join (fullPath, platformId, 'variants')
+					);
+				}
+
 				if (remains)
 					return;
 				// self.boardData = data;
