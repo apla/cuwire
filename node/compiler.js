@@ -515,19 +515,26 @@ String.prototype.replaceDict = function (conf) {
 	})
 }
 
+// TODO: copypasted from arduino#parseConfig
 function pathToVar (root, varPath, value) {
-	varPath.split ('.').forEach (function (chunk, index, chunks) {
-		// pathChunks[index] = chunk;
-		var newRoot = root[chunk];
-		if (index === chunks.length - 1) {
-			if (value !== undefined)
-				root[chunk] = value;
-		} else if (!newRoot) {
-			root[chunk] = {};
-			newRoot = root[chunk];
+	var refs = varPath.split('.');
+
+	for (var i = 0; i < refs.length; i ++) {
+		var sec = refs[i];
+		if (value !== undefined) {
+			if (!root[sec]) {
+				root[sec] = {};
+			}
+			if (i === refs.length - 1) {
+				root[sec] = new String (value);
+
+			}
 		}
-		root = newRoot;
-	});
+		if (root.constructor === String) {
+			console.log ("bad config for:", varPath, root[sec].toString ());
+		}
+		root = root[sec];
+	}
 	return root;
 }
 
