@@ -406,6 +406,8 @@ function processIno (sketchFolder, buildFolder, compiler) {
 //			console.log (matchArray[1] || "", matchArray[3], matchArray[4], '(', matchArray[5], ');');
 		}
 
+		// TODO: copy all of .h files from sketch and then generate main file in buildFolder
+		// insteda of sketchFolder
 		var projectFile = path.join (sketchFolder, '_' + sketchName + '_generated.cpp');
 		fs.writeFile (projectFile, "#include \"Arduino.h\"\n" + functions.join (";\n") + ";\n" + inoContents, function (err, done) {
 			compiler.setProjectFiles (null, [projectFile], true);
