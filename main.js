@@ -364,6 +364,12 @@ define(function (require, exports, module) {
 		$(this.domain).on ('log', function (event, message) {
 //			console.log (message);
 			$('#arduino-panel .table-container table tbody').append ("<tr><td>"+message+"</td></tr>");
+			var rowpos = $('#arduino-panel .table-container table tbody tr:last').position();
+
+			// TODO: fix scroll
+			// http://stackoverflow.com/questions/1805808/how-do-i-scroll-a-row-of-a-table-into-view-element-scrollintoview-using-jquery
+			// $('#container').scrollTop( $('#tr').offset().top - $('#td').offset().top )
+			$('#arduino-panel .table-container').scrollTop(rowpos.top);
 		});
 	}
 
