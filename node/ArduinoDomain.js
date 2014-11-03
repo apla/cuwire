@@ -40,6 +40,8 @@ maxerr: 50, node: true */
 			});
 	}
 
+	var compileFirstRun = true;
+
 	function compile (params) {
 		var currentFilePath = params.shift ();
 		var platformName    = params.shift ();
@@ -72,14 +74,19 @@ maxerr: 50, node: true */
 				buildFolder: "/Users/apla/Library/Application Support/Brackets/extensions/user/brackets-arduino/build"
 			}
 		);
-		theArduino.on ('compiled', function (size) {
-			console.log ('arduino domain: compiled', arguments);
-			cb (null, size);
-		});
-		theArduino.on ('log', function (message) {
-			console.log (message);
-			_domainManager.emitEvent ('arduino', 'log', message);
-		});
+
+		if (compileFirstRun) {
+			theArduino.on ('compiled', function (size) {
+				console.log ('arduino domain: compiled', arguments);
+				cb (null, size);
+			});
+
+			theArduino.on ('log', function (message) {
+				console.log (message);
+				_domainManager.emitEvent ('arduino', 'log', message);
+			});
+			compileFirstRun = false;
+		}
 	}
 
 
