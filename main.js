@@ -219,8 +219,8 @@ define(function (require, exports, module) {
 						boardItem.addClass ('dropdown-submenu');
 						var submenu = $("<ul class=\"dropdown-menu\">");
 						for (var cpuVariant in boardMeta.menu.cpu) {
-							variants.push (boardMeta.menu.cpu[cpuVariant].cpu_variant_name);
-							submenu.append ($("<li><a href=\"#\">" + boardMeta.menu.cpu[cpuVariant].cpu_variant_name + "</a></li>"));
+							variants.push (boardMeta.menu.cpu[cpuVariant].cpu_modification);
+							submenu.append ($("<li><a href=\"#\">" + boardMeta.menu.cpu[cpuVariant].cpu_modification + "</a></li>"));
 						}
 
 						boardItem.append (submenu);

@@ -137,8 +137,6 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 		var refs = ref.split('.');
 
 		var root = boards;
-		if (refs.length === 4 && refs[1] === "menu" && refs[2] === "cpu") {
-			refs.push ("cpu_variant_name");
 		}
 		for (var i = 0; i < refs.length; i ++) {
 			var sec = refs[i];
@@ -152,6 +150,7 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 				console.log ("bad config for:", ref, root[sec].toString ());
 			}
 			root = root[sec];
+			ref += "."+refs[2] + '_modification';
 		}
 	});
 //	console.log (Object.keys (boards));
