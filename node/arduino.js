@@ -5,6 +5,8 @@ var fs   = require('fs');
 var path = require ('path');
 var util = require ('util');
 
+var common = require ('./common');
+
 var EventEmitter = require('events').EventEmitter;
 
 var ArduinoCompiler = require ('./compiler');
@@ -137,21 +139,10 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 		var refs = ref.split('.');
 
 		var root = boards;
-		}
-		for (var i = 0; i < refs.length; i ++) {
-			var sec = refs[i];
-			if (!root[sec]) {
-				root[sec] = {};
-			}
-			if (i === refs.length - 1) {
-				root[sec] = new String (value);
-			}
-			if (root.constructor === String) {
-				console.log ("bad config for:", ref, root[sec].toString ());
-			}
-			root = root[sec];
+		if (refs.length === 4 && refs[1] === "menu") {
 			ref += "."+refs[2] + '_modification';
 		}
+		common.pathToVar (root, ref, value);
 	});
 //	console.log (Object.keys (boards));
 	cb (null, section, boards);

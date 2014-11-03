@@ -8,6 +8,8 @@ var exec = require ('child_process').exec;
 
 var EventEmitter = require ('events').EventEmitter;
 
+var common = require ('./common');
+
 function ArduinoCompiler (buildDir, boardsData, platformId, boardId, boardVariant) {
 
 	if (!Arduino)
@@ -57,12 +59,12 @@ function ArduinoCompiler (buildDir, boardsData, platformId, boardId, boardVarian
 	var currentStage = "build";
 
 	var conf = JSON.parse (JSON.stringify (platform));
-	pathToVar (conf, 'runtime.ide.path', Arduino.instance.runtimeDir);
+	common.pathToVar (conf, 'runtime.ide.path', Arduino.instance.runtimeDir);
 	// TODO: get version from mac os x bundle or from windows revisions.txt
-	pathToVar (conf, 'runtime.ide.version', "158");
-	pathToVar (conf, 'build.path', this.buildDir);
+	common.pathToVar (conf, 'runtime.ide.version', "158");
+	common.pathToVar (conf, 'build.path', this.buildDir);
 
-	conf.compiler.path = replaceDict (conf.compiler.path, conf);
+	conf.compiler.path = common.replaceDict (conf.compiler.path, conf);
 
 	"upload bootloader build".split (" ").forEach (function (stageName) {
 		for (var buildK in board[stageName]) {
@@ -72,8 +74,8 @@ function ArduinoCompiler (buildDir, boardsData, platformId, boardId, boardVarian
 		}
 	});
 
-//	pathToVar (conf, 'build.arch', platformId.split ('/')[1]);
-	pathToVar (conf, 'build.arch', platformId.split ('/')[1].toUpperCase ());
+//	common.pathToVar (conf, 'build.arch', platformId.split ('/')[1]);
+	common.pathToVar (conf, 'build.arch', platformId.split ('/')[1].toUpperCase ());
 
 	//	console.log ('BUILD', conf.build, platform.recipe.cpp.o.pattern);
 
@@ -100,7 +102,7 @@ function ArduinoCompiler (buildDir, boardsData, platformId, boardId, boardVarian
 util.inherits (ArduinoCompiler, EventEmitter);
 
 ArduinoCompiler.prototype.setProjectName = function (name) {
-	pathToVar (this.config, 'build.project_name', name);
+	common.pathToVar (this.config, 'build.project_name', name);
 	this.projectName = name;
 
 }
@@ -280,7 +282,7 @@ ArduinoCompiler.prototype.setLibNames = function (libNames) {
 //			console.log (libSrcFile);
 			conf.object_file = path.join (this.buildDir, libName, localName + '.o');
 			conf.includes    = libIncludes;
-			var compileCmd   = replaceDict (this.platform.recipe[ext].o.pattern, conf);
+			var compileCmd   = common.replaceDict (this.platform.recipe[ext].o.pattern, conf);
 
 			this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildDir, libName)));
 
@@ -316,7 +318,7 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 		// TODO: build dir
 		conf.object_file = path.join (this.buildDir, 'core', localName + '.o');
 		conf.includes = [""].concat (this.coreIncludes).join (" -I");
-		var compileCmd = replaceDict (this.platform.recipe[ext].o.pattern, conf);
+		var compileCmd = common.replaceDict (this.platform.recipe[ext].o.pattern, conf);
 
 		this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildDir, 'core')));
 
@@ -324,7 +326,7 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 		this.enqueueCmd ('core', compileCmd, null, cmdDesc);
 
 		conf.archive_file = 'core.a';
-		var archiveCmd = replaceDict (this.platform.recipe.ar.pattern, conf);
+		var archiveCmd = common.replaceDict (this.platform.recipe.ar.pattern, conf);
 
 		cmdDesc = ['archiving', srcFile].join (" ");
 		this.enqueueCmd ('core', archiveCmd, null, cmdDesc);
@@ -365,7 +367,7 @@ ArduinoCompiler.prototype.processProjectFiles = function () {
 		var includes = [""].concat (this.coreIncludes, this.libIncludes).join (" -I");
 		conf.includes = includes;
 
-		var compileCmd = replaceDict (this.platform.recipe[ext].o.pattern, conf);
+		var compileCmd = common.replaceDict (this.platform.recipe[ext].o.pattern, conf);
 
 		this.enqueueCmd ('mkdir', this.ioMkdir (this.buildDir));
 
@@ -426,7 +428,7 @@ ArduinoCompiler.prototype.linkAll = function () {
 	conf.object_files = '"' + this.objectFiles.join ("\" \"") + '"';
 	//		dict.put("ide_version", "" + Base.REVISION);
 
-	var linkCmd = replaceDict (this.platform.recipe.c.combine.pattern, conf);
+	var linkCmd = common.replaceDict (this.platform.recipe.c.combine.pattern, conf);
 	this.enqueueCmd ('link', linkCmd, null, 'all together');
 
 	if (Arduino.instance.verbose)
@@ -437,17 +439,17 @@ ArduinoCompiler.prototype.linkAll = function () {
 ArduinoCompiler.prototype.objCopy = function () {
 	var conf = this.getConfig ();
 
-	var eepCmd = replaceDict (this.platform.recipe.objcopy.eep.pattern, conf);
+	var eepCmd = common.replaceDict (this.platform.recipe.objcopy.eep.pattern, conf);
 	this.enqueueCmd ('obj-eep', eepCmd, null, 'objcopy eep');
 
-	var hexCmd = replaceDict (this.platform.recipe.objcopy.hex.pattern, conf);
+	var hexCmd = common.replaceDict (this.platform.recipe.objcopy.hex.pattern, conf);
 	this.enqueueCmd ('obj-hex', hexCmd, null, 'objcopy hex');
 }
 
 ArduinoCompiler.prototype.checkSize = function () {
 	var conf = this.getConfig ();
 
-	var sizeCmd = replaceDict (this.platform.recipe.size.pattern, conf);
+	var sizeCmd = common.replaceDict (this.platform.recipe.size.pattern, conf);
 	var sizeRegexp = new RegExp (this.platform.recipe.size.regex.toString (), 'gm');
 	var sizeDataRegexp, sizeEepromRegexp;
 	if (this.platform.recipe.size.regex.data)
@@ -498,52 +500,5 @@ fs.mkdirParent = function(dirPath, mode, callback) {
 		callback && callback(error);
 	});
 };
-
-function replaceDict (str, conf, count) {
-	if (count !== undefined && count > 2) {
-		throw "command still needs interpolation after 3 replacements:" + str;
-	}
-	var replacementRe = /{(\w+\.)*\w+}/g;
-	var replacement = str.replace (replacementRe, function (match) {
-		var varPath = match.substring (1, match.length - 1);
-		var result = pathToVar (conf, varPath);
-		if (result === undefined) {
-			throw "no interpolation found for "+varPath
-		} else if (result.constructor !== String && result.constructor !== Number) {
-			throw "bad type for interpolate \'"+varPath + '\': ' + util.inspect (result)
-		}
-
-		return result;
-	});
-
-	if (replacement.match (replacementRe)) {
-		replacement = replaceDict (replacement, conf, count === undefined ? 1 : count + 1)
-	}
-
-	return replacement;
-}
-
-// TODO: copypasted from arduino#parseConfig
-function pathToVar (root, varPath, value) {
-	var refs = varPath.split('.');
-
-	for (var i = 0; i < refs.length; i ++) {
-		var sec = refs[i];
-		if (value !== undefined) {
-			if (!root[sec]) {
-				root[sec] = {};
-			}
-			if (i === refs.length - 1) {
-				root[sec] = new String (value);
-
-			}
-		}
-		if (root.constructor === String) {
-			console.log ("bad config for:", varPath, root[sec].toString ());
-		}
-		root = root[sec];
-	}
-	return root;
-}
 
 module.exports = ArduinoCompiler;
