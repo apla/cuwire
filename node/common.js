@@ -48,8 +48,20 @@ function replaceDict (str, conf, count) {
 	return replacement;
 }
 
+function findLibNames (fileContents) {
+	// let's find all #includes
+	var includeRe = /^#include <([^>]+)\.h>/gm;
+	var matchArray;
+	var libNames = [];
+
+	while ((matchArray = includeRe.exec (fileContents)) !== null) {
+		libNames.push (matchArray[1]);
+	}
+	return libNames;
+}
 
 module.exports = {
 	pathToVar: pathToVar,
-	replaceDict: replaceDict
+	replaceDict: replaceDict,
+	findLibNames: findLibNames
 };

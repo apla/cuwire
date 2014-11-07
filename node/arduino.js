@@ -393,14 +393,7 @@ function processIno (sketchFolder, buildFolder, compiler) {
 
 		var inoContents = data.toString ();
 
-		// let's find all #includes
-		var includeRe = /^#include <([^>]+)\.h>/gm;
-		var matchArray;
-		var libNames = [];
-
-		while ((matchArray = includeRe.exec(inoContents)) !== null) {
-			libNames.push (matchArray[1]);
-		}
+		var libNames = common.findLibNames (inoContents);
 
 		// var firstStatementRe = /(\s*(\/\*[^*]*\*\/|\/\/.*?$|#([^#])*)\n)*/gm;
 
