@@ -27,7 +27,7 @@ define(function (require, exports, module) {
 //	});
 
 	var arduinoDomain = new NodeDomain("arduino", ExtensionUtils.getModulePath(module, "node/ArduinoDomain"));
-	ExtensionUtils.loadStyleSheet(module, "style.css");
+	ExtensionUtils.loadStyleSheet(module, "assets/style.css");
 
 	function ArduinoExt (require, domain) {
 		this.domain = domain;
