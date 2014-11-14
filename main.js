@@ -157,7 +157,7 @@ define(function (require, exports, module) {
 			titleButton.text (this.platforms[platformName].boards[boardId].name);
 
 		var fs = brackets.getModule("filesystem/FileSystem");
-		var boardImageUrl = require.toUrl ('./boards/'+boardId+'.jpg');
+		var boardImageUrl = require.toUrl ('./assets/board-images/'+boardId+'.jpg');
 		var fileObj = fs.getFileForPath (boardImageUrl);
 		fileObj.exists (function (err, exists) {
 			if (err || !exists)
