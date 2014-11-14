@@ -1,3 +1,10 @@
+"use strict";
+
+var os   = require("os");
+var fs   = require('fs');
+var path = require ('path');
+var util = require ('util');
+
 function pathToVar (root, varPath, value) {
 	var refs = varPath.split('.');
 
@@ -48,20 +55,55 @@ function replaceDict (str, conf, count) {
 	return replacement;
 }
 
-function findLibNames (fileContents) {
-	// let's find all #includes
-	var includeRe = /^#include <([^>]+)\.h>/gm;
-	var matchArray;
-	var libNames = [];
-
-	while ((matchArray = includeRe.exec (fileContents)) !== null) {
-		libNames.push (matchArray[1]);
-	}
-	return libNames;
+function FileWithStat (path, stat) {
+	this.path = path;
+	this.stat = stat;
 }
+
+function pathWalk (dir, done, options) {
+	var results = {};
+	fs.readdir(dir, function(err, list) {
+		if (err) return done(err);
+		var pending = list.length;
+		if (!pending) return done(null, results);
+		list.forEach(function(file) {
+			file = path.join (dir, file);
+			fs.lstat(file, function(err, stat) {
+
+				var ok = false;
+				if ("nameMatch" in options && file.match (options.nameMatch)) {
+					ok = true;
+				} else if (stat && !stat.isSymbolicLink() && stat.isDirectory()) {
+					pathWalk (file, function(err, res) {
+						for (var newFile in res) {
+							results[newFile] = res[newFile];
+						}
+						if (!--pending) done(null, results);
+					}, options);
+					return;
+				} else if (!("nameMatch" in options)) {
+					ok = true;
+				}
+
+				if (ok) {
+					results[file] = {stat: stat};
+					if (stat.isSymbolicLink()) {
+						fs.readlink (function (err, linkName) {
+							if (!err) results[file].linkedTo = linkName;
+							if (!--pending) done(null, results);
+						});
+						return;
+					}
+				}
+				if (!--pending) done(null, results);
+			});
+
+		});
+	});
+};
 
 module.exports = {
 	pathToVar: pathToVar,
 	replaceDict: replaceDict,
-	findLibNames: findLibNames
+	pathWalk: pathWalk
 };
