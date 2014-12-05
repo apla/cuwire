@@ -156,15 +156,14 @@ ArduinoCompiler.prototype.runNext = function (scope, pos, length) {
 		}
 	} else if (this._done['link']) {
 		this.objCopy ();
+	} else if (this._done['core'] && this._done['libs'] && this._done['project']) {
+		// TODO: anything else
+		this.linkAll ();
 	} else if (this._done['libs']) {
 		if (!this.sketchProcessed) {
 			this.processSketch ();
 			this.sketchProcessed = true;
 		}
-	} else if (this._done['core'] && this._done['libs'] && this._done['project']) {
-		// TODO: anything else
-		console.log ('linking');
-		this.linkAll ();
 	}
 }
 
