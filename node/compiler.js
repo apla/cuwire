@@ -39,6 +39,10 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 		boardsData.folders.root + '/variants/' + board.build.variant
 	];
 
+	this.coreIncludes = this.coreIncludes.concat (options.includes);
+
+//	console.log (this.coreIncludes);
+
 	"upload bootloader build".split (" ").forEach (function (stageName) {
 		for (var variantKey in boardVariant) {
 			if (!board.menu[variantKey]) {
@@ -152,8 +156,14 @@ ArduinoCompiler.prototype.runNext = function (scope, pos, length) {
 		}
 	} else if (this._done['link']) {
 		this.objCopy ();
+	} else if (this._done['libs']) {
+		if (!this.sketchProcessed) {
+			this.processSketch ();
+			this.sketchProcessed = true;
+		}
 	} else if (this._done['core'] && this._done['libs'] && this._done['project']) {
 		// TODO: anything else
+		console.log ('linking');
 		this.linkAll ();
 	}
 }
@@ -260,6 +270,7 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 				if (cmdCb) {
 					cmdCb (error, stdout, stderr);
 				}
+
 				cb (error);
 			});
 
@@ -290,13 +301,29 @@ ArduinoCompiler.prototype.setLibNames = function (libNames) {
 	}
 	if (!libNames.length)
 		return;
+//	console.log (libNames);
 	libNames.forEach ((function (libName) {
 		if (this.libCompile[libName])
 			return;
+
 		var libMeta = Arduino.findLib (this.platformId, libName);
 		if (!libMeta || !libMeta.root) {
 			console.log ('cannot find library', libName);
 		}
+
+//		console.log ('found lib', libName);
+
+		// requirement by requirement not supported
+		for (var req in libMeta.requirements) {
+			var libMeta2 = Arduino.findLib (this.platformId, req);
+			if (!libMeta2 || !libMeta2.root) {
+				// console.log ('cannot find library', req);
+			} else {
+				this.libCompile[req] = libMeta2;
+			}
+
+		}
+
 		this.libCompile[libName] = libMeta;
 		// libIncludes.push (libDir.root);
 	}).bind (this));
@@ -342,6 +369,7 @@ ArduinoCompiler.prototype.setLibNames = function (libNames) {
 //			console.log (libSrcFile);
 			conf.object_file = path.join (this.buildFolder, libName, localName + '.o');
 			conf.includes    = libIncludes;
+
 			var compileCmd   = common.replaceDict (this.platform.recipe[ext].o.pattern, conf);
 
 			this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildFolder, libName)));
@@ -396,39 +424,52 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 	// after all, we need to make core.a file
 }
 
-ArduinoCompiler.prototype.processSketchFile = function (srcFile) {
-
+ArduinoCompiler.prototype.processSketch = function () {
 	var conf = this.getConfig ();
 
-	var ext = srcFile.substring (srcFile.lastIndexOf ('.') + 1);
-	var localName = srcFile.substring (srcFile.lastIndexOf ('/') + 1, srcFile.lastIndexOf ('.'));
-	conf.source_file = srcFile;
-	conf.object_file = path.join (this.buildFolder, localName + '.o');
+	Object.keys (this.sketchFiles).forEach ((function (srcFile) {
+		var ext = srcFile.substring (srcFile.lastIndexOf ('.') + 1);
+		var localName = srcFile.substring (srcFile.lastIndexOf ('/') + 1, srcFile.lastIndexOf ('.'));
+		conf.source_file = srcFile;
+		conf.object_file = path.join (this.buildFolder, localName + '.o');
 
-	var allIncludes = [];
+		var allIncludes = [];
 
-	// TODO: add any library found in included source files
-	for (var libName in this.libCompile) {
-		allIncludes.push (this.libCompile[libName].include);
+		// TODO: add any library found in included source files
+		for (var libName in this.libCompile) {
+			allIncludes.push (this.libCompile[libName].include);
+		}
+
+		var includes = [""].concat (this.coreIncludes, allIncludes).join (" -I");
+		conf.includes = includes;
+
+		if (!(ext in this.platform.recipe))
+			return;
+
+		var compileCmd = common.replaceDict (this.platform.recipe[ext].o.pattern, conf);
+
+		// this.enqueueCmd ('mkdir', this.ioMkdir (this.buildFolder));
+
+		var cmdDesc = [srcFile].join (" ");
+		this.enqueueCmd ('project', compileCmd, null, cmdDesc);
+
+		this.objectFiles.push (conf.object_file);
+
+		if (Arduino.verbose)
+			console.log (compileCmd);
+
+	}).bind (this));
+
+}
+
+ArduinoCompiler.prototype.setSketchFile = function (srcFile) {
+
+	if (!this.sketchFiles) {
+		this.sketchFiles = {};
 	}
 
-	var includes = [""].concat (this.coreIncludes, allIncludes).join (" -I");
-	conf.includes = includes;
+	this.sketchFiles[srcFile] = true;
 
-	if (!(ext in this.platform.recipe))
-		return;
-
-	var compileCmd = common.replaceDict (this.platform.recipe[ext].o.pattern, conf);
-
-	// this.enqueueCmd ('mkdir', this.ioMkdir (this.buildFolder));
-
-	var cmdDesc = [srcFile].join (" ");
-	this.enqueueCmd ('project', compileCmd, null, cmdDesc);
-
-	this.objectFiles.push (conf.object_file);
-
-	if (Arduino.verbose)
-		console.log (compileCmd);
 }
 
 ArduinoCompiler.prototype.setProjectFiles = function (err, files, dontCompile) {
@@ -496,20 +537,20 @@ ArduinoCompiler.prototype.processIno = function (inoFile) {
 		var libNames = Arduino.parseLibNames (inoContents, this.platformId);
 		// search for a function declarations
 
-		if (libNames.length)
-			console.log (path.relative (this.sketchFolder, inoFile), 'contains libs', libNames);
+		if (libNames.length) {
+//			console.log (path.relative (this.sketchFolder, inoFile), 'contains libs', libNames);
+		}
 
 		// var firstStatementRe = /(\s*(\/\*[^*]*\*\/|\/\/.*?$|#([^#])*)\n)*/gm;
 
 		//		console.log (inoContents.split (firstStatementRe));
 
-		var functions = [];
-
+		var funcs  = [];
 		var matchArray = [];
 
 		var functionRe = /^[\s\n\r]*((unsigned|signed|static)[\s\n\r]+)?(void|int|char|short|long|float|double|word)[\s\n\r]+(\w+)[\s\n\r]*\(([^\)]*)\)[\s\n\r]*\{/gm;
-		while ((matchArray = functionRe.exec(inoContents)) !== null) {
-			functions.push ([matchArray[1] || "", matchArray[3], matchArray[4], '('+matchArray[5]+')'].join (" "));
+		while ((matchArray = functionRe.exec (inoContents)) !== null) {
+			funcs.push ([matchArray[1] || "", matchArray[3], matchArray[4], '('+matchArray[5]+')'].join (" "));
 			//			console.log (matchArray[1] || "", matchArray[3], matchArray[4], '(', matchArray[5], ');');
 		}
 
@@ -517,11 +558,11 @@ ArduinoCompiler.prototype.processIno = function (inoFile) {
 
 		// TODO: copy all of .h files from sketch and then generate main file in buildFolder
 		// instead of sketchFolder
-		console.log (this.buildFolder, '_' + this.projectName + '_generated.cpp');
+//		console.log (this.buildFolder, '_' + this.projectName + '_generated.cpp');
 		var projectFile = path.join (this.buildFolder, '_' + this.projectName + '_generated.cpp');
 		fs.writeFile (
 			projectFile,
-			"#include \"Arduino.h\"\n" + functions.join (";\n") + ";\n" + inoContents,
+			"#include \"Arduino.h\"\n" + funcs.join (";\n") + ";\n" + inoContents,
 			(function (err, done) {
 				if (err) {
 					console.log ('cannot write to the ', inoFile);
@@ -529,7 +570,7 @@ ArduinoCompiler.prototype.processIno = function (inoFile) {
 				}
 				// this.setProjectFiles (null, [projectFile], true);
 				this.setLibNames (libNames);
-				this.processSketchFile (projectFile);
+				this.setSketchFile (projectFile);
 		}).bind (this));
 
 
@@ -542,20 +583,22 @@ ArduinoCompiler.prototype.processIno = function (inoFile) {
 
 ArduinoCompiler.prototype.processCpp = function (cppFile) { // also for a c, h files
 	// read file
+
 	fs.readFile (cppFile, (function (err, data) {
 		if (err) {
 			console.log ('read failed', err);
 			cb (err);
 			return;
 		}
+
 		var cppContents = data.toString ();
 
 		// search for libraries
 		var libNames = Arduino.parseLibNames (cppContents, this.platformId);
 		// search for a function declarations
 
-		if (libNames.length)
-			console.log (path.relative (this.sketchFolder, cppFile), 'contains libs', libNames);
+//		if (libNames.length)
+//			console.log (path.relative (this.sketchFolder, cppFile), 'contains libs', libNames);
 
 
 //		var functions = [];
@@ -572,9 +615,11 @@ ArduinoCompiler.prototype.processCpp = function (cppFile) { // also for a c, h f
 		var cppRelPath = path.relative (this.sketchFolder, cppFile);
 		var cppFolder = path.join (this.buildFolder, path.dirname (cppRelPath));
 
+
+		// TODO: something wrong: mkdirParent not working
 		mkdirParent (cppFolder, (function (err) {
 			if (err && err.code !== 'EEXIST') {
-				console.log ('cannot create folder', cppFolder);
+				console.trace ('cannot create folder', cppFolder, err.code);
 				return;
 			}
 			var sourceFile = path.join (this.buildFolder, cppRelPath);
@@ -589,7 +634,7 @@ ArduinoCompiler.prototype.processCpp = function (cppFile) { // also for a c, h f
 					// this.setProjectFiles (null, [projectFile], true);
 					this.setLibNames (libNames);
 
-					this.processSketchFile (sourceFile);
+					this.setSketchFile (sourceFile);
 				}).bind (this));
 
 
@@ -694,11 +739,14 @@ function mkdirParent (dirPath, mode, callback) {
 	//Call the standard fs.mkdir
 	fs.mkdir(dirPath, mode, function(error) {
 		//When it fail in this way, do the custom steps
+//		console.log (error && error.code);
 		if (error && error.code === 'ENOENT') {
 			//Create all the parents recursively
-			mkdirParent (path.dirname (dirPath), mode, callback);
-			//And then the directory
-			mkdirParent (dirPath, mode, callback);
+			mkdirParent (path.dirname (dirPath), mode, function (err) {
+				//And then the directory
+				mkdirParent (dirPath, mode, callback);
+			});
+			return;
 		}
 		//Manually run the callback since we used our own callback to do all these
 		callback && callback(error);

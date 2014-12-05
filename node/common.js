@@ -88,7 +88,7 @@ function pathWalk (dir, done, options) {
 				if (ok) {
 					results[file] = {stat: stat};
 					if (stat.isSymbolicLink()) {
-						fs.readlink (function (err, linkName) {
+						fs.readlink (file, function (err, linkName) {
 							if (!err) results[file].linkedTo = linkName;
 							if (!--pending) done(null, results);
 						});

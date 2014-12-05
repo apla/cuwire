@@ -165,27 +165,32 @@ Arduino.prototype.enumerateLibraries = function (fullPath, done, err, data) {
 	var self = this;
 
 	var data = {};
-	var remains = 0;
+
 
 	function foundMeta (err, files) {
 		if (err && !files) {
 			done ('libraries');
 			return;
 		}
+
+		var remains = Object.keys (files).length;
+
 		Object.keys (files).forEach (function (fileName) {
 			if (fileName.match (/examples$/)) {
+				remains --;
 				// TODO: enumerateExamples
 				//fs.stat (fileName,  self.enumerateExamples.bind  (self, fileName, self.ioDone ()));
 				return;
 			}
 			var relativePath = fileName.substr (fullPath.length + 1);
 //			console.log (relativePath.match (/[^\/]+/));
-			var libName = relativePath.match (/[^\/]+/)[0].toLowerCase();
+			var libName = relativePath.match (/[^\/]+/)[0];
 //			console.log ('found lib', libName);
 			// TODO: user and runtime can have libraries with same name. prefer user ones
 			if (!self.libraryData[libName])
 				self.libraryData[libName] = {
 					files: {},
+					requirements: {}
 					// root: path.join (fullPath, libName)
 				};
 			if (relativePath.toLowerCase() === path.join (libName.toLowerCase(), libName.toLowerCase()+'.h')) {
@@ -197,10 +202,25 @@ Arduino.prototype.enumerateLibraries = function (fullPath, done, err, data) {
 				self.libraryData[libName].include = path.join (fullPath, libName, 'src');
 				self.libraryData[libName].version = '1.5';
 			}
-			console.log ('library: relpath', relativePath, 'libname', libName, 'root', self.libraryData[libName].root);
-			self.libraryData[libName].files[relativePath.substr (libName.length+1)] = true;
+//			console.log ('library: relpath', relativePath, 'libname', libName, 'root', self.libraryData[libName].root);
+			var relativeSrcPath = relativePath.substr (libName.length+1);
+			self.libraryData[libName].files[relativeSrcPath] = true;
+			fs.readFile (fileName, function (err, data) {
+				remains --;
+
+				// TODO: hackish solution by using prototype
+				var libNames = Arduino.prototype.parseLibNames (data);
+
+				libNames.forEach (function (req) {
+					self.libraryData[libName].requirements[req] = true;
+				});
+
+				if (remains === 0)
+					done ('libraries');
+			});
 		});
-		done ('libraries');
+		if (remains === 0)
+			done ('libraries');
 	}
 }
 
@@ -367,19 +387,25 @@ function createTempFile (cb) {
 
 Arduino.prototype.findLib = function (platformId, libName) {
 //	console.log (this.libraryData, this.boardData[platformId].libraryData, platformId, libName);
-	libName = libName.toLowerCase();
-	return this.libraryData[libName] || this.boardData[platformId].libraryData[libName];
+//	libName = libName.toLowerCase();
+	var libMeta = this.libraryData[libName] || this.boardData[platformId].libraryData[libName];
+//	if (!libMeta) {
+//		console.log ('can\'t find library', libName, 'in library folders (TODO: show library folder names)');
+//	}
+	return libMeta;
 }
 
 Arduino.prototype.parseLibNames = function (fileContents, platformId) {
 	// let's find all #includes
-	var includeRe = /^\s*#include ["<]([^>"]+)\.h[">]/gm;
+	var includeRe = /^\s*#include\s+["<]([^>"]+)\.h[">]/gm;
 	var matchArray;
 	var libNames = [];
 
 	while ((matchArray = includeRe.exec (fileContents)) !== null) {
 		var libName = matchArray[1];
-		if (this.findLib (platformId, libName)) {
+		if (platformId === undefined) {
+			libNames.push (libName);
+		} else if (this.findLib (platformId, libName)) {
 			libNames.push (libName);
 		}
 
