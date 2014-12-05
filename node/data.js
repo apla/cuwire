@@ -9,6 +9,21 @@ var EventEmitter = require('events').EventEmitter;
 
 var common          = require ('./common');
 
+var nodeToJavaPlatform = {
+	darwin: 'macos',
+	win32: 'windows',
+	linux: 'linux'
+};
+
+var javaToNodePlatform = {};
+for (var platformName in nodeToJavaPlatform) {
+	javaToNodePlatform[nodeToJavaPlatform[platformName]] = platformName;
+}
+
+var os = require ('os');
+
+var javaPlatformName = nodeToJavaPlatform [os.platform()];
+
 var Arduino = function (userDirs) {
 
 	// TODO: additional user dirs
@@ -140,6 +155,13 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 		if (ref.match (/^menu/)) return;
 		var value = line.substring (line.indexOf ('=')+1);
 		var refs = ref.split('.');
+
+		if (refs[refs.length-1] === javaPlatformName) {
+			refs.pop ();
+			ref = refs.join ('.');
+		} else if (refs[refs.length-1] in javaToNodePlatform) {
+			return;
+		}
 
 		var root = boards;
 		if (refs.length === 4 && refs[1] === "menu") {
