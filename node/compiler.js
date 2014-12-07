@@ -141,11 +141,13 @@ ArduinoCompiler.prototype.setProjectName = function (name) {
 }
 
 ArduinoCompiler.prototype.runNext = function (scope, pos, length) {
-	console.log ('['+scope+']', 'done', (pos+1)+'/'+length);
+	this.emit ('log', scope, 'done '+(pos+1)+'/'+length);
+//	console.log ('['+scope+']', 'done', (pos+1)+'/'+length);
 	this._done[scope] = true;
 
 	if (scope === 'size') {
-		console.log ('COMPILATION COMPLETE!');
+		this.emit ('log', 'all', 'done');
+//		console.log ('COMPILATION COMPLETE!');
 //		console.log (this.platform.recipe.size.regex.data.toString ());
 //		console.log (this.platform.recipe.size.regex.eeprom.toString ());
 		this.emit ('compiled', this.compiledSize);
@@ -159,6 +161,7 @@ ArduinoCompiler.prototype.runNext = function (scope, pos, length) {
 	} else if (this._done['core'] && this._done['libs'] && this._done['project']) {
 		// TODO: anything else
 		this.linkAll ();
+		this.sketchProcessed = false;
 	} else if (this._done['libs']) {
 		if (!this.sketchProcessed) {
 			this.processSketch ();
@@ -252,7 +255,7 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 		// assume shell command
 		if (cmd.constructor === String) {
 			if (cmdDesc) {
-				this.emit ('log', '[' + scope + '] ' + cmdDesc);
+				this.emit ('log', scope, cmdDesc);
 			}
 
 			var child = exec(cmd, function (error, stdout, stderr) {
@@ -263,8 +266,9 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 				// console.log('stdout: ' + stdout);
 				// console.log('stderr: ' + stderr);
 				if (error !== null) {
-					console.log ('******************', scope.toUpperCase(), cmd);
-					console.log ('******************', scope.toUpperCase(), 'exec error: ', error, 'stderr', stderr);
+					this.emit ('error', scope, stderr);
+//					console.log ('******************', scope.toUpperCase(), cmd);
+//					console.log ('******************', scope.toUpperCase(), 'exec error: ', error, 'stderr', stderr);
 				}
 				if (cmdCb) {
 					cmdCb (error, stdout, stderr);
@@ -373,7 +377,7 @@ ArduinoCompiler.prototype.setLibNames = function (libNames) {
 
 			this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildFolder, libName)));
 
-			var cmdDesc = [libName, '>', path.join (libName, libSrcFile)].join (" ");
+			var cmdDesc = path.join (libName, libSrcFile);
 			this.enqueueCmd ('libs', compileCmd, null, cmdDesc);
 
 			this.objectFiles.push (conf.object_file);
@@ -473,6 +477,7 @@ ArduinoCompiler.prototype.setSketchFile = function (srcFile) {
 
 ArduinoCompiler.prototype.setProjectFiles = function (err, files, dontCompile) {
 	if (err) {
+		// TODO: what errors we expects here, what's error recovery strategy?
 		console.log (err);
 		return;
 	}
@@ -526,7 +531,8 @@ ArduinoCompiler.prototype.processIno = function (inoFile) {
 	// read ino
 	fs.readFile (inoFile, (function (err, data) {
 		if (err) {
-			console.log ('read failed', err);
+			this.emit ('error', 'project', ['file read failed', inoFile, err.code].join (' '));
+//			console.log ('read failed', err);
 			cb (err);
 			return;
 		}
@@ -564,7 +570,8 @@ ArduinoCompiler.prototype.processIno = function (inoFile) {
 			"#include \"Arduino.h\"\n" + funcs.join (";\n") + ";\n" + inoContents,
 			(function (err, done) {
 				if (err) {
-					console.log ('cannot write to the ', inoFile);
+					this.emit ('error', 'project', ['file write failed', projectFile, err.code].join (' '));
+//					console.log ('cannot write to the ', inoFile);
 					return;
 				}
 				// this.setProjectFiles (null, [projectFile], true);
@@ -585,7 +592,8 @@ ArduinoCompiler.prototype.processCpp = function (cppFile) { // also for a c, h f
 
 	fs.readFile (cppFile, (function (err, data) {
 		if (err) {
-			console.log ('read failed', err);
+//			console.log ('read failed', err);
+			this.emit ('error', 'project', ['file read failed', cppFile, err.code].join (' '));
 			cb (err);
 			return;
 		}
@@ -618,7 +626,8 @@ ArduinoCompiler.prototype.processCpp = function (cppFile) { // also for a c, h f
 		// TODO: something wrong: mkdirParent not working
 		mkdirParent (cppFolder, (function (err) {
 			if (err && err.code !== 'EEXIST') {
-				console.trace ('cannot create folder', cppFolder, err.code);
+//				console.trace ('cannot create folder', cppFolder, err.code);
+				this.emit ('error', 'mkdir', ['cannot create folder', cppFolder, err.code].join (' '));
 				return;
 			}
 			var sourceFile = path.join (this.buildFolder, cppRelPath);
@@ -720,7 +729,8 @@ ArduinoCompiler.prototype.checkSize = function () {
 				sizeEeprom += parseInt (matches[1]);
 			}
 		// console.log (sizeRegexp.exec (stdout));
-		console.log ('[size]', 'text', size, 'data', sizeData, 'eeprom', sizeEeprom);
+		this.emit ('log', 'size', ['text', size, 'data', sizeData, 'eeprom', sizeEeprom].join (' '));
+//		console.log ('[size]', 'text', size, 'data', sizeData, 'eeprom', sizeEeprom);
 
 		this.compiledSize = {
 			text: size,
