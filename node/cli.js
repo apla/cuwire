@@ -11,8 +11,6 @@ paint.error   = paint.bind (paint, "red+white_bg");
 paint.path    = paint.cyan.bind (paint);
 paint.nodeino = paint.green.bind (paint, "nodeino");
 
-var arduino;
-
 var builds = {
 	sensor: {
 		sketch: "/Users/apla/work/com.domtale/arduino/Sensor",
@@ -82,25 +80,26 @@ var cliConfig = {
 	},
 	upload: {
 		description: "compile, then upload hex file to device",
-		run: upload
+		run: ["compile", "upload"],
+		arduino: true
 	},
 	boards: {
 		description: "show available boards",
-		run: showBoards,
+		run: "showBoards",
 		arduino: true
 	},
 	ports: {
 		description: "show com ports",
-		run: showPorts
+		run: "showPorts"
 	},
 	compile: {
 		description: "compile sketch",
-		run: compile2Times,
+		run: "compile",
 		arduino: true
 	},
 	_: {
 		anyway: true, // launch anyway, even if error is present
-		run: compile2Times,
+		run: "compile",
 	},
 	edit: {
 		anyway: true, // launch anyway, even if validation fails
@@ -184,29 +183,50 @@ var ArduinoCli = function (args) {
 
 	var haveCommand = findCommand (options);
 
-	if (haveCommand && !cliConfig[haveCommand].arduino) {
-		cliConfig[haveCommand].run.apply (this, options);
+	if (!haveCommand) {
+		// TODO: show banner
+		return;
+	}
+
+	if (!cliConfig[haveCommand].arduino) {
+//		console.log (cliConfig[haveCommand].run, this, this[cliConfig[haveCommand].run]);
+		this.launchCommand (haveCommand, options);
 		if (options.dryRun)
 			return;
 		return;
 	}
 
 	// TODO: use --arduino option to pass arduino app path
-	arduino = new ArduinoData (["/Applications/devel/Arduino.app"]);
+	this.arduino = new ArduinoData (["/Applications/devel/Arduino.app"]);
 
-	arduino.on ('done', function () {
-		if (haveCommand) {
-			cliConfig[haveCommand].run.call (this, arduino, options);
-			if (options.dryRun)
-				return;
-		}
-	});
+	this.arduino.on ('done', (function () {
+
+		this.launchCommand (haveCommand, options);
+		if (options.dryRun)
+			return;
+
+	}).bind (this));
 
 }
 
-var cli = new ArduinoCli ();
+ArduinoCli.prototype.launchCommand = function (cmdName, options) {
+	var cmdConf = cliConfig[cmdName];
 
-function showPorts () {
+	var methodNames = [].concat (cliConfig[cmdName].run);
+
+	var launchIdx = -1;
+
+	var launchNext = (function (err) {
+		launchIdx ++;
+		var methodName = methodNames[launchIdx];
+		this[methodName](options, launchNext);
+	}).bind(this);
+
+	launchNext();
+
+}
+
+ArduinoCli.prototype.showPorts = function () {
 	var sp = require("serialport");
 
 	var err, result = [];
@@ -221,7 +241,7 @@ function showPorts () {
 	});
 }
 
-function showBoards (arduino) {
+ArduinoCli.prototype.showBoards = function () {
 	var platforms = arduino.boardData;
 
 	console.log (paint.nodeino(), 'boards available:');
@@ -259,7 +279,7 @@ function showBoards (arduino) {
 	});
 }
 
-function compile2Times () {
+ArduinoCli.prototype.compile = function (options, cb) {
 
 	var buildName = argv.template || "sensor";
 
@@ -267,7 +287,7 @@ function compile2Times () {
 
 	console.log (paint.nodeino(), 'compilation of', paint.path (buildMeta.sketch));
 
-	var compiler = new ArduinoCompiler (
+	var compiler = this.compiler = new ArduinoCompiler (
 		buildMeta.sketch,
 		buildMeta.platformId,
 		buildMeta.boardId,
@@ -287,10 +307,12 @@ function compile2Times () {
 		console.log (paint.error (scope) + "\t", message);
 	});
 
+	compiler.on ('done', cb);
+
 	if (argv.test) {
 		var secondRun = false;
 
-		compiler.on ('compiled', function () {
+		compiler.on ('done', function () {
 			if (secondRun)
 				return;
 			secondRun = true;
@@ -308,21 +330,29 @@ function compile2Times () {
 	}
 }
 
-function upload () {
-//	compiler.on ('compiled', function () {
+ArduinoCli.prototype.upload = function (options) {
+//	compiler.on ('done', function () {
 //		upload (argv, buildMeta, compiler);
 //	});
+
+	var buildName = argv.template || "sensor";
+
+	var buildMeta = builds[buildName];
+
+	console.log (paint.nodeino(), 'upload ', paint.path (buildMeta.sketch));
+
 	var uploader = new ArduinoUploader (
-		compiler,
+		this.compiler,
 		buildMeta.platformId,
 		buildMeta.boardId,
 		buildMeta.variant,
 		{
 			serial: {
-				port: argv.upload
+				port: options.upload
 			},
-			verbose: argv.verbose
+			verbose: options.verbose
 		}
 	);
 }
 
+var cli = new ArduinoCli ();
