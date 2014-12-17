@@ -208,7 +208,7 @@ ArduinoUploader.prototype.runCmd = function (cmd) {
 	var scope = 'upload';
 	this.emit ('log', '[' + scope + '] ' + cmd);
 
-	var child = exec(cmd, function (error, stdout, stderr) {
+	var child = exec(cmd, (function (error, stdout, stderr) {
 		// The callback gets the arguments (error, stdout, stderr).
 		// On success, error will be null. On error, error will be an instance
 		// of Error and error.code will be the exit code of the child process,
@@ -216,11 +216,16 @@ ArduinoUploader.prototype.runCmd = function (cmd) {
 		// console.log('stdout: ' + stdout);
 		// console.log('stderr: ' + stderr);
 		if (error !== null) {
-			console.log ('******************', scope.toUpperCase(), cmd);
-			console.log ('******************', scope.toUpperCase(), 'exec error: ', error, 'stderr', stderr);
+//			console.log ('******************', scope.toUpperCase(), cmd);
+//			console.log ('******************', scope.toUpperCase(), 'exec error: ', error, 'stderr', stderr);
+			error.scope  = scope;
+			error.cmd    = cmd;
+			error.stderr = stderr;
+			this.emit ('error', error);
+			return;
 		}
 		this.emit ('done');
-	});
+	}).bind (this));
 }
 
 
