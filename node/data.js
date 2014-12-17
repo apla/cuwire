@@ -435,28 +435,6 @@ Arduino.prototype.parseLibNames = function (fileContents, platformId) {
 	return libNames;
 }
 
-
-Arduino.prototype.compile = function (sketchFolder, platformName, boardType, boardVariant, options) {
-
-	// TODO: if buildFolder is undefined, use system TMP
-	var buildFolder = options.buildFolder;
-
-	var platform = this.boardData[platformName].platform;
-	var board = this.boardData[platformName].boards[boardType];
-
-//	var boardBuild = board.build;
-//	var cpu = board.menu.cpu[cpuId];
-
-	var compiler = this.compiler = new ArduinoCompiler (sketchFolder, buildFolder, this.boardData[platformName], platformName, boardType, boardVariant, options);
-
-	compiler.on ('compiled', (function (size) {
-		this.emit ('compiled', size);
-	}).bind (this));
-
-	compiler.on ('log', (function (message) {
-		this.emit ('log', message);
-	}).bind (this));
-
 // TODO: use memoize
 Arduino.prototype.platformPath = function (platformId) {
 	return path.join (platformId.split (':'));
