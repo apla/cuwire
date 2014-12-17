@@ -321,7 +321,7 @@ ArduinoCompiler.prototype.setLibNames = function (libNames) {
 			var libMeta2 = Arduino.findLib (this.platformId, req);
 			if (!libMeta2 || !libMeta2.root) {
 				// console.log ('cannot find library', req);
-			} else {
+			} else if (!this.libCompile[req]) {
 				this.libCompile[req] = libMeta2;
 			}
 
@@ -351,8 +351,9 @@ ArduinoCompiler.prototype.setLibNames = function (libNames) {
 	for (var libName in this.libCompile) {
 		var libMeta = this.libCompile[libName];
 
-		if (libMeta.processed)
+		if (libMeta.processed) {
 			continue;
+		}
 
 		this.libCompile[libName].processed = true;
 

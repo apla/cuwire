@@ -414,7 +414,9 @@ Arduino.prototype.findLib = function (platformId, libName) {
 //	if (!libMeta) {
 //		console.log ('can\'t find library', libName, 'in library folders (TODO: show library folder names)');
 //	}
-	return libMeta;
+	if (!libMeta) return libMeta;
+	var libMetaClone = JSON.parse (JSON.stringify (libMeta));
+	return libMetaClone;
 }
 
 Arduino.prototype.parseLibNames = function (fileContents, platformId) {
