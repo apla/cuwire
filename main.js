@@ -11,7 +11,9 @@ define(function (require, exports, module) {
 		NodeDomain         = brackets.getModule("utils/NodeDomain"),
 		PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
 		Dialogs            = brackets.getModule("widgets/Dialogs"),
-	    DocumentManager    = brackets.getModule("document/DocumentManager");
+	    DocumentManager    = brackets.getModule("document/DocumentManager"),
+		WorkspaceManager   = brackets.getModule('view/WorkspaceManager');
+
 
 
 	var prefs = PreferencesManager.getExtensionPrefs (moduleId);
@@ -330,8 +332,7 @@ define(function (require, exports, module) {
 
 		myIcon.appendTo($("#main-toolbar .buttons"));
 
-		var PanelManager = brackets.getModule('view/PanelManager');
-		this.panel = PanelManager.createBottomPanel(moduleId+".panel", $(require('text!bottom-panel.html')));
+		this.panel = WorkspaceManager.createBottomPanel (moduleId+".panel", $(require('text!bottom-panel.html')));
 
 		this.enumerateSerialPorts ();
 		this.getBoardMeta ();
