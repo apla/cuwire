@@ -74,8 +74,8 @@ function ArduinoUploader (compiler, platformId, boardId, boardVariant, options) 
 
 	// arduino/avr.boards.uno.build
 
-	//	common.pathToVar (conf, 'build.arch', platformId.split ('/')[1]);
-	common.pathToVar (tool, 'build.arch', platformId.split ('/')[1].toUpperCase ());
+	//	common.pathToVar (conf, 'build.arch', platformId.split (':')[1]);
+	common.pathToVar (tool, 'build.arch', platformId.split (':')[1].toUpperCase ());
 
 //	console.log (conf.upload);
 //

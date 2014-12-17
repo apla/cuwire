@@ -285,11 +285,11 @@ Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
 			var arch       = pathChunks[1];
 			var localFile  = pathChunks[2];
 
-			var platformId = path.join (vendor, arch);
+			var platformId = [vendor, arch].join (':');
 			if (!self.boardData[platformId])
 				self.boardData[platformId] = {
 					folders: {
-						root: path.join (fullPath, platformId),
+						root: path.join (fullPath, vendor, arch),
 						arch: arch,
 						vendor: vendor
 					},
@@ -315,17 +315,17 @@ Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
 					common.pathToVar (
 						self.boardData[platformId][type],
 						"build.system.path",
-						path.join (fullPath, platformId, 'system')
+						path.join (fullPath, vendor, arch, 'system')
 					);
 					common.pathToVar (
 						self.boardData[platformId][type],
 						"build.core.path",
-						path.join (fullPath, platformId, 'cores')
+						path.join (fullPath, vendor, arch, 'cores')
 					);
 					common.pathToVar (
 						self.boardData[platformId][type],
 						"build.variant.path",
-						path.join (fullPath, platformId, 'variants')
+						path.join (fullPath, vendor, arch, 'variants')
 					);
 				}
 
@@ -457,6 +457,9 @@ Arduino.prototype.compile = function (sketchFolder, platformName, boardType, boa
 		this.emit ('log', message);
 	}).bind (this));
 
+// TODO: use memoize
+Arduino.prototype.platformPath = function (platformId) {
+	return path.join (platformId.split (':'));
 }
 
 module.exports = Arduino;

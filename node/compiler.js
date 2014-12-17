@@ -81,8 +81,8 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 		}
 	});
 
-//	common.pathToVar (conf, 'build.arch', platformId.split ('/')[1]);
-	common.pathToVar (conf, 'build.arch', platformId.split ('/')[1].toUpperCase ());
+//	common.pathToVar (conf, 'build.arch', platformId.split (':')[1]);
+	common.pathToVar (conf, 'build.arch', platformId.split (':')[1].toUpperCase ());
 
 	//	console.log ('BUILD', conf.build, platform.recipe.cpp.o.pattern);
 

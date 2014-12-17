@@ -16,7 +16,7 @@ var arduino;
 var builds = {
 	sensor: {
 		sketch: "/Users/apla/work/com.domtale/arduino/Sensor",
-		platformId: "arduino/avr",
+		platformId: "arduino:avr",
 		boardId: "pro",
 		variant: {
 			cpu: "16MHzatmega328"
@@ -25,7 +25,7 @@ var builds = {
 	},
 	reprap: {
 		sketch: "/Users/apla/work/3d/RepRapFirmware",
-		platformId: "arduino/sam",
+		platformId: "arduino:sam",
 		boardId: "arduino_due_x_dbg",
 		variant: {
 		},
@@ -37,7 +37,7 @@ var builds = {
 	},
 	marlin: {
 		sketch: "/Users/apla/work/3d/Marlin/Marlin",
-		platformId: "arduino/avr",
+		platformId: "arduino:avr",
 		boardId: "mega",
 		variant: {
 			cpu: "atmega2560"
