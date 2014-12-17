@@ -150,7 +150,7 @@ ArduinoCompiler.prototype.runNext = function (scope, pos, length) {
 //		console.log ('COMPILATION COMPLETE!');
 //		console.log (this.platform.recipe.size.regex.data.toString ());
 //		console.log (this.platform.recipe.size.regex.eeprom.toString ());
-		this.emit ('compiled', this.compiledSize);
+		this.emit ('done', this.compiledSize);
 	} else if (scope === 'obj-eep' || scope === 'obj-hex') {
 		// whe we achieved obj-* stage, no more steps remaining
 		if (this._done['obj-eep'] && this._done['obj-hex']) {
