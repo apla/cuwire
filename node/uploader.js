@@ -20,16 +20,16 @@ function ArduinoUploader (compiler, platformId, boardId, boardVariant, options) 
 
 	var boardsData = Arduino.boardData[platformId];
 
-	var platform = boardsData.platform; // arduino/avr.platform
-	var board = JSON.parse (JSON.stringify (boardsData.boards[boardId])); // arduino/avr.boards.uno
+	var platform = boardsData.platform; // arduino:avr.platform
+	var board = JSON.parse (JSON.stringify (boardsData.boards[boardId])); // arduino:avr.boards.uno
 
-	var boardBuild = board.build; // arduino/avr.boards.uno.build
+	var boardBuild = board.build; // arduino:avr.boards.uno.build
 
 	this.boardsData = boardsData;
 
 	this.platformId = platformId;
 
-	this.platform = platform; // arduino/avr.platform
+	this.platform = platform; // arduino:avr.platform
 
 	var stageName = "upload";
 
