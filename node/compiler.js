@@ -381,7 +381,7 @@ ArduinoCompiler.prototype.setLibNames = function (libNames) {
 
 			this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildFolder, libName)));
 
-			var cmdDesc = path.join (libName, libSrcFile);
+			var cmdDesc = "compile " + path.join (libName, libSrcFile);
 			this.enqueueCmd ('libs', compileCmd, null, cmdDesc);
 
 			this.objectFiles.push (conf.object_file);
@@ -415,13 +415,13 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 
 		this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildFolder, 'core')));
 
-		var cmdDesc = ['compile', srcFile].join (" ");
+		var cmdDesc = ['compile', this.platformId, localName + '.' + ext].join (" ");
 		this.enqueueCmd ('core', compileCmd, null, cmdDesc);
 
 		conf.archive_file = 'core.a';
 		var archiveCmd = common.replaceDict (this.platform.recipe.ar.pattern, conf);
 
-		cmdDesc = ['archiving', srcFile].join (" ");
+		cmdDesc = ['archive', this.platformId, localName + '.' + ext].join (" ");
 		this.enqueueCmd ('core', archiveCmd, null, cmdDesc);
 
 		if (Arduino.verbose)
@@ -457,7 +457,7 @@ ArduinoCompiler.prototype.processSketch = function () {
 
 		// this.enqueueCmd ('mkdir', this.ioMkdir (this.buildFolder));
 
-		var cmdDesc = [srcFile].join (" ");
+		var cmdDesc = ["compile", localName + '.' + ext].join (" ");
 		this.enqueueCmd ('project', compileCmd, null, cmdDesc);
 
 		this.objectFiles.push (conf.object_file);

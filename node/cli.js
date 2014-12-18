@@ -219,7 +219,8 @@ ArduinoCli.prototype.launchCommand = function (cmdName, options) {
 	var launchNext = (function (err) {
 		launchIdx ++;
 		var methodName = methodNames[launchIdx];
-		this[methodName](options, launchNext);
+		if (methodName)
+			this[methodName](options, launchNext);
 	}).bind(this);
 
 	launchNext();
