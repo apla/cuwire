@@ -69,6 +69,7 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 	common.pathToVar (conf, 'runtime.ide.path', Arduino.runtimeDir);
 	// TODO: get version from mac os x bundle or from windows revisions.txt
 	common.pathToVar (conf, 'runtime.ide.version', "158");
+	common.pathToVar (conf, 'software', "ARDUINO");
 	common.pathToVar (conf, 'build.path', this.buildFolder);
 
 	conf.compiler.path = common.replaceDict (conf.compiler.path, conf, null, "compiler.path");
