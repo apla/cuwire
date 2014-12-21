@@ -775,9 +775,9 @@ ArduinoCompiler.prototype.checkSize = function () {
 	var sizeRegexp = new RegExp (this.platform.recipe.size.regex.toString (), 'gm');
 	var sizeDataRegexp, sizeEepromRegexp;
 	if (this.platform.recipe.size.regex.data)
-		sizeDataRegexp = new RegExp (this.platform.recipe.size.regex.data.toString (), 'gm');
+		sizeDataRegexp = new RegExp (this.platform.recipe.size.regex.data, 'gm');
 	if (this.platform.recipe.size.regex.eeprom)
-		sizeEepromRegexp = new RegExp (this.platform.recipe.size.regex.eeprom.toString (), 'gm');
+		sizeEepromRegexp = new RegExp (this.platform.recipe.size.regex.eeprom, 'gm');
 	this.enqueueCmd ('size', sizeCmd, (function (error, stdout, stderr) {
 		// console.log ('[size]', stdout);
 		var size = 0, sizeData = 0, sizeEeprom = 0;
@@ -799,11 +799,16 @@ ArduinoCompiler.prototype.checkSize = function () {
 
 		this.compiledSize = {
 			text: size,
-			maxText: parseInt (conf.upload.maximum_size.toString ()),
+			maxText: parseInt (conf.upload.maximum_size),
 			data: sizeData,
-			maxData: parseInt (conf.upload.maximum_data_size.toString ()),
+			maxData: parseInt (conf.upload.maximum_data_size),
 			eeprom: sizeEeprom
 		};
+
+		// TODO:
+//		int warnDataPercentage = Integer.parseInt(prefs.get("build.warn_data_percentage"));
+//		if (maxDataSize > 0 && dataSize > maxDataSize*warnDataPercentage/100)
+//			System.err.println(_("Low memory available, stability problems may occur."));
 	}).bind(this), 'determine compiled size');
 
 }
