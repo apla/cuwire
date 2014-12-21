@@ -82,6 +82,11 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 		}
 	});
 
+	// bad, ugly arduino config
+	if (conf.build.variant && !conf.build.variant.path) {
+		common.pathToVar (conf, 'build.variant.path', "" + boardsData.folders.root + '/variants/' + conf.build.variant);
+	}
+
 //	common.pathToVar (conf, 'build.arch', platformId.split (':')[1]);
 	common.pathToVar (conf, 'build.arch', platformId.split (':')[1].toUpperCase ());
 
