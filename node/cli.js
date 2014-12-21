@@ -197,7 +197,7 @@ var ArduinoCli = function (args) {
 	}
 
 	// TODO: use --arduino option to pass arduino app path
-	this.arduino = new ArduinoData (["/Applications/devel/Arduino.app"]);
+	this.arduino = new ArduinoData ([options.arduino || "/Applications/devel/Arduino.app"]);
 
 	this.arduino.on ('done', (function () {
 
@@ -243,7 +243,7 @@ ArduinoCli.prototype.showPorts = function () {
 }
 
 ArduinoCli.prototype.showBoards = function () {
-	var platforms = arduino.boardData;
+	var platforms = this.arduino.boardData;
 
 	console.log (paint.nodeino(), 'boards available:');
 
@@ -282,7 +282,7 @@ ArduinoCli.prototype.showBoards = function () {
 
 ArduinoCli.prototype.compile = function (options, cb) {
 
-	var buildName = argv.template || "sensor";
+	var buildName = options.compile || "sensor";
 
 	var buildMeta = builds[buildName];
 
