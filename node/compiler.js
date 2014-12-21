@@ -119,6 +119,10 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 		nameMatch: /[^\/]+\.c(pp)?$/i
 	});
 
+	common.pathWalk (boardsData.folders.root + '/variants/' + board.build.variant, this.setCoreFiles.bind (this), {
+		nameMatch: /[^\/]+\.c(pp)?$/i
+	});
+
 	// for each library add [lib folder]/utility
 
 	//	var cppCompile = platform.recipe.cpp.o.pattern.replaceDict (conf);
