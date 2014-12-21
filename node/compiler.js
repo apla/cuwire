@@ -602,9 +602,20 @@ ArduinoCompiler.prototype.processIno = function (inoFile) {
 
 		var functionRe = /^[\s\n\r]*((unsigned|signed|static)[\s\n\r]+)?(void|int|char|short|long|float|double|word)[\s\n\r]+(\w+)[\s\n\r]*\(([^\)]*)\)[\s\n\r]*\{/gm;
 		while ((matchArray = functionRe.exec (inoContents)) !== null) {
+			var skip = false;
+			for (var i = 0; i < comments.length; i++) {
+				// console.log (comments[i][0] + ' < ' + matchArray.index + ' ' + comments[i][1] + ' > ' + matchArray.index);
+				if (comments[i][0] < matchArray.index && comments[i][1] > matchArray.index) {
+					skip = true;
+					break;
+				}
+			}
+			if (skip) {
+				continue;
+			}
 			// matchArray.index
-			funcs.push ([(matchArray[1] || "") + matchArray[3], matchArray[4], '('+matchArray[5]+')'].join (" "));
-			//			console.log (matchArray[1] || "", matchArray[3], matchArray[4], '(', matchArray[5], ');');
+			funcs.push ([matchArray[1] || "", matchArray[3], matchArray[4], '('+matchArray[5]+')'].join (" "));
+			//console.log (matchArray[1] || "", matchArray[3], matchArray[4], '(', matchArray[5], ');');
 		}
 
 		// write temp file:
