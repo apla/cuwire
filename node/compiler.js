@@ -551,16 +551,59 @@ ArduinoCompiler.prototype.processIno = function (inoFile) {
 //			console.log (path.relative (this.sketchFolder, inoFile), 'contains libs', libNames);
 		}
 
-		// var firstStatementRe = /(\s*(\/\*[^*]*\*\/|\/\/.*?$|#([^#])*)\n)*/gm;
+		var commentOrInstruction = /\s*(\/\*[\s\S]*?\*\/|\/\/[^\n\r]*|#[^#\n\r]*)/gm;
 
-		//		console.log (inoContents.split (firstStatementRe));
+		var funcs        = [];
+		var instructions = [];
+		var comments     = [];
+		var matchArray   = [];
 
-		var funcs  = [];
-		var matchArray = [];
+		var firstStatementOffset;
+		var lastMatchOffset;
+
+		var lastInstructionOffset = 0;
+		var ifInstruction         = 0;
+		var ifInstructionOffset   = 0;
+
+		while ((matchArray = commentOrInstruction.exec (inoContents)) !== null) {
+			//		console.log (matchArray.index, lastMatchOffset, matchArray[1]);
+			if (
+				lastMatchOffset !== undefined &&
+				lastMatchOffset !== matchArray.index &&
+				firstStatementOffset === undefined
+			) {
+				// first statement found. but this statement can be within #ifdef
+				if (ifInstruction > 0) {
+					firstStatementOffset = ifInstructionOffset;
+				} else {
+					firstStatementOffset = lastInstructionOffset;
+				}
+			}
+
+			lastMatchOffset = matchArray.index + matchArray[0].length;
+
+			if (matchArray[1][0] === '/') {
+				comments.push ([matchArray.index, matchArray.index + matchArray[0].length]);
+			} else {
+				if (matchArray[1].match (/#ifdef/)) {
+					ifInstruction ++;
+					if (ifInstruction === 1) {
+						ifInstructionOffset = matchArray.index;
+					}
+				} else if (matchArray[1].match (/#endif/)) {
+					ifInstruction --;
+				}
+				instructions.push ([matchArray.index, matchArray.index + matchArray[0].length]);
+				lastInstructionOffset = matchArray.index + matchArray[0].length;
+			}
+		}
+
+		// we found comments and instructions
 
 		var functionRe = /^[\s\n\r]*((unsigned|signed|static)[\s\n\r]+)?(void|int|char|short|long|float|double|word)[\s\n\r]+(\w+)[\s\n\r]*\(([^\)]*)\)[\s\n\r]*\{/gm;
 		while ((matchArray = functionRe.exec (inoContents)) !== null) {
-			funcs.push ([matchArray[1] || "", matchArray[3], matchArray[4], '('+matchArray[5]+')'].join (" "));
+			// matchArray.index
+			funcs.push ([(matchArray[1] || "") + matchArray[3], matchArray[4], '('+matchArray[5]+')'].join (" "));
 			//			console.log (matchArray[1] || "", matchArray[3], matchArray[4], '(', matchArray[5], ');');
 		}
 
@@ -572,7 +615,9 @@ ArduinoCompiler.prototype.processIno = function (inoFile) {
 		var projectFile = path.join (this.buildFolder, '_' + this.projectName + '_generated.cpp');
 		fs.writeFile (
 			projectFile,
-			"#include \"Arduino.h\"\n" + funcs.join (";\n") + ";\n" + inoContents,
+			[inoContents.substr (0, firstStatementOffset),
+			"\n#include \"Arduino.h\"\n" + funcs.join (";\n") + ";",
+			inoContents.substr (firstStatementOffset)].join ("\n"),
 			(function (err, done) {
 				if (err) {
 					this.emit ('error', 'project', ['file write failed', projectFile, err.code].join (' '));
