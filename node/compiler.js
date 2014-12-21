@@ -71,7 +71,7 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 	common.pathToVar (conf, 'runtime.ide.version', "158");
 	common.pathToVar (conf, 'build.path', this.buildFolder);
 
-	conf.compiler.path = common.replaceDict (conf.compiler.path, conf);
+	conf.compiler.path = common.replaceDict (conf.compiler.path, conf, null, "compiler.path");
 
 	"upload bootloader build".split (" ").forEach (function (stageName) {
 		for (var buildK in board[stageName]) {
@@ -377,11 +377,11 @@ ArduinoCompiler.prototype.setLibNames = function (libNames) {
 			conf.object_file = path.join (this.buildFolder, libName, localName + '.o');
 			conf.includes    = libIncludes;
 
-			var compileCmd   = common.replaceDict (this.platform.recipe[ext].o.pattern, conf);
+			var compileCmd   = common.replaceDict (this.platform.recipe[ext].o.pattern, conf, null, "platform.recipe."+ext+".o.pattern");
 
 			this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildFolder, libName)));
 
-			var cmdDesc = "compile " + path.join (libName, libSrcFile);
+			var cmdDesc = ["compile", libName, libSrcFile].join (" ");
 			this.enqueueCmd ('libs', compileCmd, null, cmdDesc);
 
 			this.objectFiles.push (conf.object_file);
@@ -411,7 +411,7 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 		// TODO: build dir
 		conf.object_file = path.join (this.buildFolder, 'core', localName + '.o');
 		conf.includes = [""].concat (this.coreIncludes).join (" -I");
-		var compileCmd = common.replaceDict (this.platform.recipe[ext].o.pattern, conf);
+		var compileCmd = common.replaceDict (this.platform.recipe[ext].o.pattern, conf, null, "platform.recipe."+ext+".o.pattern");
 
 		this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildFolder, 'core')));
 
@@ -419,7 +419,7 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 		this.enqueueCmd ('core', compileCmd, null, cmdDesc);
 
 		conf.archive_file = 'core.a';
-		var archiveCmd = common.replaceDict (this.platform.recipe.ar.pattern, conf);
+		var archiveCmd = common.replaceDict (this.platform.recipe.ar.pattern, conf, null, "platform.recipe.ar.pattern");
 
 		cmdDesc = ['archive', this.platformId, localName + '.' + ext].join (" ");
 		this.enqueueCmd ('core', archiveCmd, null, cmdDesc);
@@ -453,7 +453,7 @@ ArduinoCompiler.prototype.processSketch = function () {
 		if (!(ext in this.platform.recipe))
 			return;
 
-		var compileCmd = common.replaceDict (this.platform.recipe[ext].o.pattern, conf);
+		var compileCmd = common.replaceDict (this.platform.recipe[ext].o.pattern, conf, null, "platform.recipe."+ext+".o.pattern");
 
 		// this.enqueueCmd ('mkdir', this.ioMkdir (this.buildFolder));
 
@@ -689,7 +689,7 @@ ArduinoCompiler.prototype.linkAll = function () {
 	conf.object_files = '"' + this.objectFiles.join ("\" \"") + '"';
 	//		dict.put("ide_version", "" + Base.REVISION);
 
-	var linkCmd = common.replaceDict (this.platform.recipe.c.combine.pattern, conf);
+	var linkCmd = common.replaceDict (this.platform.recipe.c.combine.pattern, conf, null, "platform.recipe.c.combine.pattern");
 	this.enqueueCmd ('link', linkCmd, null, 'all together');
 
 	if (Arduino.verbose)
@@ -700,17 +700,17 @@ ArduinoCompiler.prototype.linkAll = function () {
 ArduinoCompiler.prototype.objCopy = function () {
 	var conf = this.getConfig ();
 
-	var eepCmd = common.replaceDict (this.platform.recipe.objcopy.eep.pattern, conf);
+	var eepCmd = common.replaceDict (this.platform.recipe.objcopy.eep.pattern, conf, null, "platform.recipe.objcopy.eep.pattern");
 	this.enqueueCmd ('obj-eep', eepCmd, null, 'objcopy eep');
 
-	var hexCmd = common.replaceDict (this.platform.recipe.objcopy.hex.pattern, conf);
+	var hexCmd = common.replaceDict (this.platform.recipe.objcopy.hex.pattern, conf, null, "platform.recipe.objcopy.hex.pattern");
 	this.enqueueCmd ('obj-hex', hexCmd, null, 'objcopy hex');
 }
 
 ArduinoCompiler.prototype.checkSize = function () {
 	var conf = this.getConfig ();
 
-	var sizeCmd = common.replaceDict (this.platform.recipe.size.pattern, conf);
+	var sizeCmd = common.replaceDict (this.platform.recipe.size.pattern, conf, null, "platform.recipe.size.pattern");
 	var sizeRegexp = new RegExp (this.platform.recipe.size.regex.toString (), 'gm');
 	var sizeDataRegexp, sizeEepromRegexp;
 	if (this.platform.recipe.size.regex.data)

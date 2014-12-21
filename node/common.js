@@ -31,7 +31,7 @@ function pathToVar (root, varPath, value) {
 	return root;
 }
 
-function replaceDict (str, conf, count) {
+function replaceDict (str, conf, count, meta) {
 	if (count !== undefined && count > 2) {
 		throw "command still needs interpolation after 3 replacements:" + str;
 	}
@@ -40,7 +40,7 @@ function replaceDict (str, conf, count) {
 		var varPath = match.substring (1, match.length - 1);
 		var result = pathToVar (conf, varPath);
 		if (result === undefined) {
-			throw "no interpolation found for "+varPath
+			throw "no interpolation found for '"+varPath + "' in '" + meta + "'"
 		} else if (result.constructor !== String && result.constructor !== Number) {
 			throw "bad type for interpolate \'"+varPath + '\': ' + util.inspect (result)
 		}
@@ -49,7 +49,7 @@ function replaceDict (str, conf, count) {
 	});
 
 	if (replacement.match (replacementRe)) {
-		replacement = replaceDict (replacement, conf, count === undefined ? 1 : count + 1)
+		replacement = replaceDict (replacement, conf, count === undefined ? 1 : count + 1, meta)
 	}
 
 	return replacement;
