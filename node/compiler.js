@@ -410,11 +410,11 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 		var localName = srcFile.substring (srcFile.lastIndexOf ('/') + 1, srcFile.lastIndexOf ('.'));
 		conf.source_file = srcFile;
 		// TODO: build dir
-		conf.object_file = path.join (this.buildFolder, 'core', localName + '.o');
+		conf.object_file = path.join (this.buildFolder, localName + '.' + ext + '.o');
 		conf.includes = [""].concat (this.coreIncludes).join (" -I");
 		var compileCmd = common.replaceDict (this.platform.recipe[ext].o.pattern, conf, null, "platform.recipe."+ext+".o.pattern");
 
-		this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildFolder, 'core')));
+		this.enqueueCmd ('mkdir', this.ioMkdir (this.buildFolder));
 
 		var cmdDesc = ['compile', this.platformId, localName + '.' + ext].join (" ");
 		this.enqueueCmd ('core', compileCmd, null, cmdDesc);
@@ -612,7 +612,7 @@ ArduinoCompiler.prototype.processIno = function (inoFile) {
 		// TODO: copy all of .h files from sketch and then generate main file in buildFolder
 		// instead of sketchFolder
 //		console.log (this.buildFolder, '_' + this.projectName + '_generated.cpp');
-		var projectFile = path.join (this.buildFolder, '_' + this.projectName + '_generated.cpp');
+		var projectFile = path.join (this.buildFolder, this.projectName + '.cpp');
 		fs.writeFile (
 			projectFile,
 			[inoContents.substr (0, firstStatementOffset),
