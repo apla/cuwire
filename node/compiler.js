@@ -19,7 +19,7 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 	var boardsData = Arduino.boardData[platformId];
 
 	var platform = boardsData.platform;
-	var board = JSON.parse (JSON.stringify (boardsData.boards[boardId]));
+	var board = common.extend (true, {}, boardsData.boards[boardId]);
 
 	var boardBuild = board.build;
 
@@ -65,7 +65,7 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 	// build stage
 	var currentStage = "build";
 
-	var conf = JSON.parse (JSON.stringify (platform));
+	var conf = common.extend (true, {}, platform);
 	common.pathToVar (conf, 'runtime.ide.path', Arduino.runtimeDir);
 	// TODO: get version from mac os x bundle or from windows revisions.txt
 	common.pathToVar (conf, 'runtime.ide.version', "158");
@@ -299,7 +299,7 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 
 ArduinoCompiler.prototype.getConfig = function () {
 	// speed doesn't matter here
-	return JSON.parse (JSON.stringify (this.config));
+	return common.extend (true, {}, this.config);
 }
 
 ArduinoCompiler.prototype.setLibNames = function (libNames) {
