@@ -798,9 +798,6 @@ ArduinoCompiler.prototype.checkSize = function () {
 			while ((matches = sizeEepromRegexp.exec (stdout)) !== null) {
 				sizeEeprom += parseInt (matches[1]);
 			}
-		// console.log (sizeRegexp.exec (stdout));
-		this.emit ('log', 'size', ['text', size, 'data', sizeData, 'eeprom', sizeEeprom].join (' '));
-//		console.log ('[size]', 'text', size, 'data', sizeData, 'eeprom', sizeEeprom);
 
 		this.compiledSize = {
 			text: size,
@@ -809,6 +806,15 @@ ArduinoCompiler.prototype.checkSize = function () {
 			maxData: parseInt (conf.upload.maximum_data_size),
 			eeprom: sizeEeprom
 		};
+
+		// console.log (sizeRegexp.exec (stdout));
+		this.emit ('log', 'size', [
+			'text', size + (this.compiledSize.maxText ? '/'+this.compiledSize.maxText : ""),
+			'data', sizeData + (this.compiledSize.maxData ? '/'+this.compiledSize.maxData : ""),
+			'eeprom', sizeEeprom
+		].join (' '));
+		//		console.log ('[size]', 'text', size, 'data', sizeData, 'eeprom', sizeEeprom);
+
 
 		// TODO:
 //		int warnDataPercentage = Integer.parseInt(prefs.get("build.warn_data_percentage"));
