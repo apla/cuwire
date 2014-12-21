@@ -41,7 +41,16 @@ var builds = {
 			cpu: "atmega2560"
 		},
 		includes: []
+	},
+	rfduinoled: {
+		sketch: "/Users/apla/work/mcu/rfduino/LedButton",
+		platformId: "RFDuino:RFDuino",
+		boardId: "RFduino",
+		variant: {
+		},
+		includes: []
 	}
+
 };
 
 var yargs = require ("yargs");
@@ -67,19 +76,18 @@ var cliConfig = {
 		description: "verbose output",
 		default: false
 	},
+	arduino: {
+		description: "arduino app location",
+		env: "ARDUINO_APP"
+	},
 	dryRun: {
 		alias: ["n", "dry-run"],
 		boolean: true,
 		description: "just show commands, don't do anything",
 		default: false
 	},
-	configFile: {
-		alias: ["config"],
-		description: "core config file to process",
-		env: "CONF_FU"
-	},
 	upload: {
-		description: "compile, then upload hex file to device",
+		description: "compile, then upload hex file using provided port",
 		run: ["compile", "upload"],
 		arduino: true
 	},
@@ -93,25 +101,30 @@ var cliConfig = {
 		run: "showPorts"
 	},
 	compile: {
-		description: "compile sketch",
+		description: "compile sketch in provided dir",
 		run: "compile",
+		arduino: true
+	},
+	compile3: {
+		description: "compile 3 times for testing purposes",
+		run: ["compile", "compile", "compile"],
 		arduino: true
 	},
 	_: {
 		anyway: true, // launch anyway, even if error is present
 		run: "compile",
 	},
-	edit: {
-		anyway: true, // launch anyway, even if validation fails
-		description: "run default editor for config, `core` or `fixup`",
-		run: function (options) {
-			if (options.edit === "fixup") {
-				runEditor (this.fixupFile.path);
-			} else if (options.edit === "core") {
-				runEditor (this.configFile.path);
-			}
-		}
-	},
+//	edit: {
+//		anyway: true, // launch anyway, even if validation fails
+//		description: "run default editor for config, `core` or `fixup`",
+//		run: function (options) {
+//			if (options.edit === "fixup") {
+//				runEditor (this.fixupFile.path);
+//			} else if (options.edit === "core") {
+//				runEditor (this.configFile.path);
+//			}
+//		}
+//	},
 	help: {
 		alias: "h",
 		anyway: true, // anyway here has no effect
@@ -295,7 +308,7 @@ ArduinoCli.prototype.compile = function (options, cb) {
 		buildMeta.variant,
 		{
 			// build folder
-			buildFolder: "/Users/apla/Library/Application Support/Brackets/extensions/user/brackets-arduino/build",
+			buildFolder: "/Users/apla/work/mcu/brackets-arduino/build",
 			includes: buildMeta.includes
 		}
 	);
@@ -324,7 +337,7 @@ ArduinoCli.prototype.compile = function (options, cb) {
 				buildMeta.variant,
 				{
 					// build folder
-					buildFolder: "/Users/apla/Library/Application Support/Brackets/extensions/user/brackets-arduino/build"
+					buildFolder: "/Users/apla/work/mcu/brackets-arduino/build"
 				}
 			);
 		});
