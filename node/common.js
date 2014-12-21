@@ -11,20 +11,27 @@ function pathToVar (root, varPath, value) {
 	for (var i = 0; i < refs.length; i ++) {
 		var sec = refs[i];
 		if (value !== undefined) {
-			if (!root[sec]) {
+			if (root[sec] === undefined) {
 				root[sec] = {};
 			}
+			if (i < refs.length - 1 && root[sec] && root[sec].constructor === String) {
+				root[sec] = new String (root[sec]);
+			}
 			if (i === refs.length - 1) {
-				root[sec] = new String (value);
-
+				root[sec] = value;
 			}
 		}
+
+//		if (varPath === 'build.variant.path')
+//			console.log (root[sec], sec, i, refs.length - 1, value);
+
 		if (root === undefined) {
 			throw "no value for "+ varPath;
 		}
 
 		if (root.constructor === String) {
-			console.log ("bad config for:", varPath, root[sec].toString ());
+			// TODO: use key-value for that task
+			console.log ("bad config for:", varPath, root[sec] ? root[sec].toString () : root);
 		}
 		root = root[sec];
 	}
