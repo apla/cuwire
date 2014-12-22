@@ -505,21 +505,8 @@ ArduinoCompiler.prototype.setProjectFiles = function (err, files, dontCompile) {
 	Object.keys (files).forEach ((function (fileName) {
 		var fileObject = files[fileName];
 		var extname = path.extname (fileName).substring (1);
-		if (
-			extname === 'cpp'
-			&& (this.projectName + '.' + extname) === fileName
-		) {
-			var inoFile = files[this.projectName + '.ino'] || files[this.projectName + '.pde'];
-			if (
-				inoFile.stat.isSymbolicLink()
-				&& inoFile.linkedTo === fileName
-			) {
-				// nothing to do, horrible project configuration
-			}
-			return;
-		}
 		if (extname.match (/^(c|cpp|h|ino|pde)$/)) {
-			this.filePreProcessor (fileName);
+			this.filePreProcessor (fileName, files[fileName]);
 		}
 
 	}).bind(this));
@@ -532,17 +519,28 @@ ArduinoCompiler.prototype.setProjectFiles = function (err, files, dontCompile) {
 //	}
 }
 
-ArduinoCompiler.prototype.filePreProcessor = function (fileName) {
+ArduinoCompiler.prototype.filePreProcessor = function (fileName, fileMeta) {
 	var extname = path.extname (fileName).substring (1);
 	if (extname === 'ino' || extname === 'pde') {
-		this.processIno (fileName);
+		this.processIno (fileName, fileMeta);
 	} else if (extname.match (/c(?:pp)?|h/)) {
-		this.processCpp (fileName);
+		this.processCpp (fileName, fileMeta);
 	}
 }
 
-ArduinoCompiler.prototype.processIno = function (inoFile) {
+ArduinoCompiler.prototype.processIno = function (inoFile, fileMeta) {
 	// read ino
+
+	var sketchFileName = path.basename (inoFile, path.extname (inoFile));
+
+	if (fileMeta.stat.isSymbolicLink()) {
+		var ext = path.extname (inoFile).substring (1);
+		if (fileMeta.linkedTo === sketchFileName + '.cpp') {
+			this.setSketchFile (sketchFileName);
+			return;
+		}
+	}
+
 	fs.readFile (inoFile, (function (err, data) {
 		if (err) {
 			this.emit ('error', 'project', ['file read failed', inoFile, err.code].join (' '));
@@ -609,7 +607,7 @@ ArduinoCompiler.prototype.processIno = function (inoFile) {
 
 		// we found comments and instructions
 
-		var functionRe = /^[\s\n\r]*((unsigned|signed|static)[\s\n\r]+)?(void|int|char|short|long|float|double|word)[\s\n\r]+(\w+)[\s\n\r]*\(([^\)]*)\)[\s\n\r]*\{/gm;
+		var functionRe = /^[\s\n\r]*((unsigned|signed|static)[\s\n\r]+)?(void|int|char|short|long|float|double|word|bool)[\s\n\r]+(\w+)[\s\n\r]*\(([^\)]*)\)[\s\n\r]*\{/gm;
 		while ((matchArray = functionRe.exec (inoContents)) !== null) {
 			var skip = false;
 			for (var i = 0; i < comments.length; i++) {
@@ -649,15 +647,13 @@ ArduinoCompiler.prototype.processIno = function (inoFile) {
 				this.setSketchFile (projectFile);
 		}).bind (this));
 
-
-
 		// function declarations
 		// actual ino file contents
 	}).bind (this));
 
 }
 
-ArduinoCompiler.prototype.processCpp = function (cppFile) { // also for a c, h files
+ArduinoCompiler.prototype.processCpp = function (cppFile, fileMeta) { // also for a c, h files
 	// read file
 
 	fs.readFile (cppFile, (function (err, data) {
