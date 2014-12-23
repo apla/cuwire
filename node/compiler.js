@@ -41,54 +41,14 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 
 	this.coreIncludes = this.coreIncludes.concat (options.includes);
 
-//	console.log (this.coreIncludes);
+	var currentStage = 'build';
 
-	"upload bootloader build".split (" ").forEach (function (stageName) {
-		for (var variantKey in boardVariant) {
-			if (!board.menu[variantKey]) {
-				// TODO: probably it is a program error, no need to say something to user
-				console.log ('brackets-arduino error:', boardId, 'doesn\'t have a', variantKey, 'variants');
-				console.log ('ignored for now, can continue');
-				continue;
-			}
-			var fixup = board.menu[variantKey][boardVariant[variantKey]];
-			if (!fixup[stageName])
-				return;
-			for (var stageKey in fixup[stageName]) {
-				board[stageName][stageKey] = fixup[stageName][stageKey];
-			}
-		}
-	});
+	var conf = common.createDict (Arduino, platformId, boardId, boardVariant, options, currentStage);
 
-	delete (board.menu);
-
-	// build stage
-	var currentStage = "build";
-
-	var conf = common.extend (true, {}, platform);
-	common.pathToVar (conf, 'runtime.ide.path', Arduino.runtimeDir);
-	// TODO: get version from mac os x bundle or from windows revisions.txt
-	common.pathToVar (conf, 'runtime.ide.version', "158");
-	common.pathToVar (conf, 'software', "ARDUINO");
 	common.pathToVar (conf, 'build.path', this.buildFolder);
 
-	conf.compiler.path = common.replaceDict (conf.compiler.path, conf, null, "compiler.path");
+//	console.log (this.coreIncludes);
 
-	"upload bootloader build".split (" ").forEach (function (stageName) {
-		for (var buildK in board[stageName]) {
-			if (!conf[stageName])
-				conf[stageName] = {};
-			conf[stageName][buildK] = board[stageName][buildK];
-		}
-	});
-
-	// bad, ugly arduino config
-	if (conf.build.variant && !conf.build.variant.path) {
-		common.pathToVar (conf, 'build.variant.path', "" + boardsData.folders.root + '/variants/' + conf.build.variant);
-	}
-
-//	common.pathToVar (conf, 'build.arch', platformId.split (':')[1]);
-	common.pathToVar (conf, 'build.arch', platformId.split (':')[1].toUpperCase ());
 
 	//	console.log ('BUILD', conf.build, platform.recipe.cpp.o.pattern);
 
@@ -99,6 +59,7 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 
 	this.config = conf;
 
+	// TODO: use dataflows
 	this.on ('queue-completed', this.runNext.bind (this));
 	// TODO: emit something to arduino
 	this.on ('queue-progress', function (scope, pos, length) {

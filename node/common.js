@@ -6,19 +6,32 @@ var path = require ('path');
 var util = require ('util');
 
 function pathToVar (root, varPath, value) {
-	var refs = varPath.split('.');
+	var refs;
+	if (varPath.constructor === Array) {
+		refs = varPath;
+		varPath = refs.join ('.');
+	} else {
+		refs = varPath.split('.');
+	}
 
 	for (var i = 0; i < refs.length; i ++) {
 		var sec = refs[i];
 		if (value !== undefined) {
+			var emptyO = {};
 			if (root[sec] === undefined) {
-				root[sec] = {};
+				root[sec] = emptyO;
 			}
-			if (i < refs.length - 1 && root[sec] && root[sec].constructor === String) {
+			if (i < refs.length - 1 && root[sec].constructor === String) {
 				root[sec] = new String (root[sec]);
 			}
 			if (i === refs.length - 1) {
-				root[sec] = value;
+				var backup = root[sec];
+				if (backup === emptyO) {
+					root[sec] = value;
+				} else if (value.constructor === String) {
+					root[sec] = new String (value);
+					extend (true, root[sec], backup);
+				}
 			}
 		}
 
@@ -108,6 +121,84 @@ function pathWalk (dir, done, options) {
 		});
 	});
 };
+
+function createDict (arduino, platformId, boardId, boardVariant, options, currentStage) {
+
+	var boardsData = arduino.boardData[platformId];
+
+	var platform = boardsData.platform;
+	var board = extend (true, {}, boardsData.boards[boardId]);
+
+	var boardBuild = board.build;
+
+	"upload bootloader build".split (" ").forEach (function (stageName) {
+		for (var variantKey in boardVariant) {
+			if (!board.menu[variantKey]) {
+				// TODO: probably it is a program error, no need to say something to user
+				console.log ('brackets-arduino error:', boardId, 'doesn\'t have a', variantKey, 'variants');
+				console.log ('ignored for now, can continue');
+				continue;
+			}
+			var fixup = board.menu[variantKey][boardVariant[variantKey]];
+			if (!fixup[stageName])
+				return;
+			for (var stageKey in fixup[stageName]) {
+				board[stageName][stageKey] = fixup[stageName][stageKey];
+			}
+		}
+	});
+
+	delete (board.menu);
+
+	var conf;
+	if (currentStage === 'upload') {
+		var toolName = board.upload.tool;
+		conf = extend (true, {}, platform.tools[toolName]); // arduino/avr.platform.tools.<toolName>
+		// TODO: remove
+		pathToVar (conf, 'runtime.platform.path', boardsData.folders.root);
+		pathToVar (conf, 'runtime.hardware.path', path.dirname (boardsData.folders.root));
+
+	} else if (currentStage === 'build') {
+		conf = extend (true, {}, platform);
+	}
+
+	pathToVar (conf, 'runtime.ide.path', arduino.runtimeDir);
+	// TODO: get version from mac os x bundle or from windows revisions.txt
+	pathToVar (conf, 'runtime.ide.version', "158");
+	pathToVar (conf, 'software', "ARDUINO");
+
+
+	//	Preferences.set("runtime.platform.path", platformFolder.getAbsolutePath());
+	//	Preferences.set("runtime.hardware.path", platformFolder.getParentFile().getAbsolutePath());
+
+	if (conf.compiler) {
+		// TODO: move to if (currentStage === 'build')
+		conf.compiler.path = replaceDict (conf.compiler.path, conf, null, "compiler.path");
+	}
+
+
+	"upload bootloader build".split (" ").forEach (function (stageName) {
+		for (var buildK in board[stageName]) {
+//			var debugFlag = false;
+//			if (conf[stageName] && conf[stageName][buildK]){
+//				console.log ("key '"+stageName+"."+buildK+"' will be overwritten:", conf[stageName][buildK], " => ", board[stageName][buildK]);
+//				debugFlag = true;
+//			}
+			pathToVar (conf, [stageName, buildK], board[stageName][buildK]);
+//			if (debugFlag){
+//				console.log (conf[stageName][buildK], conf[stageName][buildK].path);
+//			}
+		}
+	});
+
+	// bad, ugly arduino config
+	pathToVar (conf, 'build.variant.path', "" + boardsData.folders.root + '/variants/' + conf.build.variant);
+
+	//	common.pathToVar (conf, 'build.arch', platformId.split (':')[1]);
+	pathToVar (conf, 'build.arch', platformId.split (':')[1].toUpperCase ());
+
+	return conf;
+}
 
 /*
 	jQuery.extend extracted from the jQuery source & optimised for NodeJS
@@ -233,6 +324,7 @@ function extend () {
 module.exports = {
 	pathToVar: pathToVar,
 	replaceDict: replaceDict,
+	createDict: createDict,
 	pathWalk: pathWalk,
 	extend: extend
 };

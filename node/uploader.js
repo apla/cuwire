@@ -31,48 +31,12 @@ function ArduinoUploader (compiler, platformId, boardId, boardVariant, options) 
 
 	this.platform = platform; // arduino:avr.platform
 
-	var stageName = "upload";
+	var currentStage = "upload";
 
-	"upload bootloader build".split (" ").forEach (function (stageName) {
-		for (var variantKey in boardVariant) {
-			if (!board.menu[variantKey]) {
-				// TODO: probably it is a program error, no need to say something to user
-				console.log ('brackets-arduino error:', boardId, 'doesn\'t have a', variantKey, 'variants');
-				console.log ('ignored for now, can continue');
-				continue;
-			}
-			var fixup = board.menu[variantKey][boardVariant[variantKey]];
-			if (!fixup[stageName])
-				return;
-			for (var stageKey in fixup[stageName]) {
-				board[stageName][stageKey] = fixup[stageName][stageKey];
-			}
-		}
-	});
+	var tool = common.createDict (Arduino, platformId, boardId, boardVariant, options, currentStage);
 
-	delete (board.menu);
-
-	// let's find upload tool
-
-	var toolName = board.upload.tool;
-	var tool = JSON.parse (JSON.stringify (platform.tools[toolName])); // arduino/avr.platform.tools.<toolName>
-
-
-	common.pathToVar (tool, 'runtime.ide.path', Arduino.runtimeDir);
-	// TODO: get version from mac os x bundle or from windows revisions.txt
-	common.pathToVar (tool, 'runtime.ide.version', "158");
-
-	// conf.compiler.path = common.replaceDict (tool.compiler.path, conf);
-
-	"upload bootloader build".split (" ").forEach (function (stageName) {
-		for (var buildK in board[stageName]) {
-			if (!tool[stageName])
-				tool[stageName] = {};
-			tool[stageName][buildK] = board[stageName][buildK];
-		}
-	});
-
-	// arduino/avr.boards.uno.build
+	common.pathToVar (tool, 'build.path', compiler.buildFolder);
+	common.pathToVar (tool, 'build.project_name', compiler.projectName);
 
 	//	common.pathToVar (conf, 'build.arch', platformId.split (':')[1]);
 	common.pathToVar (tool, 'build.arch', platformId.split (':')[1].toUpperCase ());
@@ -92,9 +56,6 @@ function ArduinoUploader (compiler, platformId, boardId, boardVariant, options) 
 	}
 
 	common.pathToVar (tool, 'serial.port', options.serial.port);
-
-	tool.build.project_name = compiler.projectName;
-	tool.build.path         = compiler.buildFolder;
 
 	this.prepareCmd (tool);
 
