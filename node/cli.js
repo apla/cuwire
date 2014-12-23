@@ -76,6 +76,15 @@ var cliConfig = {
 		description: "verbose output",
 		default: false
 	},
+	sketch: {
+		description: "sketch folder, config file or template name (testing only)"
+	},
+	platform: {
+		description: "platform identifier"
+	},
+	board: {
+		description: "board identifier"
+	},
 	arduino: {
 		description: "arduino app location",
 		env: "ARDUINO_APP"
@@ -294,7 +303,7 @@ ArduinoCli.prototype.showBoards = function () {
 
 ArduinoCli.prototype.compile = function (options, cb) {
 
-	var buildName = options.compile || "sensor";
+	var buildName = options.sketch || "sensor";
 
 	var buildMeta = builds[buildName];
 
@@ -307,10 +316,12 @@ ArduinoCli.prototype.compile = function (options, cb) {
 		buildMeta.variant,
 		{
 			// build folder
-			buildFolder: "/Users/apla/work/mcu/brackets-arduino/build",
+//			buildFolder: "/Users/apla/work/mcu/brackets-arduino/build",
 			includes: buildMeta.includes
 		}
 	);
+
+	compiler.verbose = options.verbose;
 
 	compiler.on ('log', function (scope, message) {
 		console.log (paint.yellow (scope) + "\t", message.match (/^done/) ? paint.green (message) : message);
@@ -336,7 +347,7 @@ ArduinoCli.prototype.compile = function (options, cb) {
 				buildMeta.variant,
 				{
 					// build folder
-					buildFolder: "/Users/apla/work/mcu/brackets-arduino/build"
+//					buildFolder: "/Users/apla/work/mcu/brackets-arduino/build"
 				}
 			);
 		});
@@ -348,7 +359,7 @@ ArduinoCli.prototype.upload = function (options) {
 //		upload (argv, buildMeta, compiler);
 //	});
 
-	var buildName = argv.template || "sensor";
+	var buildName = argv.sketch || "sensor";
 
 	var buildMeta = builds[buildName];
 
