@@ -9,7 +9,7 @@ var paint = require ('./color');
 
 paint.error   = paint.bind (paint, "red+white_bg");
 paint.path    = paint.cyan.bind (paint);
-paint.nodeino = paint.green.bind (paint, "nodeino");
+paint.cuwire = paint.green.bind (paint, "cuwire");
 
 var builds = {
 	sensor: {
@@ -128,10 +128,9 @@ var cliConfig = {
 	help: {
 		alias: "h",
 		anyway: true, // anyway here has no effect
-		banner: paint.nodeino () + " usage:"
+		banner: paint.cuwire () + " usage:"
 	}
 };
-
 
 
 function initOptions () {
@@ -179,7 +178,7 @@ function findCommand (options) {
 		if (!(k in cliConfig))
 			continue;
 		if (haveCommand && k !== '_' && cliConfig[k].run) {
-			console.error (paint.nodeino (), 'you cannot launch two commands at once:', [
+			console.error (paint.cuwire (), 'you cannot launch two commands at once:', [
 				paint.path (k), paint.path (haveCommand)
 			].join (' and '));
 			return;
@@ -245,7 +244,7 @@ ArduinoCli.prototype.showPorts = function () {
 
 	var err, result = [];
 	sp.list (function (err, ports) {
-		console.log (paint.nodeino(), 'serial ports available:');
+		console.log (paint.cuwire(), 'serial ports available:');
 		ports.forEach (function (port) {
 			console.log (paint.path (port.comName));
 			//console.log(port.comName);
@@ -258,7 +257,7 @@ ArduinoCli.prototype.showPorts = function () {
 ArduinoCli.prototype.showBoards = function () {
 	var platforms = this.arduino.boardData;
 
-	console.log (paint.nodeino(), 'boards available:');
+	console.log (paint.cuwire(), 'boards available:');
 
 	Object.keys (platforms).sort().forEach (function (platformName) {
 		var platformVer = platforms[platformName].platform.version;
@@ -299,7 +298,7 @@ ArduinoCli.prototype.compile = function (options, cb) {
 
 	var buildMeta = builds[buildName];
 
-	console.log (paint.nodeino(), 'compilation of', paint.path (buildMeta.sketch));
+	console.log (paint.cuwire(), 'compilation of', paint.path (buildMeta.sketch));
 
 	var compiler = this.compiler = new ArduinoCompiler (
 		buildMeta.sketch,
@@ -353,7 +352,7 @@ ArduinoCli.prototype.upload = function (options) {
 
 	var buildMeta = builds[buildName];
 
-	console.log (paint.nodeino(), 'upload ', paint.path (buildMeta.sketch));
+	console.log (paint.cuwire(), 'upload ', paint.path (buildMeta.sketch));
 
 	var uploader = new ArduinoUploader (
 		this.compiler,
