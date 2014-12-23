@@ -34,6 +34,7 @@ var Arduino = function (userDirs) {
 	this.init (userDirs);
 
 	this.boardData = {};
+	this.boardDataKV = {};
 	this.libraryData = {};
 
 	this.on ('done', this.storeBoardsData.bind (this));
@@ -145,6 +146,7 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 	}
 
 	var boards = {};
+	var keyValue = {};
 
 	data.toString().split('\n').forEach(function(line){
 		if(line.indexOf("#") == 0) return;
@@ -155,6 +157,7 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 		if (ref.match (/^menu/)) return;
 		var value = line.substring (line.indexOf ('=')+1);
 		var refs = ref.split('.');
+		keyValue[ref] = value;
 
 		if (refs[refs.length-1] === javaPlatformName) {
 			refs.pop ();
@@ -170,7 +173,7 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 		common.pathToVar (root, ref, value);
 	});
 //	console.log (Object.keys (boards));
-	cb (null, section, boards);
+	cb (null, section, boards, keyValue);
 }
 
 Arduino.prototype.enumerateLibraries = function (fullPath, done, err, data) {
@@ -295,6 +298,12 @@ Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
 					},
 					libraryData: {}
 				};
+			self.boardDataKV[platformId] = {
+				"folders.root": path.join (fullPath, vendor, arch),
+				"folders.arch": arch,
+				"folders.vendor": vendor,
+				libraryData: {}
+			};
 
 			if (localFile === 'libraries') {
 				// TODO: little hackish
@@ -302,14 +311,15 @@ Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
 				return;
 			}
 			var type = localFile.replace ('.txt', '');
-			var readCb = function (err, type, fileData) {
+			var readCb = function (err, type, fileData, keyValue) {
 				remains --;
 				if (err) {
 					console.log ('read error for', fileName);
 					return;
 				}
 
-				self.boardData[platformId][type] = fileData;
+				self.boardData[platformId][type]   = fileData;
+				self.boardDataKV[platformId][type] = keyValue;
 
 				if (type === 'platform') {
 					common.pathToVar (
@@ -326,6 +336,16 @@ Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
 						self.boardData[platformId][type],
 						"build.variant.path",
 						path.join (fullPath, vendor, arch, 'variants')
+					);
+					common.pathToVar (
+						self.boardData[platformId][type],
+						"runtime.platform.path",
+						path.join (fullPath, vendor, arch)
+					);
+					common.pathToVar (
+						self.boardData[platformId][type],
+						"runtime.hardware.path",
+						path.join (fullPath, vendor)
 					);
 				}
 
