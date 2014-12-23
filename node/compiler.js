@@ -366,7 +366,7 @@ ArduinoCompiler.prototype.setLibNames = function (libNames) {
 
 			this.objectFiles.push (conf.object_file);
 
-			if (Arduino.verbose)
+			if (this.verbose)
 				console.log (compileCmd);
 
 		}
@@ -404,7 +404,7 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 		cmdDesc = ['archive', this.platformId, localName + '.' + ext].join (" ");
 		this.enqueueCmd ('core', archiveCmd, null, cmdDesc);
 
-		if (Arduino.verbose)
+		if (this.verbose)
 			console.log (compileCmd);
 	}).bind (this));
 
@@ -442,7 +442,7 @@ ArduinoCompiler.prototype.processSketch = function () {
 
 		this.objectFiles.push (conf.object_file);
 
-		if (Arduino.verbose)
+		if (this.verbose)
 			console.log (compileCmd);
 
 	}).bind (this));
@@ -724,7 +724,7 @@ ArduinoCompiler.prototype.linkAll = function () {
 	var linkCmd = common.replaceDict (this.platform.recipe.c.combine.pattern, conf, null, "platform.recipe.c.combine.pattern");
 	this.enqueueCmd ('link', linkCmd, null, 'all together');
 
-	if (Arduino.verbose)
+	if (this.verbose)
 		console.log (linkCmd);
 
 }
