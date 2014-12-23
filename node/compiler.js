@@ -28,7 +28,7 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 	this.platformId = platformId;
 
 	// TODO: replace by temporary folder
-	this.buildFolder = options.buildFolder || '';
+	this.buildFolder = options.buildFolder || common.buildFolder (sketchFolder);
 
 	this.platform = platform;
 
@@ -77,17 +77,26 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 
 	this.sketchFolder = sketchFolder;
 
-	common.pathWalk (sketchFolder, this.setProjectFiles.bind (this), {
-		nameMatch: /[^\/]+\.(c(?:pp)|h|ino|pde)?$/i
-	});
 
-	common.pathWalk (boardsData.folders.root + '/cores/' + board.build.core, this.setCoreFiles.bind (this), {
-		nameMatch: /[^\/]+\.c(pp)?$/i
-	});
+	fs.mkdir (this.buildFolder, (function (err) {
+		if (err && err.code !== "EEXIST") {
+			this.emit ('error', 'cannot create build folder '+this.buildFolder+': '+err.code+', '+err);
+			return;
+		}
 
-	common.pathWalk (boardsData.folders.root + '/variants/' + board.build.variant, this.setCoreFiles.bind (this), {
-		nameMatch: /[^\/]+\.c(pp)?$/i
-	});
+		common.pathWalk (sketchFolder, this.setProjectFiles.bind (this), {
+			nameMatch: /[^\/]+\.(c(?:pp)|h|ino|pde)?$/i
+		});
+
+		common.pathWalk (boardsData.folders.root + '/cores/' + board.build.core, this.setCoreFiles.bind (this), {
+			nameMatch: /[^\/]+\.c(pp)?$/i
+		});
+
+		common.pathWalk (boardsData.folders.root + '/variants/' + board.build.variant, this.setCoreFiles.bind (this), {
+			nameMatch: /[^\/]+\.c(pp)?$/i
+		});
+
+	}).bind (this));
 
 	// for each library add [lib folder]/utility
 

@@ -1,9 +1,10 @@
 "use strict";
 
-var os   = require("os");
-var fs   = require('fs');
-var path = require ('path');
-var util = require ('util');
+var os     = require("os");
+var fs     = require('fs');
+var path   = require ('path');
+var util   = require ('util');
+var crypto = require('crypto');
 
 function pathToVar (root, varPath, value) {
 	var refs;
@@ -321,10 +322,22 @@ function extend () {
 	return target;
 };
 
+function buildFolder (sketchFolder, cb) {
+	var sketchName = path.basename (sketchFolder);
+
+	var hash = crypto.createHash('md5').update(sketchFolder).digest('hex');
+//	console.log(hash); // 9b74c9897bac770ffc029102a200c5de
+
+	var buildFolder = path.join (os.tmpdir(), sketchName + '-cuwire-' + hash.substr (0, 8));
+
+	return buildFolder;
+}
+
 module.exports = {
 	pathToVar: pathToVar,
 	replaceDict: replaceDict,
 	createDict: createDict,
 	pathWalk: pathWalk,
+	buildFolder: buildFolder,
 	extend: extend
 };

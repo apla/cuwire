@@ -323,6 +323,8 @@ ArduinoCli.prototype.compile = function (options, cb) {
 
 	compiler.verbose = options.verbose;
 
+	console.log ('build folder:', paint.path (compiler.buildFolder));
+
 	compiler.on ('log', function (scope, message) {
 		console.log (paint.yellow (scope) + "\t", message.match (/^done/) ? paint.green (message) : message);
 	});
