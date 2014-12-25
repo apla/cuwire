@@ -1,5 +1,4 @@
-/*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4,
-maxerr: 50, node: true */
+/*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, node: true */
 /*global */
 
 (function () {
@@ -11,7 +10,9 @@ maxerr: 50, node: true */
 
 	var _domainManager;
 
-	var Arduino = require ('./arduino');
+	var ArduinoData = require ('./data');
+	var ArduinoCompiler = require ('./compiler');
+//	var Arduinouploader = require ('./uploader');
 
 	var theArduino;
 
@@ -20,7 +21,7 @@ maxerr: 50, node: true */
 		var cb = arguments[arguments.length-1];
 
 		if (!theArduino) {
-			theArduino = new Arduino (locations);
+			theArduino = new ArduinoData (locations);
 
 			theArduino.on ('done', function () {
 				cb (null, theArduino.boardData);
@@ -35,7 +36,9 @@ maxerr: 50, node: true */
 			path.join (__dirname, "../arduino.json"),
 			JSON.stringify (boards, null, '\t'),
 			function (err) {
-				if (err) cb (err);
+				if (err) {
+					cb (err);
+				}
 				cb (null, boards);
 			});
 	}
@@ -57,7 +60,7 @@ maxerr: 50, node: true */
 			return;
 		}
 
-		theArduino.compile (
+		var compiler = new ArduinoCompiler (
 			// "sketch" folder
 			"/Users/apla/work/com.domtale/arduino/Sensor",
 			// platform name
@@ -71,22 +74,28 @@ maxerr: 50, node: true */
 			// options (e.g. custom build folder)
 			{
 				// build folder
-				buildFolder: "/Users/apla/Library/Application Support/Brackets/extensions/user/brackets-arduino/build"
+				// buildFolder: "/Users/apla/tmp/cuwire-build"
 			}
 		);
 
-		if (compileFirstRun) {
-			theArduino.on ('compiled', function (size) {
-				console.log ('arduino domain: compiled', arguments);
-				cb (null, size);
-			});
+		console.log ('after compiler init');
 
-			theArduino.on ('log', function (message) {
-				console.log (message);
-				_domainManager.emitEvent ('arduino', 'log', message);
-			});
-			compileFirstRun = false;
-		}
+		compiler.on ('done', function (size) {
+			console.log ('arduino domain: compiled', arguments);
+			cb (null, size);
+		});
+
+		compiler.on ('log', function (scope, message, payload) {
+			console.log (scope, message, payload);
+			_domainManager.emitEvent ('arduino', 'log', [scope, message, payload]);
+		});
+
+		compiler.on ('error', function (err) {
+			console.log ('error', err);
+			_domainManager.emitEvent ('arduino', 'log', [err.scope, err.toString(), err]);
+			cb (err);
+		});
+
 	}
 
 
@@ -197,9 +206,17 @@ maxerr: 50, node: true */
 			"arduino",     // domain name
 			"log",         // event name
 			[{
-				name: "string",
+				name: "scope",
+				type: "string",
+				description: "message scope"
+			}, {
+				name: "message",
 				type: "string",
 				description: "log string"
+			}, {
+				name: "payload",
+				type: "object",
+				description: "log message payload"
 			}]
 		);
 	}

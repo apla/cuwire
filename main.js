@@ -12,6 +12,7 @@ define(function (require, exports, module) {
 		PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
 		Dialogs            = brackets.getModule("widgets/Dialogs"),
 	    DocumentManager    = brackets.getModule("document/DocumentManager"),
+		ProjectManager     = brackets.getModule("project/ProjectManager"),
 		WorkspaceManager   = brackets.getModule('view/WorkspaceManager');
 
 
@@ -362,9 +363,17 @@ define(function (require, exports, module) {
 		var uploadButton = $('#arduino-panel button.arduino-upload');
 		uploadButton.on ('click', this.upload.bind (this, null, null));
 
-		$(this.domain).on ('log', function (event, message) {
+		$(this.domain).on ('log', function (event, scope, message, payload) {
 //			console.log (message);
-			$('#arduino-panel .table-container table tbody').append ("<tr><td>"+message+"</td></tr>");
+
+			var highlight = '';
+			if (payload && payload.stderr) {
+				highlight = 'error';
+			} else if (message.match (/^done\s/)) {
+				highlight = 'done';
+			}
+
+			$('#arduino-panel .table-container table tbody').append ("<tr class=\""+highlight+"\"><td>"+scope+"</td><td>"+message+"</td></tr>");
 			var rowpos = $('#arduino-panel .table-container table tbody tr:last').position();
 
 			// TODO: fix scroll

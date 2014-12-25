@@ -11,6 +11,20 @@
 	margin-right: 5em;
 }
 
+#arduino-panel .table-container td:first-of-type {
+	width: 5em;
+}
+
+
+#arduino-panel .table-container tr.error td {
+	background-color: rgb(255, 94, 138);
+}
+
+#arduino-panel .table-container tr.done td {
+	background-color: #39c0c4;
+}
+
+
 #arduino-panel ul.dropdown-menu {
 	height: auto;
 	max-height: 300px;

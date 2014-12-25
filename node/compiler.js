@@ -238,6 +238,8 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 				this.emit ('log', scope, cmdDesc);
 			}
 
+//			console.log ("child exec launch: %s", cmd);
+
 			var child = exec (cmd, (function (error, stdout, stderr) {
 				// The callback gets the arguments (error, stdout, stderr).
 				// On success, error will be null. On error, error will be an instance
