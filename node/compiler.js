@@ -39,7 +39,9 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 		boardsData.folders.root + '/variants/' + board.build.variant
 	];
 
-	this.coreIncludes = this.coreIncludes.concat (options.includes);
+	if (options.includes) {
+		this.coreIncludes = this.coreIncludes.concat (options.includes);
+	}
 
 	var currentStage = 'build';
 
@@ -345,6 +347,7 @@ ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile) {
 		allIncludes.push (this.libCompile[libName].include);
 	}
 
+//	console.log (this.coreIncludes);
 //	console.log (allIncludes);
 
 	for (var libName in this.libCompile) {
