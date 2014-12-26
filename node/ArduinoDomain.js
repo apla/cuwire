@@ -46,7 +46,7 @@
 	var compileFirstRun = true;
 
 	function compile (params) {
-		var currentFilePath = params.shift ();
+		var sketchFolder    = params.shift ();
 		var platformName    = params.shift ();
 		var boardId         = params.shift ();
 		var boardVariation  = params.shift ();
@@ -62,7 +62,7 @@
 
 		var compiler = new ArduinoCompiler (
 			// "sketch" folder
-			"/Users/apla/work/com.domtale/arduino/Sensor",
+			sketchFolder,
 			// platform name
 			platformName,
 			// board id
@@ -77,8 +77,6 @@
 				// buildFolder: "/Users/apla/tmp/cuwire-build"
 			}
 		);
-
-		console.log ('after compiler init');
 
 		compiler.on ('done', function (size) {
 			console.log ('arduino domain: compiled', arguments);

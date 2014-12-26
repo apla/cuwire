@@ -260,71 +260,181 @@ define(function (require, exports, module) {
 		processStateDiv.removeClass ();
 		processStateDiv.addClass ('process-state span1 running');
 
+		// cleanup log before next compile
+		$('#arduino-panel .table-container table tbody tr').remove();
 
-		this.domain.exec ("compile", [
-			fullPath,
-			platformName,
-			boardId,
-			boardVariation || {},
-			options || {}
-		])
-		.done(function (size) {
-			console.log (size);
+		this.findSketchFolder ((function (err, folder) {
 
-			processStateDiv.removeClass ();
-			processStateDiv.addClass ('process-state span1 success');
+			this.domain.exec ("compile", [
+				folder,
+				platformName,
+				boardId,
+				boardVariation || {},
+				options || {}
+			])
+			.done(function (size) {
+				console.log (size);
 
-			var percentageDegrees = function( p ) {
-				p = ( p >= 100 ? 100 : p );
-				var d = 3.6 * p;
-				return d;
-			};
+				processStateDiv.removeClass ();
+				processStateDiv.addClass ('process-state span1 success');
 
-			var createGradient = function ( elem, d, p ) {
-				if ( d <= 180 ) {
-					d = 90 + d;
-					elem.css( 'background', 'linear-gradient(90deg, #2c3e50 50%, transparent 50%), linear-gradient('+ d +'deg, #2ecc71 50%, #2c3e50 50%)' );
-				} else {
-					d = d - 90;
-					elem.css( 'background', 'linear-gradient(-90deg, #2ecc71 50%, transparent 50%), linear-gradient('+ d +'deg, #2c3e50 50%, #2ecc71 50%)' );
+				var percentageDegrees = function( p ) {
+					p = ( p >= 100 ? 100 : p );
+					var d = 3.6 * p;
+					return d;
+				};
+
+				var createGradient = function ( elem, d, p ) {
+					if ( d <= 180 ) {
+						d = 90 + d;
+						elem.css( 'background', 'linear-gradient(90deg, #2c3e50 50%, transparent 50%), linear-gradient('+ d +'deg, #2ecc71 50%, #2c3e50 50%)' );
+					} else {
+						d = d - 90;
+						elem.css( 'background', 'linear-gradient(-90deg, #2ecc71 50%, transparent 50%), linear-gradient('+ d +'deg, #2c3e50 50%, #2ecc71 50%)' );
+					}
+					elem.attr ('data-percentage', p);
+					elem.text (p + '%');
 				}
-				elem.attr ('data-percentage', p);
-				elem.text (p + '%');
+
+				var textSizeP = Math.round (size.text / size.maxText * 100);
+				createGradient ($('.pie-text'), percentageDegrees (textSizeP), textSizeP);
+				var dataSizeP = Math.round (size.data / (size.maxData || size.data) * 100);
+				createGradient ($('.pie-data'), percentageDegrees (dataSizeP), dataSizeP);
+				// createGradient ($('.pie-eeprom'), percentageDegrees (0), 0);
+
+
+			}).fail (function (error) {
+				processStateDiv.removeClass ();
+				processStateDiv.addClass ('process-state span1 failure');
+				console.log (error);
+			});
+		}).bind (this));
+	}
+
+	function getRelativeFilename(basePath, filename) {
+		if (!filename || filename.substr(0, basePath.length) !== basePath) {
+			return;
+		}
+
+		return filename.substr(basePath.length);
+	}
+
+	ArduinoExt.prototype.findSketchFolder = function (cb) {
+		var error;
+		ProjectManager.getAllFiles (function (fileName) {
+			// searching for ino/pde only
+			if (fileName.fullPath.match (/\.(ino|pde)$/))
+				return true;
+			return false;
+		}).done (function (fileList) {
+
+			if (!fileList.length) {
+				error = 'cannot find .ino or .pde files within current project';
+				cb (error);
+				return;
 			}
 
-			var textSizeP = Math.round (size.text / size.maxText * 100);
-			createGradient ($('.pie-text'), percentageDegrees (textSizeP), textSizeP);
-			var dataSizeP = Math.round (size.data / (size.maxData || size.data) * 100);
-			createGradient ($('.pie-data'), percentageDegrees (dataSizeP), dataSizeP);
-			// createGradient ($('.pie-eeprom'), percentageDegrees (0), 0);
+			// only one sketch within project dir, do it!
+			if (fileList.length === 1) {
+				var sketchFolderPath = fileList[0].parentPath;
+				cb (null, sketchFolderPath);
+				return;
+			}
 
+			var projectRoot = ProjectManager.getProjectRoot();
 
-		}).fail (function (error) {
-			processStateDiv.removeClass ();
-			processStateDiv.addClass ('process-state span1 failure');
-			console.log (error);
+			// selected file and current document can be different, so check context for both
+			var selectedFile = ProjectManager.getSelectedItem();
+			var selectedFilePath = selectedFile.fullPath;
+			var currentDoc   = DocumentManager.getCurrentDocument();
+			var openedFile   = currentDoc.file;
+			var openedFilePath = openedFile.fullPath;
+
+			console.log (getRelativeFilename (projectRoot.fullPath, selectedFile.fullPath, openedFile.fullPath));
+
+			var currentSketchFolder;
+
+			fileList.every (function (inoFile) {
+				var sketchFolderPath = inoFile.parentPath;
+
+				if (openedFile && getRelativeFilename (sketchFolderPath, openedFilePath)) {
+					currentSketchFolder = sketchFolderPath;
+					return false;
+				} else if (selectedFile && getRelativeFilename (sketchFolderPath, selectedFilePath)) {
+					currentSketchFolder = sketchFolderPath;
+					return false;
+				}
+				return true;
+			});
+
+			if (currentSketchFolder) {
+				// we have selected or opened file somewhere within sketch tree
+				cb (null, currentSketchFolder);
+				return;
+			}
+
+			// TODO: draw a dialog with buttons to handle this
+			var dialogHtml = $(
+				'<div id="arduino-board-alert" class="modal">'
+				+'<div class="modal-header">'
+				+ '<h1 class="dialog-title">Please select sketch:</h1>'
+				+ '</div>'
+				+ '<div class="modal-body">'
+				+ '<p>Our microcontroller cannot distinguish between available sketches displayed below. Please do it manually. We don\'t store your selection because path to the sketch file can be bigger than available memory. Sorry!</p>'
+				+ fileList.map (function (fileObject, fileObjectIdx) {
+					var sketchFolderPath = fileObject.parentPath;
+					return [
+						'<div><button data-button-id="cuwire-sketch-',
+						fileObjectIdx,
+						'" class="dialog-button btn btn-80">',
+						getRelativeFilename (projectRoot.fullPath, sketchFolderPath),
+						'</button></div>'
+					].join ('');
+				}).join ('')
+				+'</div><div class="modal-footer">'
+				+ '<button data-button-id="close" class="dialog-button btn btn-80">Close</button></div></div>'
+			);
+
+			Dialogs.showModalDialogUsingTemplate(dialogHtml).done(function (buttonId) {
+				var buttonMatch = buttonId.match (/cuwire-sketch-(\d+)/);
+				if (!buttonMatch) {
+					// don't care about another buttons
+					return;
+				}
+
+				var sketchIdx = parseInt (buttonMatch[1]);
+
+				cb (null, fileList[sketchIdx].parentPath);
+
+			});
+
 		});
 
 	}
 
 	ArduinoExt.prototype.upload = function () {
-		// TODO: use template
-		var dialogHtml = $(
-			'<div id="arduino-board-alert" class="modal">'
-			//				+ '<div class="modal-header">'
-			//				+ '<h1 class="dialog-title">{{Strings.AUTHORS_OF}} {{file}}</h1>'
-			//				+ '</div>'
-			+ '<div class="modal-body"></div><div class="modal-footer">'
-			+ '<button data-button-id="close" class="dialog-button btn btn-80">Close</button></div></div>'
-		);
+		this.findSketchFolder(function (err, folder) {
+			// TODO: use template
+			var dialogHtml = $(
+				'<div id="arduino-board-alert" class="modal">'+
+				'<h3>'+folder+'</h3>'+
+				//				+ '<div class="modal-header">'
+				//				+ '<h1 class="dialog-title">{{Strings.AUTHORS_OF}} {{file}}</h1>'
+				//				+ '</div>'
+				+ '<div class="modal-body"></div><div class="modal-footer">'
+				+ '<button data-button-id="close" class="dialog-button btn btn-80">Close</button></div></div>'
+			);
 
-		$(".modal-body", dialogHtml).append ("<h3>Not implemented yet!</h3>");
+			$(".modal-body", dialogHtml).append ("<h3>Not implemented yet!</h3>");
 
-		Dialogs.showModalDialogUsingTemplate(dialogHtml).done(function (buttonId) {
-			if (buttonId === "ok") {
-				// CommandManager.execute("debug.refreshWindow");
-			}
+			Dialogs.showModalDialogUsingTemplate(dialogHtml).done(function (buttonId) {
+				if (buttonId === "ok") {
+					// CommandManager.execute("debug.refreshWindow");
+				}
+			});
+
 		});
+
 	}
 
 	ArduinoExt.prototype.createUI = function (require) {
@@ -369,7 +479,7 @@ define(function (require, exports, module) {
 			var highlight = '';
 			if (payload && payload.stderr) {
 				highlight = 'error';
-			} else if (message.match (/^done\s/)) {
+			} else if (message.match (/^done(?:\s|$)/)) {
 				highlight = 'done';
 			}
 
