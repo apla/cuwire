@@ -13,15 +13,20 @@
 
 #arduino-panel .table-container td:first-of-type {
 	width: 5em;
+	font-size: inherit !important;
 }
 
 
 #arduino-panel .table-container tr.error td {
 	background-color: rgb(255, 94, 138);
+	color: white;
+	font-size: larger;
 }
 
 #arduino-panel .table-container tr.done td {
 	background-color: #39c0c4;
+	color: white;
+	font-size: larger;
 }
 
 
