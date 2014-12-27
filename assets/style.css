@@ -51,13 +51,6 @@
 	background: url(plug.svg) 4px 4px no-repeat;
 }
 
-#arduino-panel .dropdown-submenu{position:relative;}
-#arduino-panel .dropdown-submenu>.dropdown-menu{top:0;left:100%;margin-top:-6px;margin-left:-1px;-webkit-border-radius:0 6px 6px 6px;-moz-border-radius:0 6px 6px 6px;border-radius:0 6px 6px 6px;}
-#arduino-panel .dropdown-submenu:hover>.dropdown-menu{display:block;}
-#arduino-panel .dropdown-submenu>a:after{display:block;content:" ";float:right;width:0;height:0;border-color:transparent;border-style:solid;border-width:5px 0 5px 5px;border-left-color:#cccccc;margin-top:5px;margin-right:-10px;}
-#arduino-panel .dropdown-submenu:hover>a:after{border-left-color:#ffffff;}
-#arduino-panel .dropdown-submenu.pull-left{float:none;}.dropdown-submenu.pull-left>.dropdown-menu{left:-100%;margin-left:10px;-webkit-border-radius:6px 0 6px 6px;-moz-border-radius:6px 0 6px 6px;border-radius:6px 0 6px 6px;}
-
 #arduino-panel .pie {
 	text-indent: -9999rem;
 	width: 3rem;
@@ -99,7 +92,9 @@
 	color: white;
 	font-size: 1rem;
 	margin-top: 1em;
-	width: 100%;
+	padding: .5em 0;
+	text-align: center;
+	width: 90%;
 }
 
 #arduino-panel .process-state.success .label-success {
@@ -127,4 +122,10 @@
 
 form#cuwire-board-mod label {
 	display: inline;
+}
+
+.cuwire-sketch-select button[data-button-id^="cuwire-sketch-"],
+.cuwire-sketch-select button[data-button-id^="cuwire-sketch-"]:active {
+	background-color: #39c0c4;
+	color: white;
 }

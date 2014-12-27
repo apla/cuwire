@@ -240,7 +240,7 @@ define(function (require, exports, module) {
 			}
 		}).bind (this));
 
-		var boardModInputs = boardModInputs = $("#cuwire-board-mod input");
+		var boardModInputs = $("#cuwire-board-mod input");
 		// WTF: there is little delay between actual rendering and request to create an dom nodes
 		// setTimeout (function () {
 			boardModInputs = $("#cuwire-board-mod input");
@@ -253,7 +253,7 @@ define(function (require, exports, module) {
 		// WTF: also, you can't do anything with app with modal window open. even quit app!!!
 
 
-		boardModInputs.change(function() {
+		boardModInputs.change (function() {
 			var formEl = $(this)[0].form;
 			formData = getFormFields (formEl);
 			// console.log (formData);
@@ -343,7 +343,7 @@ define(function (require, exports, module) {
 
 		var processStateDiv = $('#arduino-panel .process-state');
 		processStateDiv.removeClass ();
-		processStateDiv.addClass ('process-state span1 running');
+		processStateDiv.addClass ('process-state span2 running');
 
 		// cleanup log before next compile
 		$('#arduino-panel .table-container table tbody tr').remove();
@@ -361,7 +361,7 @@ define(function (require, exports, module) {
 				console.log (size);
 
 				processStateDiv.removeClass ();
-				processStateDiv.addClass ('process-state span1 success');
+				processStateDiv.addClass ('process-state span2 success');
 
 				var percentageDegrees = function( p ) {
 					p = ( p >= 100 ? 100 : p );
@@ -391,7 +391,7 @@ define(function (require, exports, module) {
 
 			}).fail (function (error) {
 				processStateDiv.removeClass ();
-				processStateDiv.addClass ('process-state span1 failure');
+				processStateDiv.addClass ('process-state span2 failure');
 				console.log (error);
 			});
 		}).bind (this));
@@ -460,28 +460,26 @@ define(function (require, exports, module) {
 			}
 
 			// TODO: draw a dialog with buttons to handle this
-			var dialogHtml = $(
-				'<div id="arduino-board-alert" class="modal">'
-				+'<div class="modal-header">'
-				+ '<h1 class="dialog-title">Please select sketch:</h1>'
-				+ '</div>'
-				+ '<div class="modal-body">'
-				+ '<p>Our microcontroller cannot distinguish between available sketches displayed below. Please do it manually. We don\'t store your selection because path to the sketch file can be bigger than available memory. Sorry!</p>'
-				+ fileList.map (function (fileObject, fileObjectIdx) {
-					var sketchFolderPath = fileObject.parentPath;
-					return [
-						'<div><button data-button-id="cuwire-sketch-',
-						fileObjectIdx,
-						'" class="dialog-button btn btn-80">',
-						getRelativeFilename (projectRoot.fullPath, sketchFolderPath),
-						'</button></div>'
-					].join ('');
-				}).join ('')
-				+'</div><div class="modal-footer">'
-				+ '<button data-button-id="close" class="dialog-button btn btn-80">Close</button></div></div>'
-			);
+			var message = "<p>Our microcontroller cannot distinguish between available sketches displayed below. "
+			+"Please do it manually. We don\'t store your selection because path to the sketch file can be bigger "
+			+"than available memory. Sorry!</p><div class=\"btn-group btn-group-vertical\">";
+			message += fileList.sort().map (function (fileObject, fileObjectIdx) {
+				var sketchFolderPath = fileObject.parentPath;
+				return [
+					'<button data-button-id="cuwire-sketch-',
+					fileObjectIdx,
+					'" class="dialog-button btn btn-large input-block-level">',
+					getRelativeFilename (projectRoot.fullPath, sketchFolderPath),
+					'</button>'
+				].join ('');
+			}).join ('');
+			message += '</div>';
 
-			Dialogs.showModalDialogUsingTemplate(dialogHtml).done(function (buttonId) {
+			Dialogs.showModalDialog (
+				"cuwire-sketch-select",
+				"Please select sketch:",
+				message
+			).done(function (buttonId) {
 				var buttonMatch = buttonId.match (/cuwire-sketch-(\d+)/);
 				if (!buttonMatch) {
 					// don't care about another buttons
