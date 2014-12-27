@@ -130,10 +130,9 @@ define(function (require, exports, module) {
 				// CommandManager.execute("debug.refreshWindow");
 			}
 		});
-
 	}
 
-	ArduinoExt.prototype.setBoard = function (boardId, platformName) {
+	ArduinoExt.prototype.setBoard = function (boardId, platformName, boardMod) {
 		// TODO: set board in preferences
 		if (!boardId) {
 			var boardPref = prefs.get ('board');
@@ -143,7 +142,7 @@ define(function (require, exports, module) {
 			boardId = boardPref[0];
 			platformName = boardPref[1];
 		} else {
-			prefs.set ('board', [boardId, platformName]);
+			prefs.set ('board', [boardId, platformName, boardMod]);
 		}
 
 		var self = this;
@@ -184,6 +183,86 @@ define(function (require, exports, module) {
 
 	}
 
+	function getFormFields (formEl) {
+		var formData = {};
+		for (var i = 0; i < formEl.elements.length; i ++) {
+			var formField = formEl.elements[i];
+			if ((formField.type === 'radio' && formField.checked) || formField.type !== 'radio') {
+				formData[formField.name] = formField.value;
+			}
+		}
+		return formData;
+	}
+
+	ArduinoExt.prototype.selectBoardMod = function (boardId, platformName) {
+		var boardMeta = this.platforms[platformName].boards[boardId];
+		if (!("menu" in boardMeta)) {
+			this.setBoard (boardId, platformName);
+			return;
+		}
+
+		// WTF: mustache doesn't support iteration over object keys
+		var message = "<h3>Select:</h3><form id=\"cuwire-board-mod\">";
+		for (var modType in boardMeta.menu) {
+			// variants.push (modType+':');
+			var submenu = "<fieldset><p>"+modType+"</p>";
+			var idx = 0;
+			for (var mod in boardMeta.menu[modType]) {
+				// variants.push (boardMeta.menu[modType][mod].[modType + "_modification"]);
+				submenu += "<div><input type=\"radio\" id=\""+modType+mod+"\" name=\""+modType+"\" value=\""+mod+"\""+(idx === 0 ? " checked" : "")+"><label for=\""+modType+mod+"\">" + boardMeta.menu[modType][mod][modType + "_modification"] + "</label></div>";
+				idx ++;
+			}
+			message += submenu + '</fieldset>';
+		}
+		message += "</form>";
+
+		var formData = {};
+
+		var dlg = Dialogs.showModalDialog (
+			'cuwire-board-mod',
+			boardMeta.name + ' modifications:', // title
+			message, // dialog body
+			null, // buttons, by default ok button
+			true // autodismiss, true by default
+		).done ((function (buttonId) {
+			if (buttonId === "ok") {
+				var formEl = document.getElementById ("cuwire-board-mod");
+				console.log (formData);
+				// CommandManager.execute("debug.refreshWindow");
+				var boardMod = {};
+				for (var modType in boardMeta.menu) {
+					boardMod[modType] = formData[modType];
+					if (!boardMod[modType]) {
+						console.error ('board modification', modType, 'not defined, continue with caution');
+					}
+				}
+				this.setBoard (boardId, platformName, boardMod);
+			}
+		}).bind (this));
+
+		var boardModInputs = boardModInputs = $("#cuwire-board-mod input");
+		// WTF: there is little delay between actual rendering and request to create an dom nodes
+		// setTimeout (function () {
+			boardModInputs = $("#cuwire-board-mod input");
+			var formEl = boardModInputs[0].form;
+			formData = getFormFields (formEl);
+		// }, 100);
+
+		// WTF: brackets have no option to prevent dialog close
+		// I can use autodismiss: false, but this is not works, really
+		// WTF: also, you can't do anything with app with modal window open. even quit app!!!
+
+
+		boardModInputs.change(function() {
+			var formEl = $(this)[0].form;
+			formData = getFormFields (formEl);
+			// console.log (formData);
+			// console.log ($(this).attr('name'), $(this).attr('value'));
+		});
+
+
+	}
+
 	ArduinoExt.prototype.getBoardMeta = function () {
 		// TODO: show spinner indicator
 
@@ -216,22 +295,25 @@ define(function (require, exports, module) {
 
 					var boardItem = $('<li><a href="#">'+boardMeta.name+"</a></li>");
 					boardItem.appendTo(arduinoBoardDD);
-					boardItem.on ('click', self.setBoard.bind (self, boardId, platformName))
+					boardItem.on ('click', self.selectBoardMod.bind (self, boardId, platformName));
 
 					var boardDesc = boardMeta.name + ' (' + boardId
 					if ("menu" in boardMeta) {
-						boardDesc += ', variants: ';
+						boardDesc += ', modifications: ';
 						var variants = [];
-						boardItem.addClass ('dropdown-submenu');
-						var submenu = $("<ul class=\"dropdown-menu\">");
-						for (var cpuVariant in boardMeta.menu.cpu) {
-							variants.push (boardMeta.menu.cpu[cpuVariant].cpu_modification);
-							submenu.append ($("<li><a href=\"#\">" + boardMeta.menu.cpu[cpuVariant].cpu_modification + "</a></li>"));
+//						boardItem.addClass ('dropdown-submenu');
+//						var submenu = $("<ul class=\"dropdown-menu\">");
+						for (var modType in boardMeta.menu) {
+							variants.push (modType+':');
+							for (var mod in boardMeta.menu[modType]) {
+								variants.push (boardMeta.menu[modType][mod][modType + "_modification"]);
+//								submenu.append ($("<li><a href=\"#\">" + boardMeta.menu.cpu[cpuVariant].cpu_modification + "</a></li>"));
+							}
 						}
 
-						boardItem.append (submenu);
+						// boardItem.append (submenu);
 
-						boardDesc += variants.join (",");
+						boardDesc += variants.join (" ");
 
 					}
 					boardDesc += ')';
@@ -248,11 +330,11 @@ define(function (require, exports, module) {
 
 	}
 
-	ArduinoExt.prototype.compile = function () {
+	ArduinoExt.prototype.compile = function (cb) {
 		var boardMeta = prefs.get ('board');
 		var boardId = boardMeta[0];
 		var platformName = boardMeta[1];
-		var boardVariation = prefs.get ('boardVariation');
+		var boardMod  = boardMeta[2];
 		var options = {};
 
 		var currentDoc = DocumentManager.getCurrentDocument();
@@ -272,7 +354,7 @@ define(function (require, exports, module) {
 				folder,
 				platformName,
 				boardId,
-				boardVariation || {},
+				boardMod || {},
 				options || {}
 			])
 			.done(function (size) {
@@ -305,6 +387,7 @@ define(function (require, exports, module) {
 				createGradient ($('.pie-data'), percentageDegrees (dataSizeP), dataSizeP);
 				// createGradient ($('.pie-eeprom'), percentageDegrees (0), 0);
 
+				cb && cb();
 
 			}).fail (function (error) {
 				processStateDiv.removeClass ();

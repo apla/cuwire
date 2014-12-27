@@ -124,3 +124,7 @@
 #arduino-panel .label-info {
 	background-color: rgb(54, 65, 80);
 }
+
+form#cuwire-board-mod label {
+	display: inline;
+}

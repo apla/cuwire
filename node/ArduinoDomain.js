@@ -49,7 +49,7 @@
 		var sketchFolder    = params.shift ();
 		var platformName    = params.shift ();
 		var boardId         = params.shift ();
-		var boardVariation  = params.shift ();
+		var boardMod        = params.shift ();
 		var options         = params.shift ();
 
 		var cb = arguments[arguments.length-1];
@@ -68,11 +68,9 @@
 			// board id
 			boardId,
 			// boardVariation (e.g. cpu menu selection)
-			{
-				cpu: '16MHzatmega328'
-			},
+			boardMod || {},
 			// options (e.g. custom build folder)
-			{
+			options || {
 				// build folder
 				// buildFolder: "/Users/apla/tmp/cuwire-build"
 			}
