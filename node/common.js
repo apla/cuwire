@@ -15,6 +15,14 @@ function pathToVar (root, varPath, value) {
 		refs = varPath.split('.');
 	}
 
+	if (varPath.match (/\.build\.mcu$/) && value === "atmega2560") {
+		// TODO: fill an issue on github for this:
+//		// For atmega2560, need --relax linker option to link larger
+//		java/Compiler.java:    if (prefs.get("build.mcu").equals("atmega2560"))
+		// TODO: can be overwritten, bad solution
+		pathToVar (root, varPath.replace (/\.mcu$/, ".extra_flags"), "--relax");
+	}
+
 	for (var i = 0; i < refs.length; i ++) {
 		var sec = refs[i];
 		if (value !== undefined) {
