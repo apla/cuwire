@@ -62,6 +62,7 @@
 	linear-gradient(-90deg, #2ecc71 50%, transparent 50%),
 	linear-gradient(180deg, #2c3e50 50%, #2ecc71 50%);*/
 	position: relative;
+	transition: all .5s;
 }
 
 #arduino-panel .pie:after {
@@ -93,6 +94,10 @@
 #arduino-panel .pie-label span.t {
 	text-align: center;
 	font-weight: bold;
+}
+
+#arduino-panel .process-state {
+	overflow-y: hidden;
 }
 
 #arduino-panel .process-state .label {
@@ -134,6 +139,24 @@ form#cuwire-board-mod label {
 
 .cuwire-sketch-select button[data-button-id^="cuwire-sketch-"],
 .cuwire-sketch-select button[data-button-id^="cuwire-sketch-"]:active {
+/*
 	background-color: #39c0c4;
 	color: white;
+*/
+	background-image: url(logo.svg);
+	background-size: 36px;
+	background-repeat: no-repeat;
+	background-position: 50% 50%;
+	height: 40px;
+	width: 50px;
+}
+
+.cuwire-sketch-select li {
+	transition: all .2s;
+	padding: 10px 10px 0 10px;
+	border-radius: 5px;
+}
+
+.cuwire-sketch-select li:hover {
+	background-color: white;
 }

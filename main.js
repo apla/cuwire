@@ -468,18 +468,24 @@ define(function (require, exports, module) {
 			// TODO: draw a dialog with buttons to handle this
 			var message = "<p>Our microcontroller cannot distinguish between available sketches displayed below. "
 			+"Please do it manually. We don\'t store your selection because path to the sketch file can be bigger "
-			+"than available memory. Sorry!</p><div class=\"btn-group btn-group-vertical\">";
+			+"than available memory. Sorry!</p><ul class=\"media-list\">";
+
 			message += fileList.sort().map (function (fileObject, fileObjectIdx) {
 				var sketchFolderPath = fileObject.parentPath.replace (/\/$/, "");
+				var sketchFolder = sketchFolderPath.substr (sketchFolderPath.lastIndexOf ('/') + 1);
 				return [
-					'<button data-button-id="cuwire-sketch-',
-					fileObjectIdx,
-					'" class="dialog-button btn btn-large input-block-level">',
-					getRelativeFilename (projectRoot.fullPath, sketchFolderPath),
-					'</button>'
-				].join ('');
+					'<li class="media">',
+					'<div class="media-body">',
+					'<button data-button-id="cuwire-sketch-'
+					+fileObjectIdx
+					+'" class="dialog-button btn btn-large pull-right"> </button>',
+					'<h4 class="media-heading">'+sketchFolder+'</h4>',
+					'<p>'+getRelativeFilename (projectRoot.fullPath, sketchFolderPath)+'</p>',
+					'</div>',
+					'</li>',
+				].join ("\n");
 			}).join ('');
-			message += '</div>';
+			message += '</ul>';
 
 			Dialogs.showModalDialog (
 				"cuwire-sketch-select",
