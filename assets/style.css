@@ -1,57 +1,57 @@
-#arduino-sidebar-icon {
+#cuwire-sidebar-icon {
 	background-image: url(logo.svg);
 	background-size: 24px;
 }
 
-#arduino-panel {}
-#arduino-panel .toolbar {
+#cuwire-panel {}
+#cuwire-panel .toolbar {
 	overflow: visible;
 }
-#arduino-panel span.title {
+#cuwire-panel span.title {
 	margin-right: 5em;
 }
 
-#arduino-panel .table-container td:first-of-type {
+#cuwire-panel .table-container td:first-of-type {
 	width: 5em;
 	font-size: inherit !important;
 }
 
 
-#arduino-panel .table-container tr.error td {
+#cuwire-panel .table-container tr.error td {
 	background-color: rgb(255, 94, 138);
 	color: white;
 	font-size: larger;
 }
 
-#arduino-panel .table-container tr.done td {
+#cuwire-panel .table-container tr.done td {
 	background-color: #39c0c4;
 	color: white;
 	font-size: larger;
 }
 
 
-#arduino-panel ul.dropdown-menu {
+#cuwire-panel ul.dropdown-menu {
 	height: auto;
 	max-height: 300px;
 	overflow-x: hidden;
 }
 
-#arduino-panel ul.dropdown-menu .dropdown-header {
+#cuwire-panel ul.dropdown-menu .dropdown-header {
 	padding: 5px 10px;
 	background-color: #f3f3f3;
 }
 
-#arduino-panel button.with-chip {
+#cuwire-panel button.with-chip {
 	padding-left: 24px;
 	background: url(chip.svg) 4px 4px no-repeat;
 }
 
-#arduino-panel button.with-plug {
+#cuwire-panel button.with-plug {
 	padding-left: 24px;
 	background: url(plug.svg) 4px 4px no-repeat;
 }
 
-#arduino-panel .pie {
+#cuwire-panel .pie {
 	text-indent: -9999rem;
 	width: 3rem;
 	height: 3rem;
@@ -65,7 +65,7 @@
 	transition: all .5s;
 }
 
-#arduino-panel .pie:after {
+#cuwire-panel .pie:after {
 	content: attr(data-percentage) '%';
 	width: 2.5rem;
 	height: 2.5rem;
@@ -82,7 +82,7 @@
 	line-height: 2.5rem;
 }
 
-#arduino-panel .pie-label {
+#cuwire-panel .pie-label {
 /*
 	-webkit-transform: rotate(270deg) translateX(-2.5rem);
 	-webkit-transform-origin: left top 0;
@@ -91,16 +91,16 @@
 	margin-right: 10%;
 	text-align: right;
 }
-#arduino-panel .pie-label span.t {
+#cuwire-panel .pie-label span.t {
 	text-align: center;
 	font-weight: bold;
 }
 
-#arduino-panel .process-state {
+#cuwire-panel .process-state {
 	overflow-y: hidden;
 }
 
-#arduino-panel .process-state .label {
+#cuwire-panel .process-state .label {
 	display: none;
 	color: white;
 	font-size: 1rem;
@@ -110,26 +110,26 @@
 	width: 90%;
 }
 
-#arduino-panel .process-state.success .label-success {
+#cuwire-panel .process-state.success .label-success {
 	display: inherit;
 }
-#arduino-panel .label-success {
+#cuwire-panel .label-success {
 	background-color: #39c0c4;
 }
 
 
-#arduino-panel .process-state.failure .label-important {
+#cuwire-panel .process-state.failure .label-important {
 	display: inherit;
 }
-#arduino-panel .label-important {
+#cuwire-panel .label-important {
 	background-color: rgb(255, 94, 138);
 }
 
 
-#arduino-panel .process-state.running .label-info {
+#cuwire-panel .process-state.running .label-info {
 	display: inherit;
 }
-#arduino-panel .label-info {
+#cuwire-panel .label-info {
 	background-color: rgb(54, 65, 80);
 }
 

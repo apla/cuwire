@@ -10,30 +10,30 @@
 
 	var _domainManager;
 
-	var ArduinoData = require ('./data');
-	var ArduinoCompiler = require ('./compiler');
-	var ArduinoUploader = require ('./uploader');
+	var CuWireData = require ('./data');
+	var CuWireCompiler = require ('./compiler');
+	var CuWireUploader = require ('./uploader');
 
-	var theArduino;
+	var theCuWire;
 
 	function getBoardsMeta (locations) {
 
 		var cb = arguments[arguments.length-1];
 
-		if (!theArduino) {
-			theArduino = new ArduinoData (locations);
+		if (!theCuWire) {
+			theCuWire = new CuWireData (locations);
 
-			theArduino.on ('done', function () {
-				cb (null, theArduino.boardData);
+			theCuWire.on ('done', function () {
+				cb (null, theCuWire.boardData);
 			});
 		} else {
-			cb (null, theArduino.boardData);
+			cb (null, theCuWire.boardData);
 		}
 	}
 
-	function arduinoBoardsDone (cb, boards) {
+	function cuwireBoardsDone (cb, boards) {
 		fs.writeFile (
-			path.join (__dirname, "../arduino.json"),
+			path.join (__dirname, "../cuwire.json"),
 			JSON.stringify (boards, null, '\t'),
 			function (err) {
 				if (err) {
@@ -54,13 +54,13 @@
 
 		var cb = arguments[arguments.length-1];
 
-		if (!theArduino) {
+		if (!theCuWire) {
 			// show error
 			// cb
 			return;
 		}
 
-		var compiler = new ArduinoCompiler (
+		var compiler = new CuWireCompiler (
 			// "sketch" folder
 			sketchFolder,
 			// platform name
@@ -77,18 +77,18 @@
 		);
 
 		compiler.on ('done', function (size) {
-//			console.log ('arduino domain: compiled', arguments);
+//			console.log ('cuwire domain: compiled', arguments);
 			cb ();
 		});
 
 		compiler.on ('log', function (scope, message, payload) {
 //			console.log (scope, message, payload);
-			_domainManager.emitEvent ('arduino', 'log', [scope, message, payload]);
+			_domainManager.emitEvent ('cuwire', 'log', [scope, message, payload]);
 		});
 
 		compiler.on ('error', function (err) {
 //			console.log ('error', err);
-			_domainManager.emitEvent ('arduino', 'log', [err.scope, err.toString(), err]);
+			_domainManager.emitEvent ('cuwire', 'log', [err.scope, err.toString(), err]);
 			cb (err);
 		});
 
@@ -103,13 +103,13 @@
 
 		var cb = arguments[arguments.length-1];
 
-		if (!theArduino) {
+		if (!theCuWire) {
 			// show error
 			// cb
 			return;
 		}
 
-		var compiler = new ArduinoCompiler (
+		var compiler = new CuWireCompiler (
 			// "sketch" folder
 			sketchFolder,
 			// platform name
@@ -126,8 +126,8 @@
 		);
 
 		compiler.on ('done', function (size) {
-			console.log ('arduino domain: compiled', arguments);
-			var uploader = new ArduinoUploader (
+			console.log ('cuwire domain: compiled', arguments);
+			var uploader = new CuWireUploader (
 				// "sketch" folder
 				compiler,
 				// platform name
@@ -144,30 +144,30 @@
 			);
 
 			uploader.on ('done', function (size) {
-//				console.log ('arduino domain: uploaded', arguments);
+//				console.log ('cuwire domain: uploaded', arguments);
 				cb();
 			});
 
 			uploader.on ('log', function (scope, message, payload) {
 				console.log (scope, message, payload);
-				_domainManager.emitEvent ('arduino', 'log', [scope, message, payload]);
+				_domainManager.emitEvent ('cuwire', 'log', [scope, message, payload]);
 			});
 
 			uploader.on ('error', function (err) {
 //				console.log ('error', err);
-				_domainManager.emitEvent ('arduino', 'log', [err.scope, err.toString(), err]);
+				_domainManager.emitEvent ('cuwire', 'log', [err.scope, err.toString(), err]);
 				cb (err);
 			});
 		});
 
 		compiler.on ('log', function (scope, message, payload) {
 			console.log (scope, message, payload);
-			_domainManager.emitEvent ('arduino', 'log', [scope, message, payload]);
+			_domainManager.emitEvent ('cuwire', 'log', [scope, message, payload]);
 		});
 
 		compiler.on ('error', function (err) {
 			console.log ('error', err);
-			_domainManager.emitEvent ('arduino', 'log', [err.scope, err.toString(), err]);
+			_domainManager.emitEvent ('cuwire', 'log', [err.scope, err.toString(), err]);
 			cb (err);
 		});
 
@@ -219,12 +219,12 @@
 	* @param {DomainManager} domainManager The DomainManager for the server
 	*/
 	function init(domainManager) {
-		if (!domainManager.hasDomain("arduino")) {
-			domainManager.registerDomain("arduino", {major: 0, minor: 1});
+		if (!domainManager.hasDomain("cuwire")) {
+			domainManager.registerDomain("cuwire", {major: 0, minor: 1});
 		}
 		_domainManager = domainManager;
 		domainManager.registerCommand(
-			"arduino",       // domain name
+			"cuwire",       // domain name
 			"enumerateSerialPorts",    // command name
 			enumerateSerialPorts,   // command handler function
 			true,          // this command is asynchronous in Node
@@ -235,11 +235,11 @@
 			  description: "serial port path names"}]
 		);
 		domainManager.registerCommand(
-			"arduino",       // domain name
+			"cuwire",       // domain name
 			"getBoardsMeta",    // command name
 			getBoardsMeta,   // command handler function
 			true,          // this command is asynchronous in Node
-			"get arduino boards metadata",
+			"get cuwire boards metadata",
 			[{
 				name: "dirs",
 				type: "array",
@@ -250,7 +250,7 @@
 			  description: "board data"}]
 		);
 		domainManager.registerCommand(
-			"arduino",     // domain name
+			"cuwire",     // domain name
 			"compile",     // command name
 			compile,       // command handler function
 			true,          // this command is asynchronous in Node
@@ -262,7 +262,7 @@
 			}, {
 				name: "platformName",
 				type: "string",
-				description: "arduino platform name"
+				description: "cuwire platform name"
 			}, {
 				name: "boardId",
 				type: "string",
@@ -281,7 +281,7 @@
 			  description: "compiled code size"}]
 		);
 		domainManager.registerCommand(
-			"arduino",     // domain name
+			"cuwire",     // domain name
 			"upload",     // command name
 			upload,       // command handler function
 			true,          // this command is asynchronous in Node
@@ -293,7 +293,7 @@
 			}, {
 				name: "platformName",
 				type: "string",
-				description: "arduino platform name"
+				description: "cuwire platform name"
 			}, {
 				name: "boardId",
 				type: "string",
@@ -312,7 +312,7 @@
 			  description: "compiled code size"}]
 		);
 		domainManager.registerEvent(
-			"arduino",     // domain name
+			"cuwire",     // domain name
 			"log",         // event name
 			[{
 				name: "scope",

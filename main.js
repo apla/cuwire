@@ -5,7 +5,7 @@ maxerr: 50, browser: true */
 define(function (require, exports, module) {
 	"use strict";
 
-	var moduleId = "me.apla.brackets-arduino";
+	var moduleId = "me.apla.brackets-cuwire";
 
 	var ExtensionUtils     = brackets.getModule("utils/ExtensionUtils"),
 		NodeDomain         = brackets.getModule("utils/NodeDomain"),
@@ -29,42 +29,42 @@ define(function (require, exports, module) {
 //	prefs.definePreference ("patterns", "array", []).on("change", function () {
 //	});
 
-	var arduinoDomain = new NodeDomain("arduino", ExtensionUtils.getModulePath(module, "node/ArduinoDomain"));
+	var cuwireDomain = new NodeDomain ("cuwire", ExtensionUtils.getModulePath(module, "node/cuwireDomain"));
 	ExtensionUtils.loadStyleSheet(module, "assets/style.css");
 
-	function ArduinoExt (require, domain) {
+	function CuWireExt (require, domain) {
 		this.domain = domain;
 		this.createUI (require);
 	}
 
 	var app = brackets.getModule('utils/AppInit');
 
-	ArduinoExt.prototype.loadNodePart = function () {
+	CuWireExt.prototype.loadNodePart = function () {
 
 	}
 
 
-	ArduinoExt.prototype.enumerateSerialPorts = function () {
+	CuWireExt.prototype.enumerateSerialPorts = function () {
 		// TODO: show spinner indicator
 
 		var self = this;
 
-		var arduinoPortDD = $('#arduino-panel ul.arduino-port');
+		var cuwirePortDD = $('#cuwire-panel ul.cuwire-port');
 		if (!this.portsDDSubscribed) {
 			// can't find the working API for this
-			var buttonDD = arduinoPortDD.prev("*[data-toggle=\"dropdown\"]");
+			var buttonDD = cuwirePortDD.prev("*[data-toggle=\"dropdown\"]");
 			buttonDD.on ('click', function () {
 				if (!buttonDD.parent ().hasClass ('open')) {
 					self.enumerateSerialPorts ();
 				}
 			});
-//			arduinoPortDD.prev().on ('show.bs.dropdown', function () {
+//			cuwirePortDD.prev().on ('show.bs.dropdown', function () {
 //				console.log (123);
 //			});
 			this.portsDDSubscribed = true;
 		}
 
-		$('<li><a href="#">Updating</a></li>').appendTo(arduinoPortDD);
+		$('<li><a href="#">Updating</a></li>').appendTo(cuwirePortDD);
 
 		this.domain.exec("enumerateSerialPorts")
 		.done(function (ports) {
@@ -72,17 +72,16 @@ define(function (require, exports, module) {
 			// TODO: show warning indicator
 			// user must select port prior to launch
 			console.log(
-				"[brackets-arduino-node] Available ports:",
+				"[brackets-cuwire-node] Available ports:",
 				ports.join (", ")
 			);
-			arduinoPortDD.empty ();
-			// tr = $('<tr />').appendTo('#arduino-panel tbody');
-
+			cuwirePortDD.empty ();
+			// tr = $('<tr />').appendTo('#cuwire-panel tbody');
 
 			ports.forEach (function (portName) {
 				$('<li><a href="#">'+portName+"</a></li>")
 				.on ('click', self.setPort.bind (self, portName))
-				.appendTo(arduinoPortDD);
+				.appendTo(cuwirePortDD);
 			});
 
 			//		$('<td />').text(err.message).appendTo(tr);
@@ -90,12 +89,12 @@ define(function (require, exports, module) {
 			self.setPort ();
 		}).fail(function (err) {
 			// TODO: show error indicator
-			console.error("[brackets-arduino-node] failed to run arduino.enumerateSerialPorts, error:", err);
+			console.error("[brackets-cuwire-node] failed to run cuwire.enumerateSerialPorts, error:", err);
 		});
 
 	}
 
-	ArduinoExt.prototype.setPort = function (portName) {
+	CuWireExt.prototype.setPort = function (portName) {
 		// TODO: set port in preferences
 		if (!portName) {
 			portName = prefs.get ('port');
@@ -105,10 +104,10 @@ define(function (require, exports, module) {
 		} else {
 			prefs.set ('port', portName);
 		}
-		$('#arduino-panel button.arduino-port').text (portName.replace (/^\/dev\/cu\./, ""));
+		$('#cuwire-panel button.cuwire-port').text (portName.replace (/^\/dev\/cu\./, ""));
 	}
 
-	ArduinoExt.prototype.showBoardImage = function (boardId, platformName) {
+	CuWireExt.prototype.showBoardImage = function (boardId, platformName) {
 		console.log ("board image", boardId, platformName, this.boardImage);
 		if (boardId) {
 			throw "unexpected boardId, not implemented yet";
@@ -119,7 +118,7 @@ define(function (require, exports, module) {
 			message = '<img src="'+this.board.imageUrl+'"/>';
 		}
 
-		Dialogs.showModalDialog (
+		var dlg = Dialogs.showModalDialog (
 			'cuwire-board-image',
 			this.board.name, // title
 			message // dialog body
@@ -132,7 +131,7 @@ define(function (require, exports, module) {
 		});
 	}
 
-	ArduinoExt.prototype.setBoard = function (boardId, platformName, boardMod) {
+	CuWireExt.prototype.setBoard = function (boardId, platformName, boardMod) {
 		// TODO: set board in preferences
 		if (!boardId) {
 			var boardPref = prefs.get ('board');
@@ -157,7 +156,7 @@ define(function (require, exports, module) {
 			imageUrl: boardImageUrl
 		};
 
-		var titleButton = $('#arduino-panel button.arduino-board');
+		var titleButton = $('#cuwire-panel button.cuwire-board');
 		if (this.platforms[platformName])
 			titleButton.text (boardMeta.name);
 
@@ -194,7 +193,7 @@ define(function (require, exports, module) {
 		return formData;
 	}
 
-	ArduinoExt.prototype.selectBoardMod = function (boardId, platformName) {
+	CuWireExt.prototype.selectBoardMod = function (boardId, platformName) {
 		var boardMeta = this.platforms[platformName].boards[boardId];
 		if (!("menu" in boardMeta)) {
 			this.setBoard (boardId, platformName);
@@ -263,7 +262,7 @@ define(function (require, exports, module) {
 
 	}
 
-	ArduinoExt.prototype.getBoardMeta = function () {
+	CuWireExt.prototype.getBoardMeta = function () {
 		// TODO: show spinner indicator
 
 		var self = this;
@@ -272,13 +271,13 @@ define(function (require, exports, module) {
 		// TODO: when we can't find arduino ide in default locations gracefully degrade
 		this.domain.exec("getBoardsMeta", ["/Applications/devel/Arduino.app"])
 		.done(function (platforms) {
-			console.log("[brackets-arduino-node] Available boards:");
+			console.log("[brackets-cuwire-node] Available boards:");
 
 			self.platforms = platforms;
 
-			$('#arduino-panel ul.arduino-board li').remove();
-			// tr = $('<tr />').appendTo('#arduino-panel tbody');
-			var arduinoBoardDD = $('#arduino-panel ul.arduino-board');
+			$('#cuwire-panel ul.cuwire-board li').remove();
+			// tr = $('<tr />').appendTo('#cuwire-panel tbody');
+			var cuwireBoardDD = $('#cuwire-panel ul.cuwire-board');
 
 			console.log (Object.keys (platforms));
 
@@ -287,14 +286,14 @@ define(function (require, exports, module) {
 				$('<li class="dropdown-header">'
 				  + platforms[platformName].platform.name + " "
 				  + platforms[platformName].platform.version
-				  + "</li>").appendTo(arduinoBoardDD);
+				  + "</li>").appendTo(cuwireBoardDD);
 
 				var boards = platforms[platformName].boards;
 				Object.keys (boards).sort().map (function (boardId) {
 					var boardMeta = boards[boardId];
 
 					var boardItem = $('<li><a href="#">'+boardMeta.name+"</a></li>");
-					boardItem.appendTo(arduinoBoardDD);
+					boardItem.appendTo(cuwireBoardDD);
 					boardItem.on ('click', self.selectBoardMod.bind (self, boardId, platformName));
 
 					var boardDesc = boardMeta.name + ' (' + boardId
@@ -325,7 +324,7 @@ define(function (require, exports, module) {
 			self.setBoard();
 		}).fail(function (err) {
 			// TODO: show error indicator
-			console.error("[brackets-arduino-node] failed to run arduino.getBoardMeta, error:", err);
+			console.error("[brackets-cuwire-node] failed to run cuwire.getBoardMeta, error:", err);
 		});
 
 	}
@@ -353,7 +352,7 @@ define(function (require, exports, module) {
 	}
 
 
-	ArduinoExt.prototype.compileOrUpload = function (mode) {
+	CuWireExt.prototype.compileOrUpload = function (mode) {
 		var boardMeta = prefs.get ('board');
 		var boardId = boardMeta[0];
 		var platformName = boardMeta[1];
@@ -373,12 +372,12 @@ define(function (require, exports, module) {
 
 		var fullPath = currentDoc.file.fullPath;
 
-		var processStateDiv = $('#arduino-panel .process-state');
+		var processStateDiv = $('#cuwire-panel .process-state');
 		processStateDiv.removeClass ();
 		processStateDiv.addClass ('process-state span2 running');
 
 		// cleanup log before next compile
-		$('#arduino-panel .table-container table tbody tr').remove();
+		$('#cuwire-panel .table-container table tbody tr').remove();
 
 		this.findSketchFolder ((function (err, folder) {
 
@@ -411,7 +410,7 @@ define(function (require, exports, module) {
 		return filename.substr(basePath.length);
 	}
 
-	ArduinoExt.prototype.findSketchFolder = function (cb) {
+	CuWireExt.prototype.findSketchFolder = function (cb) {
 		var error;
 		ProjectManager.getAllFiles (function (fileName) {
 			// searching for ino/pde only
@@ -508,7 +507,7 @@ define(function (require, exports, module) {
 
 	}
 
-	ArduinoExt.prototype.upload = function () {
+	CuWireExt.prototype.upload = function () {
 		var boardMeta = prefs.get ('board');
 		var boardId = boardMeta[0];
 		var platformName = boardMeta[1];
@@ -536,9 +535,9 @@ define(function (require, exports, module) {
 
 	}
 
-	ArduinoExt.prototype.createUI = function (require) {
+	CuWireExt.prototype.createUI = function (require) {
 
-		var myIcon = $("<a href=\"#\" id=\"arduino-sidebar-icon\"></a>");
+		var myIcon = $("<a href=\"#\" id=\"cuwire-sidebar-icon\"></a>");
 
 		myIcon.appendTo($("#main-toolbar .buttons"));
 
@@ -561,15 +560,15 @@ define(function (require, exports, module) {
 
 		myIcon.on ("click", this.panel.toggle.bind (this.panel));
 		// we call toggle because you cannot click on close button on hidden panel
-		$('#arduino-panel .close').on('click', this.panel.toggle.bind (this.panel));
+		$('#cuwire-panel .close').on('click', this.panel.toggle.bind (this.panel));
 
-		var titleButton = $('#arduino-panel button.arduino-board');
+		var titleButton = $('#cuwire-panel button.cuwire-board');
 		titleButton.on ('click', this.showBoardImage.bind (this, null, null));
 
-		var compileButton = $('#arduino-panel button.arduino-compile');
+		var compileButton = $('#cuwire-panel button.cuwire-compile');
 		compileButton.on ('click', this.compileOrUpload.bind (this, "compile"));
 
-		var uploadButton = $('#arduino-panel button.arduino-upload');
+		var uploadButton = $('#cuwire-panel button.cuwire-upload');
 		uploadButton.on ('click', this.compileOrUpload.bind (this, "upload"));
 
 		$(this.domain).on ('log', function (event, scope, message, payload) {
@@ -589,13 +588,13 @@ define(function (require, exports, module) {
 				highlight = 'done';
 			}
 
-			$('#arduino-panel .table-container table tbody').append ("<tr class=\""+highlight+"\"><td>"+scope+"</td><td>"+message+"</td></tr>");
-			var rowpos = $('#arduino-panel .table-container table tbody tr:last').position();
+			$('#cuwire-panel .table-container table tbody').append ("<tr class=\""+highlight+"\"><td>"+scope+"</td><td>"+message+"</td></tr>");
+			var rowpos = $('#cuwire-panel .table-container table tbody tr:last').position();
 
 			// TODO: fix scroll
 			// http://stackoverflow.com/questions/1805808/how-do-i-scroll-a-row-of-a-table-into-view-element-scrollintoview-using-jquery
 			// $('#container').scrollTop( $('#tr').offset().top - $('#td').offset().top )
-			$('#arduino-panel .table-container').scrollTop(rowpos.top);
+			$('#cuwire-panel .table-container').scrollTop(rowpos.top);
 		});
 	}
 
@@ -603,7 +602,7 @@ define(function (require, exports, module) {
 	app.appReady(function(){
 		//		$(brackets.getModule('document/DocumentManager')).on('documentSaved', onDocumentSaved);
 
-		var arduinoExt = new ArduinoExt (require, arduinoDomain);
+		var cuwireExt = new CuWireExt (require, cuwireDomain);
 	});
 
 });
