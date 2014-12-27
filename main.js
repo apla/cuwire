@@ -330,12 +330,40 @@ define(function (require, exports, module) {
 
 	}
 
-	ArduinoExt.prototype.compile = function (cb) {
+	function percentageDegrees (p) {
+		p = (p >= 100 ? 100 : p);
+		var d = 3.6 * p;
+		return d;
+	};
+
+	function createGradient (elem, d, p) {
+		if (d <= 180) {
+			d = 90 + d;
+			elem.css ('background', 'linear-gradient(90deg, #2c3e50 50%, transparent 50%), linear-gradient('+ d +'deg, #2ecc71 50%, #2c3e50 50%)');
+		} else {
+			d = d - 90;
+			elem.css ('background', 'linear-gradient(-90deg, #2ecc71 50%, transparent 50%), linear-gradient('+ d +'deg, #2c3e50 50%, #2ecc71 50%)');
+		}
+		elem.attr ('data-percentage', p);
+		elem.text (p + '%');
+	}
+
+
+	ArduinoExt.prototype.compileOrUpload = function (mode) {
 		var boardMeta = prefs.get ('board');
 		var boardId = boardMeta[0];
 		var platformName = boardMeta[1];
 		var boardMod  = boardMeta[2];
 		var options = {};
+
+		if (mode === 'upload') {
+			options.serial = {
+				port: prefs.get ('port')
+			};
+		}
+
+		options.includes = prefs.get ('includes');
+
 
 		var currentDoc = DocumentManager.getCurrentDocument();
 
@@ -350,44 +378,18 @@ define(function (require, exports, module) {
 
 		this.findSketchFolder ((function (err, folder) {
 
-			this.domain.exec ("compile", [
+			this.domain.exec (mode, [
 				folder,
 				platformName,
 				boardId,
 				boardMod || {},
 				options || {}
 			])
-			.done(function (size) {
+			.done (function (size) {
 				console.log (size);
 
 				processStateDiv.removeClass ();
 				processStateDiv.addClass ('process-state span2 success');
-
-				var percentageDegrees = function( p ) {
-					p = ( p >= 100 ? 100 : p );
-					var d = 3.6 * p;
-					return d;
-				};
-
-				var createGradient = function ( elem, d, p ) {
-					if ( d <= 180 ) {
-						d = 90 + d;
-						elem.css( 'background', 'linear-gradient(90deg, #2c3e50 50%, transparent 50%), linear-gradient('+ d +'deg, #2ecc71 50%, #2c3e50 50%)' );
-					} else {
-						d = d - 90;
-						elem.css( 'background', 'linear-gradient(-90deg, #2ecc71 50%, transparent 50%), linear-gradient('+ d +'deg, #2c3e50 50%, #2ecc71 50%)' );
-					}
-					elem.attr ('data-percentage', p);
-					elem.text (p + '%');
-				}
-
-				var textSizeP = Math.round (size.text / size.maxText * 100);
-				createGradient ($('.pie-text'), percentageDegrees (textSizeP), textSizeP);
-				var dataSizeP = Math.round (size.data / (size.maxData || size.data) * 100);
-				createGradient ($('.pie-data'), percentageDegrees (dataSizeP), dataSizeP);
-				// createGradient ($('.pie-eeprom'), percentageDegrees (0), 0);
-
-				cb && cb();
 
 			}).fail (function (error) {
 				processStateDiv.removeClass ();
@@ -497,26 +499,29 @@ define(function (require, exports, module) {
 	}
 
 	ArduinoExt.prototype.upload = function () {
-		this.findSketchFolder(function (err, folder) {
-			// TODO: use template
-			var dialogHtml = $(
-				'<div id="arduino-board-alert" class="modal">'+
-				'<h3>'+folder+'</h3>'+
-				//				+ '<div class="modal-header">'
-				//				+ '<h1 class="dialog-title">{{Strings.AUTHORS_OF}} {{file}}</h1>'
-				//				+ '</div>'
-				+ '<div class="modal-body"></div><div class="modal-footer">'
-				+ '<button data-button-id="close" class="dialog-button btn btn-80">Close</button></div></div>'
-			);
+		var boardMeta = prefs.get ('board');
+		var boardId = boardMeta[0];
+		var platformName = boardMeta[1];
+		var boardMod = boardMeta[2];
+		var options = {
+			serial: {
+				port: prefs.get ('port')
+			}
+		};
 
-			$(".modal-body", dialogHtml).append ("<h3>Not implemented yet!</h3>");
+		this.domain.exec ("upload", [
+			folder,
+			platformName,
+			boardId,
+			boardMod || {},
+			options || {}
+		])
+		.done(function (size) {
 
-			Dialogs.showModalDialogUsingTemplate(dialogHtml).done(function (buttonId) {
-				if (buttonId === "ok") {
-					// CommandManager.execute("debug.refreshWindow");
-				}
-			});
-
+		}).fail (function (error) {
+			processStateDiv.removeClass ();
+			processStateDiv.addClass ('process-state span2 failure');
+			console.log (error);
 		});
 
 	}
@@ -552,10 +557,10 @@ define(function (require, exports, module) {
 		titleButton.on ('click', this.showBoardImage.bind (this, null, null));
 
 		var compileButton = $('#arduino-panel button.arduino-compile');
-		compileButton.on ('click', this.compile.bind (this, null, null));
+		compileButton.on ('click', this.compileOrUpload.bind (this, "compile"));
 
 		var uploadButton = $('#arduino-panel button.arduino-upload');
-		uploadButton.on ('click', this.upload.bind (this, null, null));
+		uploadButton.on ('click', this.compileOrUpload.bind (this, "upload"));
 
 		$(this.domain).on ('log', function (event, scope, message, payload) {
 //			console.log (message);
@@ -563,6 +568,13 @@ define(function (require, exports, module) {
 			var highlight = '';
 			if (payload && payload.stderr) {
 				highlight = 'error';
+			} else if (payload && payload.maxText) {
+				var textSizeP = Math.round (payload.text / payload.maxText * 100);
+				createGradient ($('.pie-text'), percentageDegrees (textSizeP), textSizeP);
+				var dataSizeP = Math.round (payload.data / (payload.maxData || payload.data) * 100);
+				createGradient ($('.pie-data'), percentageDegrees (dataSizeP), dataSizeP);
+				// createGradient ($('.pie-eeprom'), percentageDegrees (0), 0);
+
 			} else if (message.match (/^done(?:\s|$)/)) {
 				highlight = 'done';
 			}

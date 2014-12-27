@@ -12,7 +12,7 @@
 
 	var ArduinoData = require ('./data');
 	var ArduinoCompiler = require ('./compiler');
-//	var Arduinouploader = require ('./uploader');
+	var ArduinoUploader = require ('./uploader');
 
 	var theArduino;
 
@@ -77,8 +77,87 @@
 		);
 
 		compiler.on ('done', function (size) {
+//			console.log ('arduino domain: compiled', arguments);
+			cb ();
+		});
+
+		compiler.on ('log', function (scope, message, payload) {
+//			console.log (scope, message, payload);
+			_domainManager.emitEvent ('arduino', 'log', [scope, message, payload]);
+		});
+
+		compiler.on ('error', function (err) {
+//			console.log ('error', err);
+			_domainManager.emitEvent ('arduino', 'log', [err.scope, err.toString(), err]);
+			cb (err);
+		});
+
+	}
+
+	function upload (params) {
+		var sketchFolder    = params.shift ();
+		var platformName    = params.shift ();
+		var boardId         = params.shift ();
+		var boardMod        = params.shift ();
+		var options         = params.shift ();
+
+		var cb = arguments[arguments.length-1];
+
+		if (!theArduino) {
+			// show error
+			// cb
+			return;
+		}
+
+		var compiler = new ArduinoCompiler (
+			// "sketch" folder
+			sketchFolder,
+			// platform name
+			platformName,
+			// board id
+			boardId,
+			// boardVariation (e.g. cpu menu selection)
+			boardMod || {},
+			// options (e.g. custom build folder)
+			options || {
+				// build folder
+				// buildFolder: "/Users/apla/tmp/cuwire-build"
+			}
+		);
+
+		compiler.on ('done', function (size) {
 			console.log ('arduino domain: compiled', arguments);
-			cb (null, size);
+			var uploader = new ArduinoUploader (
+				// "sketch" folder
+				compiler,
+				// platform name
+				platformName,
+				// board id
+				boardId,
+				// boardVariation (e.g. cpu menu selection)
+				boardMod || {},
+				// options (e.g. custom build folder)
+				options || {
+					// build folder
+					// buildFolder: "/Users/apla/tmp/cuwire-build"
+				}
+			);
+
+			uploader.on ('done', function (size) {
+//				console.log ('arduino domain: uploaded', arguments);
+				cb();
+			});
+
+			uploader.on ('log', function (scope, message, payload) {
+				console.log (scope, message, payload);
+				_domainManager.emitEvent ('arduino', 'log', [scope, message, payload]);
+			});
+
+			uploader.on ('error', function (err) {
+//				console.log ('error', err);
+				_domainManager.emitEvent ('arduino', 'log', [err.scope, err.toString(), err]);
+				cb (err);
+			});
 		});
 
 		compiler.on ('log', function (scope, message, payload) {
@@ -177,9 +256,9 @@
 			true,          // this command is asynchronous in Node
 			"compile current sketch",
 			[{
-				name: "currentFilePath",
+				name: "sketchFolder",
 				type: "string",
-				description: "current file path — to find a ino sketch"
+				description: "sketch folder, contains .ino or .pde file"
 			}, {
 				name: "platformName",
 				type: "string",
@@ -189,10 +268,44 @@
 				type: "string",
 				description: "board identifier"
 			}, {
-				name: "menus",
+				name: "boardMod",
 				type: "object",
-				description: "menus"
-
+				description: "board modification"
+			}, {
+				name: "options",
+				type: "object",
+				description: "options, like includes"
+			}],
+			[{name: "size", // return values
+			  type: "object",
+			  description: "compiled code size"}]
+		);
+		domainManager.registerCommand(
+			"arduino",     // domain name
+			"upload",     // command name
+			upload,       // command handler function
+			true,          // this command is asynchronous in Node
+			"compile then upload sketch",
+			[{
+				name: "sketchFolder",
+				type: "string",
+				description: "sketch folder, contains .ino or .pde file"
+			}, {
+				name: "platformName",
+				type: "string",
+				description: "arduino platform name"
+			}, {
+				name: "boardId",
+				type: "string",
+				description: "board identifier"
+			}, {
+				name: "boardMod",
+				type: "object",
+				description: "board modification"
+			}, {
+				name: "options",
+				type: "object",
+				description: "options, like includes or upload port"
 			}],
 			[{name: "size", // return values
 			  type: "object",

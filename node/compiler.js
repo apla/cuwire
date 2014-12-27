@@ -128,7 +128,7 @@ ArduinoCompiler.prototype.runNext = function (scope, pos, length) {
 	this._done[scope] = true;
 
 	if (scope === 'size') {
-		this.emit ('log', 'all', 'done');
+		this.emit ('log', 'compile', 'done');
 //		console.log ('COMPILATION COMPLETE!');
 //		console.log (this.platform.recipe.size.regex.data.toString ());
 //		console.log (this.platform.recipe.size.regex.eeprom.toString ());
@@ -798,7 +798,7 @@ ArduinoCompiler.prototype.checkSize = function () {
 			'text', size + (this.compiledSize.maxText ? '/'+this.compiledSize.maxText : ""),
 			'data', sizeData + (this.compiledSize.maxData ? '/'+this.compiledSize.maxData : ""),
 			'eeprom', sizeEeprom
-		].join (' '));
+		].join (' '), this.compiledSize);
 		//		console.log ('[size]', 'text', size, 'data', sizeData, 'eeprom', sizeEeprom);
 
 
