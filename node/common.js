@@ -30,7 +30,7 @@ function pathToVar (root, varPath, value) {
 			if (root[sec] === undefined) {
 				root[sec] = emptyO;
 			}
-			if (i < refs.length - 1 && root[sec].constructor === String) {
+			if (i < refs.length - 1 && typeof root[sec] === "string") {
 				root[sec] = new String (root[sec]);
 			}
 			if (i === refs.length - 1) {

@@ -148,9 +148,9 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 	var boards = {};
 	var keyValue = {};
 
-	data.toString().split('\n').forEach(function(line){
-		if(line.indexOf("#") == 0) return;
-		if(line.length == 0) return;
+	data.toString ().split ('\n').forEach (function (line) {
+		if (line.indexOf("#") === 0) return;
+		if (line.length === 0) return;
 		// console.log (line);
 		var ref = line.substring (0, line.indexOf ('='));
 		// TODO: menu handling
