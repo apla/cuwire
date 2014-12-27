@@ -57,7 +57,7 @@
 	height: 3rem;
 	border-radius: 100%;
 /*	margin: 1rem 90%;*/
-	margin: 3px 3px 3px 18px;
+	margin: 3px;
 	/*background:
 	linear-gradient(-90deg, #2ecc71 50%, transparent 50%),
 	linear-gradient(180deg, #2c3e50 50%, #2ecc71 50%);*/
@@ -82,9 +82,17 @@
 }
 
 #arduino-panel .pie-label {
+/*
 	-webkit-transform: rotate(270deg) translateX(-2.5rem);
 	-webkit-transform-origin: left top 0;
-	float: left;
+*/
+	float: right;
+	margin-right: 10%;
+	text-align: right;
+}
+#arduino-panel .pie-label span.t {
+	text-align: center;
+	font-weight: bold;
 }
 
 #arduino-panel .process-state .label {

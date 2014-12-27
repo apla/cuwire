@@ -336,16 +336,20 @@ define(function (require, exports, module) {
 		return d;
 	};
 
-	function createGradient (elem, d, p) {
+	function createGradient (elemPie, elemValue, elemMax, value, max) {
+		var p = Math.round (value / (max || value) * 100);
+		var d = percentageDegrees (p);
 		if (d <= 180) {
 			d = 90 + d;
-			elem.css ('background', 'linear-gradient(90deg, #2c3e50 50%, transparent 50%), linear-gradient('+ d +'deg, #2ecc71 50%, #2c3e50 50%)');
+			elemPie.css ('background', 'linear-gradient(90deg, #2c3e50 50%, transparent 50%), linear-gradient('+ d +'deg, #2ecc71 50%, #2c3e50 50%)');
 		} else {
 			d = d - 90;
-			elem.css ('background', 'linear-gradient(-90deg, #2ecc71 50%, transparent 50%), linear-gradient('+ d +'deg, #2c3e50 50%, #2ecc71 50%)');
+			elemPie.css ('background', 'linear-gradient(-90deg, #2ecc71 50%, transparent 50%), linear-gradient('+ d +'deg, #2c3e50 50%, #2ecc71 50%)');
 		}
-		elem.attr ('data-percentage', p);
-		elem.text (p + '%');
+		elemPie.attr ('data-percentage', p);
+		elemPie.text (p + '%');
+		elemValue.text (value);
+		elemMax.text (max || 'n/a');
 	}
 
 
@@ -466,7 +470,7 @@ define(function (require, exports, module) {
 			+"Please do it manually. We don\'t store your selection because path to the sketch file can be bigger "
 			+"than available memory. Sorry!</p><div class=\"btn-group btn-group-vertical\">";
 			message += fileList.sort().map (function (fileObject, fileObjectIdx) {
-				var sketchFolderPath = fileObject.parentPath;
+				var sketchFolderPath = fileObject.parentPath.replace (/\/$/, "");
 				return [
 					'<button data-button-id="cuwire-sketch-',
 					fileObjectIdx,
@@ -569,10 +573,10 @@ define(function (require, exports, module) {
 			if (payload && payload.stderr) {
 				highlight = 'error';
 			} else if (payload && payload.maxText) {
-				var textSizeP = Math.round (payload.text / payload.maxText * 100);
-				createGradient ($('.pie-text'), percentageDegrees (textSizeP), textSizeP);
-				var dataSizeP = Math.round (payload.data / (payload.maxData || payload.data) * 100);
-				createGradient ($('.pie-data'), percentageDegrees (dataSizeP), dataSizeP);
+//				var textSizeP = Math.round (payload.text / payload.maxText * 100);
+				createGradient ($('.pie.pie-text'), $('.pie-label.pie-text .value'), $('.pie-label.pie-text .full'), payload.text, payload.maxText);
+//				var dataSizeP = Math.round (payload.data / (payload.maxData || payload.data) * 100);
+				createGradient ($('.pie.pie-data'), $('.pie-label.pie-data .value'), $('.pie-label.pie-data .full'), payload.data, payload.maxData);
 				// createGradient ($('.pie-eeprom'), percentageDegrees (0), 0);
 
 			} else if (message.match (/^done(?:\s|$)/)) {
