@@ -114,24 +114,18 @@ define(function (require, exports, module) {
 			throw "unexpected boardId, not implemented yet";
 		}
 
-		// TODO: use template
-		this.boardImagePopUp = $(
-			'<div id="arduino-board-image" class="modal">'
-			//				+ '<div class="modal-header">'
-			//				+ '<h1 class="dialog-title">{{Strings.AUTHORS_OF}} {{file}}</h1>'
-			//				+ '</div>'
-			+ '<div class="modal-body"></div><div class="modal-footer">'
-			+ '<button data-button-id="close" class="dialog-button btn btn-80">Close</button></div></div>'
-		);
-
-		if (this.boardImage) {
-			$(".modal-body", this.boardImagePopUp).append (this.boardImage);
-		} else {
-			$(".modal-body", this.boardImagePopUp).append (
-				'<h3>No board image found</h3>'
-			);
+		var message = "<h3>No board image found</h3>";
+		if (this.board.image) {
+			message = '<img src="'+this.board.imageUrl+'"/>';
 		}
-		Dialogs.showModalDialogUsingTemplate(this.boardImagePopUp).done(function (buttonId) {
+
+		Dialogs.showModalDialog (
+			'cuwire-board-image',
+			this.board.name, // title
+			message // dialog body
+			// buttons, by default ok button
+			// autodismiss, true by default
+		).done (function (buttonId) {
 			if (buttonId === "ok") {
 				// CommandManager.execute("debug.refreshWindow");
 			}
@@ -153,22 +147,31 @@ define(function (require, exports, module) {
 		}
 
 		var self = this;
-		this.boardImage = null;
+		var boardMeta = this.platforms[platformName].boards[boardId];
+		var boardImageUrl = require.toUrl ('./assets/board-images/'+boardId+'.jpg');
+
+		this.board = {
+			id:    boardId,
+			meta:  boardMeta,
+			name:  boardMeta.name,
+			image: null,
+			imageUrl: boardImageUrl
+		};
 
 		var titleButton = $('#arduino-panel button.arduino-board');
 		if (this.platforms[platformName])
-			titleButton.text (this.platforms[platformName].boards[boardId].name);
+			titleButton.text (boardMeta.name);
 
 		var fs = brackets.getModule("filesystem/FileSystem");
-		var boardImageUrl = require.toUrl ('./assets/board-images/'+boardId+'.jpg');
 		var fileObj = fs.getFileForPath (boardImageUrl);
+
 		fileObj.exists (function (err, exists) {
 			if (err || !exists)
 				return;
 			var bi = new Image ();
 			bi.addEventListener ('load',  function () {
 				console.log ('load done', arguments);
-				self.boardImage = bi;
+				self.board.image = bi;
 			}, false);
 			bi.addEventListener ('error', function () {
 				console.log ('load error', arguments);
