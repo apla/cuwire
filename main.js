@@ -15,7 +15,10 @@ define(function (require, exports, module) {
 		ProjectManager     = brackets.getModule("project/ProjectManager"),
 		WorkspaceManager   = brackets.getModule('view/WorkspaceManager');
 
+	var basicDialogMst     = require("text!assets/templates/basic-dialog.mst"),
+		boardModsMst       = require("text!assets/templates/board-mods.mst");
 
+	var boardMods = Mustache.compile (boardModsMst);
 
 	var prefs = PreferencesManager.getExtensionPrefs (moduleId);
 
@@ -107,16 +110,37 @@ define(function (require, exports, module) {
 		$('#cuwire-panel button.cuwire-port').text (portName.replace (/^\/dev\/cu\./, ""));
 	}
 
-	CuWireExt.prototype.showBoardImage = function (boardId, platformName) {
-		console.log ("board image", boardId, platformName, this.boardImage);
+	CuWireExt.prototype.showBoardInfo = function (boardId, platformName) {
+
+		var messageData = {
+			images: []
+		};
+
+		var newBoard = false;
 		if (boardId) {
-			throw "unexpected boardId, not implemented yet";
+			if (this.board && boardId !== this.board.id) {
+				newBoard = true;
+			}
+			messageData.infoActive = "active";
+		} else {
+			boardId      = this.board.id;
+			platformName = this.platformName;
+			messageData.imageActive = "active";
 		}
 
-		var message = "<h3>No board image found</h3>";
-		if (this.board.image) {
-			message = '<img src="'+this.board.imageUrl+'"/>';
+		var boardMeta = this.platforms[platformName].boards[boardId];
+		messageData.mods = boardMeta.mods;
+
+		// imageOK is null when image not found, is undefined when image loading
+		// and true if image cached successfully
+		if (boardMeta.imageUrl && boardMeta.imageOk !== null) {
+			messageData.images.push ({src: boardMeta.imageUrl});
 		}
+
+		// render cached mustache template
+		var message = boardMods (messageData);
+
+		var formData = {};
 
 		var dlg = Dialogs.showModalDialog (
 			'cuwire-board-image',
@@ -124,62 +148,100 @@ define(function (require, exports, module) {
 			message // dialog body
 			// buttons, by default ok button
 			// autodismiss, true by default
-		).done (function (buttonId) {
+		).done ((function (buttonId) {
 			if (buttonId === "ok") {
+				console.log (formData);
 				// CommandManager.execute("debug.refreshWindow");
+				var boardMod = {};
+				if ("menu" in boardMeta) {
+					for (var modType in boardMeta.menu) {
+						boardMod[modType] = formData[modType];
+						if (!boardMod[modType]) {
+							console.error ('board modification', modType, 'not defined, continue with caution');
+						}
+					}
+				}
+				this.setBoard (boardId, platformName, boardMod);
 			}
+		}).bind (this));
+
+		var theBoard = this.board;
+
+		var boardModInputs = $("#cuwire-board-mod input");
+		// WTF: there is little delay between actual rendering and request to create an dom nodes
+		// setTimeout (function () {
+			boardModInputs = $("#cuwire-board-mod input");
+
+			// if we had a new board, then we need to discard previous settings
+			boardModInputs.each (function (idx) {
+				var typeId = $(this).attr('name');
+				var modId  = $(this).attr('value');
+				if (newBoard) {
+					// select every first radio in every mod
+					if (!$(this).prev().length) {
+						$(this).prop("checked", true);
+					}
+				} else {
+					// select appropriate inputs from prefs
+					if (theBoard.mod[typeId] && theBoard.mod[typeId] === modId) {
+						$(this).prop("checked", true);
+					}
+				}
+//					console.log( index + ": " + $( this ).text() );
+			});
+
+			if (boardModInputs[0] && boardModInputs[0].form) {
+				var formEl = boardModInputs[0].form;
+				formData = getFormFields (formEl);
+			}
+
+		// }, 100);
+
+		// WTF: brackets have no option to prevent dialog close
+		// I can use autodismiss: false, but this is not works, really
+		// WTF: also, you can't do anything with app with modal window open. even quit app!!!
+
+
+		boardModInputs.change (function() {
+			var formEl = $(this)[0].form;
+			formData = getFormFields (formEl);
+			console.log (formData);
+			console.log ($(this).attr('name'), $(this).attr('value'));
 		});
+
+
 	}
 
 	CuWireExt.prototype.setBoard = function (boardId, platformName, boardMod) {
-		// TODO: set board in preferences
 		if (!boardId) {
 			var boardPref = prefs.get ('board');
+
 			// no preference, first launch
 			if (!boardPref)
 				return;
-			boardId = boardPref[0];
+
+			boardId      = boardPref[0];
 			platformName = boardPref[1];
+			boardMod     = boardPref[2];
 		} else {
 			prefs.set ('board', [boardId, platformName, boardMod]);
 		}
 
 		var self = this;
 		var boardMeta = this.platforms[platformName].boards[boardId];
-		var boardImageUrl = require.toUrl ('./assets/board-images/'+boardId+'.jpg');
 
 		this.board = {
 			id:    boardId,
 			meta:  boardMeta,
 			name:  boardMeta.name,
-			image: null,
-			imageUrl: boardImageUrl
+			mod:   boardMod
 		};
+
+		this.platformName = platformName;
 
 		var titleButton = $('#cuwire-panel button.cuwire-board');
 		if (this.platforms[platformName])
 			titleButton.text (boardMeta.name);
-
-		var fs = brackets.getModule("filesystem/FileSystem");
-		var fileObj = fs.getFileForPath (boardImageUrl);
-
-		fileObj.exists (function (err, exists) {
-			if (err || !exists)
-				return;
-			var bi = new Image ();
-			bi.addEventListener ('load',  function () {
-				console.log ('load done', arguments);
-				self.board.image = bi;
-			}, false);
-			bi.addEventListener ('error', function () {
-				console.log ('load error', arguments);
-			}, false);
-			bi.addEventListener ('abort', function () {
-				console.log ('load abort', arguments);
-			}, false);
-			bi.src = encodeURI (boardImageUrl);
-		})
-
 	}
 
 	function getFormFields (formEl) {
@@ -200,66 +262,38 @@ define(function (require, exports, module) {
 			return;
 		}
 
-		// WTF: mustache doesn't support iteration over object keys
-		var message = "<h3>Select:</h3><form id=\"cuwire-board-mod\">";
-		for (var modType in boardMeta.menu) {
-			// variants.push (modType+':');
-			var submenu = "<fieldset><p>"+modType+"</p>";
-			var idx = 0;
-			for (var mod in boardMeta.menu[modType]) {
-				// variants.push (boardMeta.menu[modType][mod].[modType + "_modification"]);
-				submenu += "<div><input type=\"radio\" id=\""+modType+mod+"\" name=\""+modType+"\" value=\""+mod+"\""+(idx === 0 ? " checked" : "")+"><label for=\""+modType+mod+"\">" + boardMeta.menu[modType][mod][modType + "_modification"] + "</label></div>";
-				idx ++;
+		this.showBoardInfo (boardId, platformName);
+	}
+
+	CuWireExt.prototype.getBoardImage = function (boardId, platformName) {
+		var boardMeta = this.platforms[platformName].boards[boardId];
+		var boardImageUrl = require.toUrl ('./assets/board-images/'+boardId+'.jpg');
+
+		boardMeta.imageUrl = boardImageUrl;
+
+		var fs = brackets.getModule ("filesystem/FileSystem");
+		var fileObj = fs.getFileForPath (boardImageUrl);
+
+		fileObj.exists (function (err, exists) {
+			if (err || !exists) {
+				boardMeta.imageOk = null;
+				return;
 			}
-			message += submenu + '</fieldset>';
-		}
-		message += "</form>";
-
-		var formData = {};
-
-		var dlg = Dialogs.showModalDialog (
-			'cuwire-board-mod',
-			boardMeta.name + ' modifications:', // title
-			message, // dialog body
-			null, // buttons, by default ok button
-			true // autodismiss, true by default
-		).done ((function (buttonId) {
-			if (buttonId === "ok") {
-				var formEl = document.getElementById ("cuwire-board-mod");
-				console.log (formData);
-				// CommandManager.execute("debug.refreshWindow");
-				var boardMod = {};
-				for (var modType in boardMeta.menu) {
-					boardMod[modType] = formData[modType];
-					if (!boardMod[modType]) {
-						console.error ('board modification', modType, 'not defined, continue with caution');
-					}
-				}
-				this.setBoard (boardId, platformName, boardMod);
-			}
-		}).bind (this));
-
-		var boardModInputs = $("#cuwire-board-mod input");
-		// WTF: there is little delay between actual rendering and request to create an dom nodes
-		// setTimeout (function () {
-			boardModInputs = $("#cuwire-board-mod input");
-			var formEl = boardModInputs[0].form;
-			formData = getFormFields (formEl);
-		// }, 100);
-
-		// WTF: brackets have no option to prevent dialog close
-		// I can use autodismiss: false, but this is not works, really
-		// WTF: also, you can't do anything with app with modal window open. even quit app!!!
-
-
-		boardModInputs.change (function() {
-			var formEl = $(this)[0].form;
-			formData = getFormFields (formEl);
-			// console.log (formData);
-			// console.log ($(this).attr('name'), $(this).attr('value'));
-		});
-
-
+			var bi = new Image ();
+			bi.addEventListener ('load',  function () {
+//				console.log ('board image load done', arguments);
+				boardMeta.imageOk = true;
+			}, false);
+			bi.addEventListener ('error', function () {
+				console.log ('board image file found, but got error on loading', arguments);
+				boardMeta.imageOk = null;
+			}, false);
+			bi.addEventListener ('abort', function () {
+				console.log ('board image file found, but got error on loading', arguments);
+				boardMeta.imageOk = null;
+			}, false);
+			bi.src = encodeURI (boardImageUrl);
+		})
 	}
 
 	CuWireExt.prototype.getBoardMeta = function () {
@@ -292,6 +326,8 @@ define(function (require, exports, module) {
 				Object.keys (boards).sort().map (function (boardId) {
 					var boardMeta = boards[boardId];
 
+					self.getBoardImage (boardId, platformName);
+
 					var boardItem = $('<li><a href="#">'+boardMeta.name+"</a></li>");
 					boardItem.appendTo(cuwireBoardDD);
 					boardItem.on ('click', self.selectBoardMod.bind (self, boardId, platformName));
@@ -300,17 +336,26 @@ define(function (require, exports, module) {
 					if ("menu" in boardMeta) {
 						boardDesc += ', modifications: ';
 						var variants = [];
-//						boardItem.addClass ('dropdown-submenu');
-//						var submenu = $("<ul class=\"dropdown-menu\">");
+
+						boardMeta.mods = [];
+						var modDesc = {};
+						boardMeta.mods.push (modDesc);
+
 						for (var modType in boardMeta.menu) {
+							// TODO: use description from arduino menu
+							modDesc.typeTitle = modType;
+							modDesc.typeId    = modType;
+							modDesc.modList   = [];
+
 							variants.push (modType+':');
+							var idx = 0;
 							for (var mod in boardMeta.menu[modType]) {
-								variants.push (boardMeta.menu[modType][mod][modType + "_modification"]);
-//								submenu.append ($("<li><a href=\"#\">" + boardMeta.menu.cpu[cpuVariant].cpu_modification + "</a></li>"));
+								var modTitle = boardMeta.menu[modType][mod][modType + "_modification"];
+								variants.push (modTitle);
+								modDesc.modList.push ({modTitle: modTitle, modId: mod, index: idx});
+								idx++;
 							}
 						}
-
-						// boardItem.append (submenu);
 
 						boardDesc += variants.join (" ");
 
@@ -563,7 +608,7 @@ define(function (require, exports, module) {
 		$('#cuwire-panel .close').on('click', this.panel.toggle.bind (this.panel));
 
 		var titleButton = $('#cuwire-panel button.cuwire-board');
-		titleButton.on ('click', this.showBoardImage.bind (this, null, null));
+		titleButton.on ('click', this.showBoardInfo.bind (this, null, null));
 
 		var compileButton = $('#cuwire-panel button.cuwire-compile');
 		compileButton.on ('click', this.compileOrUpload.bind (this, "compile"));
