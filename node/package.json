@@ -3,9 +3,12 @@
 	"version": "0.2.1",
 
 	"title": "tool to compile and upload mcu firmware",
-	"homepage": "https://github.com/apla/unode",
+	"homepage": "https://github.com/apla/cuwire",
 	"description": "mainly based on arduino third party hardware specification, new platforms will be added soon",
 
 	"author": "Ivan Baktsheev <dot.and.thing@gmail.com>",
-	"license": "MIT"
+	"license": "MIT",
+    "dependencies": {
+        "serialport": "*"
+    }
 }
