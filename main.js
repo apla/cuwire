@@ -79,14 +79,14 @@ define(function (require, exports, module) {
 			// user must select port prior to launch
 			console.log(
 				"[brackets-cuwire-node] Available ports:",
-				ports.join (", ")
+				ports.map (function (port) {return port.name}).join (", ")
 			);
 			cuwirePortDD.empty ();
 			// tr = $('<tr />').appendTo('#cuwire-panel tbody');
 
-			ports.forEach (function (portName) {
-				$('<li><a href="#">'+portName+"</a></li>")
-				.on ('click', self.setPort.bind (self, portName))
+			ports.forEach (function (port) {
+				$('<li><a href="#">'+port.name+"</a></li>")
+				.on ('click', self.setPort.bind (self, port))
 				.appendTo(cuwirePortDD);
 			});
 
@@ -100,17 +100,17 @@ define(function (require, exports, module) {
 
 	}
 
-	CuWireExt.prototype.setPort = function (portName) {
+	CuWireExt.prototype.setPort = function (port) {
 		// TODO: set port in preferences
-		if (!portName) {
-			portName = prefs.get ('port');
+		if (!port) {
+			port = prefs.get ('port');
 			// no preference, first launch
-			if (!portName)
+			if (!port)
 				return;
 		} else {
-			prefs.set ('port', portName);
+			prefs.set ('port', port);
 		}
-		$('#cuwire-panel button.cuwire-port').text (portName.replace (/^\/dev\/cu\./, ""));
+		$('#cuwire-panel button.cuwire-port').text (port.name.replace (/^\/dev\/cu\./, ""));
 	}
 
 	CuWireExt.prototype.showBoardInfo = function (boardId, platformName) {
@@ -307,7 +307,14 @@ define(function (require, exports, module) {
 		// TODO: author's module location - use preferences for this
 		// TODO: when we can't find arduino ide in default locations gracefully degrade
 		// TODO: add support for energia
-		this.domain.exec("getBoardsMeta", [prefs.get ('arduino-ide')])
+        var locations = [];
+        if (prefs.get ('arduino-ide')) {
+            locations.push (prefs.get ('arduino-ide'));
+        }
+        if (prefs.get ('energia-ide')) {
+            locations.push (prefs.get ('energia-ide'));
+        }
+		this.domain.exec("getBoardsMeta", locations)
 		.done(function (platforms) {
 			console.log("[brackets-cuwire-node] Available boards:");
 
