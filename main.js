@@ -13,12 +13,15 @@ define(function (require, exports, module) {
 		Dialogs            = brackets.getModule("widgets/Dialogs"),
 	    DocumentManager    = brackets.getModule("document/DocumentManager"),
 		ProjectManager     = brackets.getModule("project/ProjectManager"),
-		WorkspaceManager   = brackets.getModule('view/WorkspaceManager');
+		WorkspaceManager   = brackets.getModule('view/WorkspaceManager'),
+		PopUpManager       = brackets.getModule("widgets/PopUpManager");
 
 	var basicDialogMst     = require("text!assets/templates/basic-dialog.mst"),
-		boardModsMst       = require("text!assets/templates/board-mods.mst");
+		boardModsMst       = require("text!assets/templates/board-mods.mst"),
+		settingsMst        = require("text!assets/templates/settings.mst");
 
 	var boardMods = Mustache.compile (boardModsMst);
+	var settingsRenderer = Mustache.compile (settingsMst);
 
 	var prefs = PreferencesManager.getExtensionPrefs (moduleId);
 
@@ -303,7 +306,8 @@ define(function (require, exports, module) {
 
 		// TODO: author's module location - use preferences for this
 		// TODO: when we can't find arduino ide in default locations gracefully degrade
-		this.domain.exec("getBoardsMeta", ["/Applications/devel/Arduino.app"])
+		// TODO: add support for energia
+		this.domain.exec("getBoardsMeta", [prefs.get ('arduino-ide')])
 		.done(function (platforms) {
 			console.log("[brackets-cuwire-node] Available boards:");
 
@@ -552,32 +556,54 @@ define(function (require, exports, module) {
 
 	}
 
-	CuWireExt.prototype.upload = function () {
-		var boardMeta = prefs.get ('board');
-		var boardId = boardMeta[0];
-		var platformName = boardMeta[1];
-		var boardMod = boardMeta[2];
-		var options = {
-			serial: {
-				port: prefs.get ('port')
-			}
+	CuWireExt.prototype.showSettings = function () {
+
+		var messageData = {
+			"arduinoIDE": prefs.get ('arduino-ide'),
+			"energiaIDE": prefs.get ('energia-ide')
 		};
 
-		this.domain.exec ("upload", [
-			folder,
-			platformName,
-			boardId,
-			boardMod || {},
-			options || {}
-		])
-		.done(function (size) {
+		var message = settingsRenderer (messageData);
 
-		}).fail (function (error) {
-			processStateDiv.removeClass ();
-			processStateDiv.addClass ('process-state span2 failure');
-			console.log (error);
+		var formData = {};
+
+		var dlg = Dialogs.showModalDialog (
+			'cuwire-settings',
+			"cuwire settings", // title
+			message // dialog body
+			// buttons, by default ok button
+			// autodismiss, true by default
+		).done ((function (buttonId) {
+			if (buttonId === "ok") {
+				console.log (formData);
+				// CommandManager.execute("debug.refreshWindow");
+				prefs.set ('arduino-ide', formData.arduinoIDE);
+				prefs.set ('energia-ide', formData.energiaIDE);
+			}
+		}).bind (this));
+
+		var theBoard = this.board;
+
+		var boardPrefInputs = $("#cuwire-settings-panel input");
+		// WTF: there is little delay between actual rendering and request to create an dom nodes
+		// setTimeout (function () {
+			boardPrefInputs = $("#cuwire-settings-panel input");
+			var formEl = boardPrefInputs[0].form;
+			formData = getFormFields (formEl);
+
+		// }, 100);
+
+		boardPrefInputs.change (function() {
+			var formEl = $(this)[0].form;
+			formData = getFormFields (formEl);
 		});
 
+//		$settings.find("#markdown-preview-format")
+//		.prop("selectedIndex", _prefs.get("useGFM") ? 1 : 0)
+//		.change(function (e) {
+//			_prefs.set("useGFM", e.target.selectedIndex === 1);
+//			_updateSettings();
+//		});
 	}
 
 	CuWireExt.prototype.createUI = function (require) {
@@ -615,6 +641,9 @@ define(function (require, exports, module) {
 
 		var uploadButton = $('#cuwire-panel button.cuwire-upload');
 		uploadButton.on ('click', this.compileOrUpload.bind (this, "upload"));
+
+		var settingsButton = $('#cuwire-panel button.cuwire-settings');
+		settingsButton.on ('click', this.showSettings.bind (this));
 
 		$(this.domain).on ('log', function (event, scope, message, payload) {
 //			console.log (message);

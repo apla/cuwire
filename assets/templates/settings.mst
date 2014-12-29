@@ -1,0 +1,11 @@
+<div id="cuwire-settings-panel">
+	<form>
+	<div>
+	<label for="cuwire-pref-arduinoIDE">Arduino IDE location</label>
+	<input id="cuwire-pref-arduinoIDE" name="arduinoIDE" value="{{arduinoIDE}}"/>
+	</div><div>
+	<label for="cuwire-pref-energiaIDE">Energia IDE location</label>
+	<input id="cuwire-pref-energiaIDE" name="energiaIDE" value="{{energiaIDE}}"/>
+	</div>
+	</form>
+</div>
