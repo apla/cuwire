@@ -199,7 +199,12 @@
 		var err, result = [];
 		serialport.list(function (err, ports) {
 			ports.forEach(function(port) {
-				result.push (port.comName);
+				result.push ({
+					name:         port.comName,
+					manufacturer: port.manufacturer,
+					vendorId:     port.vendorId,
+					productId:    port.productId
+				});
 //				console.log(port.comName);
 //				console.log(port.pnpId);
 //				console.log(port.manufacturer);
