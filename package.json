@@ -1,15 +1,18 @@
 {
 	"name": "cuwire",
-	"version": "0.3.1",
-
-	"title": "Microcontroller development for Brackets",
+	"version": "0.3.2",
+	"title": "cuwire: IDE for microcontrollers",
 	"homepage": "https://github.com/apla/brackets-cuwire",
-	"description": "Now Brackets can be used to develop software for MCU's. Throw away you Arduino, Energia and others.",
+	"description": "Now Brackets can be used to develop software for MCUs. Throw away you Arduino, Energia and others.",
 
-	"author": "Ivan Baktsheev <dot.and.thing@gmail.com>",
+	"author": "Ivan Baktsheev",
 	"license": "MIT",
 
 	"engines": {
 		"brackets": ">=0.36.0"
+	},
+	"scripts": {
+		"archive": "git archive --format zip -o cuwire-0.3.2.zip master",
+		"prepare-binaries": ""
 	}
 }
