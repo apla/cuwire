@@ -80,7 +80,8 @@ Arduino.prototype.processDirs = function (type, dirs) {
 
 	var self = this;
 
-	dirs.forEach (function (dir) {
+	dirs.forEach (function (dirStr) {
+        var dir = path.resolve (dirStr);
 		fs.stat (path.join (dir, 'hardware'),  self.enumerateHardware.bind  (self, path.join (dir, 'hardware'), self.ioDone ('hardware', dir)));
 		fs.stat (path.join (dir, 'libraries'), self.enumerateLibraries.bind (self, path.join (dir, 'libraries'), self.ioDone ('libraries', dir)));
 		// TODO: enumerateExamples
@@ -115,11 +116,13 @@ function appendStandardLocations (type, locations) {
 			locations.push ("/Applications/Arduino.app/Contents/Java");
 		} else if (os.platform () === 'win32') {
 			locations.push ("C:/Program Files/Arduino");
+            locations.push ("C:/Program Files (x86)/Arduino");
 		}
 
 		if (!locations.length)
 			return;
 
+        console.log ('[brackets-cuwire] search for runtime within:', locations.join (", "));
 		return locations;
 	}
 
@@ -135,6 +138,7 @@ function appendStandardLocations (type, locations) {
 	// TODO: read preference file ~/Library/Arduino15/preferences.txt
 	locations.push (path.join (getUserHome(), "Documents/Arduino"));
 
+    console.log ('[brackets-cuwire] search for sketches within:', locations.join (", "));
 	return locations;
 }
 
@@ -184,7 +188,10 @@ Arduino.prototype.enumerateLibraries = function (fullPath, done, err, data) {
 	}
 
 	common.pathWalk (fullPath, foundMeta, {
-		nameMatch: /.*\/(examples|.+\.cp{0,2}|.+\.h)$/i
+		nameMatch: (os.platform() === "win32"
+            ? /.*\\(examples|.+\.cp{0,2}|.+\.h)$/i
+            : /.*\/(examples|.+\.cp{0,2}|.+\.h)$/i
+        )
 	});
 
 	var self = this;
@@ -209,7 +216,7 @@ Arduino.prototype.enumerateLibraries = function (fullPath, done, err, data) {
 			}
 			var relativePath = fileName.substr (fullPath.length + 1);
 //			console.log (relativePath.match (/[^\/]+/));
-			var libName = relativePath.match (/[^\/]+/)[0];
+			var libName = relativePath.match (/[^\/\\]+/)[0];
 //			console.log ('found lib', libName);
 			// TODO: user and runtime can have libraries with same name. prefer user ones
 			if (!self.libraryData[libName])
@@ -257,7 +264,10 @@ Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
 	}
 
 	common.pathWalk (fullPath, foundMeta, {
-		nameMatch: /.*\/(tools|libraries|boards.txt|platform.txt)$/i
+		nameMatch: (os.platform() === "win32"
+            ? /.*\\(tools|libraries|boards.txt|platform.txt)$/i
+            : /.*\/(tools|libraries|boards.txt|platform.txt)$/i
+        )
 	});
 
 	var self = this;
@@ -276,10 +286,10 @@ Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
 //			console.log (relativePath, relativePath.match (/[^\/]+\/[^\/]+\/libraries/));
 //			console.log (relativePath);
 			if (relativePath === "tools") {
-				self.runtimeDir = fullPath.replace ('\/hardware', "");
+				self.runtimeDir = fullPath.replace (path.sep+'hardware', "");
 				return;
 			}
-			var pathChunks = relativePath.split ('/');
+			var pathChunks = relativePath.split (path.sep);
 			if (pathChunks.length > 3) {
 				// something wrong
 				console.log ('SOMETHING WRONG');
