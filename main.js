@@ -231,6 +231,7 @@ define(function (require, exports, module) {
 		}
 
 		var self = this;
+		// TODO: show a message when board unavailable
 		var boardMeta = this.platforms[platformName].boards[boardId];
 
 		this.board = {
@@ -307,14 +308,14 @@ define(function (require, exports, module) {
 		// TODO: author's module location - use preferences for this
 		// TODO: when we can't find arduino ide in default locations gracefully degrade
 		// TODO: add support for energia
-        var locations = [];
-        if (prefs.get ('arduino-ide')) {
-            locations.push (prefs.get ('arduino-ide'));
-        }
-        if (prefs.get ('energia-ide')) {
-            locations.push (prefs.get ('energia-ide'));
-        }
-		this.domain.exec("getBoardsMeta", locations)
+		var locations = [];
+		if (prefs.get ('arduino-ide')) {
+			locations.push (prefs.get ('arduino-ide'));
+		}
+		if (prefs.get ('energia-ide')) {
+			locations.push (prefs.get ('energia-ide'));
+		}
+		this.domain.exec("getBoardsMeta", locations, [])
 		.done(function (platforms) {
 			console.log("[brackets-cuwire-node] Available boards:");
 
@@ -422,7 +423,6 @@ define(function (require, exports, module) {
 		}
 
 		options.includes = prefs.get ('includes');
-
 
 		var currentDoc = DocumentManager.getCurrentDocument();
 
@@ -586,6 +586,7 @@ define(function (require, exports, module) {
 				// CommandManager.execute("debug.refreshWindow");
 				prefs.set ('arduino-ide', formData.arduinoIDE);
 				prefs.set ('energia-ide', formData.energiaIDE);
+				this.getBoardMeta ();
 			}
 		}).bind (this));
 

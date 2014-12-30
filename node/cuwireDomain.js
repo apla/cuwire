@@ -16,19 +16,19 @@
 
 	var theCuWire;
 
-	function getBoardsMeta (locations) {
+	function getBoardsMeta (runtimeFolders, sketchesFolder) {
 
 		var cb = arguments[arguments.length-1];
 
-		if (!theCuWire) {
-			theCuWire = new CuWireData (locations);
+//		if (!theCuWire) {
+			theCuWire = new CuWireData (runtimeFolders, sketchesFolder, true);
 
 			theCuWire.on ('done', function () {
 				cb (null, theCuWire.boardData);
 			});
-		} else {
-			cb (null, theCuWire.boardData);
-		}
+//		} else {
+//			cb (null, theCuWire.boardData);
+//		}
 	}
 
 	function cuwireBoardsDone (cb, boards) {
@@ -190,11 +190,16 @@
 			// 1) cd <extension-folder>/node; npm install node-gyp node-pre-gyp serialport
 			// 2) cd node_modules/serialport
 			// 3) /Applications/devel/Brackets.app/Contents/MacOS/Brackets-node ../../node_modules/node-pre-gyp/bin/node-pre-gyp --arch=ia32 rebuild
+
+			// current binaries got from http://node-serialport.s3.amazonaws.com
 			serialport = require("serialport");
 		} catch (e) {
 			cb ("cannot load serialport module"+e);
 			return;
 		}
+
+		if (!serialport)
+			return;
 
 		var err, result = [];
 		serialport.list(function (err, ports) {
@@ -246,9 +251,13 @@
 			true,          // this command is asynchronous in Node
 			"get cuwire boards metadata",
 			[{
-				name: "dirs",
+				name: "customRuntimeFolders",
 				type: "array",
-				description: "directory list to search within"
+				description: "folders for a runtime search"
+			}, {
+				name: "customSketchesFolder",
+				type: "array",
+				description: "folders for a sketches search"
 			}],
 			[{name: "boards", // return values
 			  type: "object",

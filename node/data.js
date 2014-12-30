@@ -24,18 +24,25 @@ var os = require ('os');
 
 var javaPlatformName = nodeToJavaPlatform [os.platform()];
 
-var Arduino = function (userDirs) {
+var Arduino = function (customRuntimeFolders, customSketchesFolder, fromScratch) {
+
+	console.log ('before check arduino data instance');
 
 	// TODO: additional user dirs
-	if (Arduino.instance)
+	if (Arduino.instance && !fromScratch) {
 		return Arduino.instance;
+	}
+
+	console.log ('after check arduino data instance');
 
 	// useful for reloading
-	this.init (userDirs);
+	this.init (customRuntimeFolders, customSketchesFolder);
 
 	this.boardData = {};
 	this.boardDataKV = {};
 	this.libraryData = {};
+
+	this.folders = {};
 
 	this.on ('done', this.storeBoardsData.bind (this));
 	this.on ('done', this.storeLibraryData.bind (this));
@@ -48,15 +55,16 @@ var Arduino = function (userDirs) {
 
 util.inherits (Arduino, EventEmitter);
 
-Arduino.prototype.init = function (userDirs) {
-	userDirs = appendStandardLocations ('runtime', userDirs);
-	userDirs = appendStandardLocations ('user',    userDirs);
+Arduino.prototype.init = function (customRuntimeFolders, customSketchesFolder) {
+	customRuntimeFolders = appendStandardLocations ('runtime',  customRuntimeFolders);
+	customSketchesFolder = appendStandardLocations ('sketches', customSketchesFolder);
 
 	// we must find correct arduino ide location.
 	// we assume [arduino ide]/hardware/tools contains avr-gcc and so on
 	// TODO: linux path resolve
 
-	this.processDirs ('all', userDirs);
+	this.processDirs ('runtime', customRuntimeFolders);
+	this.processDirs ('sketches', customSketchesFolder);
 }
 
 var ioWait = 0;
@@ -81,7 +89,7 @@ Arduino.prototype.processDirs = function (type, dirs) {
 	var self = this;
 
 	dirs.forEach (function (dirStr) {
-        var dir = path.resolve (dirStr);
+		var dir = path.resolve (dirStr);
 		fs.stat (path.join (dir, 'hardware'),  self.enumerateHardware.bind  (self, path.join (dir, 'hardware'), self.ioDone ('hardware', dir)));
 		fs.stat (path.join (dir, 'libraries'), self.enumerateLibraries.bind (self, path.join (dir, 'libraries'), self.ioDone ('libraries', dir)));
 		// TODO: enumerateExamples
@@ -104,29 +112,42 @@ function appendStandardLocations (type, locations) {
 		}
 	}
 
-	// 1.0 /Applications/Arduino.app/Contents/Resources/Java/hardware/arduino/boards.txt
-	// 1.5 /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/boards.txt
-
 	// default application folders:
 	if (type === 'runtime') {
 		if (os.platform () === 'darwin') {
-			locations.forEach (function (location, idx) {
-				locations[idx] = location.replace (/Arduino\.app\/?$/, "Arduino.app/Contents/Java")
-			});
-			locations.push ("/Applications/Arduino.app/Contents/Java");
+			locations.push ("/Applications/Arduino.app");
+
+			// search for
+			//<key>CFBundleShortVersionString</key>
+			//<string>1.5.8</string>
+			// within Arduino.app/Contents/Info.plist
 		} else if (os.platform () === 'win32') {
 			locations.push ("C:/Program Files/Arduino");
-            locations.push ("C:/Program Files (x86)/Arduino");
+			locations.push ("C:/Program Files (x86)/Arduino");
+			// binary version??
+		} else if (os.platform () === 'linux') {
+			locations.push ("/usr/share/arduino/");
 		}
+
+		// postprocessing
+		locations.forEach (function (location, idx) {
+			if (os.platform () === 'darwin') {
+				// 1.0 /Applications/Arduino.app/Contents/Resources/Java/hardware/arduino/boards.txt
+				// 1.5 /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/boards.txt
+				locations[idx] = location.replace (/Arduino\.app\/?$/, "Arduino.app/Contents/Java");
+			}
+
+		});
+
 
 		if (!locations.length)
 			return;
 
-        console.log ('[brackets-cuwire] search for runtime within:', locations.join (", "));
+//		console.log ('search for runtime within:', locations.join (", "));
 		return locations;
 	}
 
-	if (type !== 'user') {
+	if (type !== 'sketches') {
 		return;
 	}
 
@@ -136,9 +157,10 @@ function appendStandardLocations (type, locations) {
 	}
 
 	// TODO: read preference file ~/Library/Arduino15/preferences.txt
+	// TODO: read preference file ~/.arduino/preferences.txt
 	locations.push (path.join (getUserHome(), "Documents/Arduino"));
 
-    console.log ('[brackets-cuwire] search for sketches within:', locations.join (", "));
+//	console.log ('search for sketches within:', locations.join (", "));
 	return locations;
 }
 
@@ -183,15 +205,19 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 Arduino.prototype.enumerateLibraries = function (fullPath, done, err, data) {
 
 	if (err) {
+		this.folders[fullPath] = {
+			error: err.code,
+			scope: 'libraries'
+		};
 		done ('libraries');
 		return;
 	}
 
 	common.pathWalk (fullPath, foundMeta, {
 		nameMatch: (os.platform() === "win32"
-            ? /.*\\(examples|.+\.cp{0,2}|.+\.h)$/i
-            : /.*\/(examples|.+\.cp{0,2}|.+\.h)$/i
-        )
+			? /.*\\(examples|.+\.cp{0,2}|.+\.h)$/i
+			: /.*\/(examples|.+\.cp{0,2}|.+\.h)$/i
+		)
 	});
 
 	var self = this;
@@ -259,15 +285,20 @@ Arduino.prototype.enumerateLibraries = function (fullPath, done, err, data) {
 Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
 
 	if (err) {
+		this.folders[fullPath] = {
+			error: err.code,
+			scope: 'hardware'
+		};
+
 		done ('hardware');
 		return;
 	}
 
 	common.pathWalk (fullPath, foundMeta, {
 		nameMatch: (os.platform() === "win32"
-            ? /.*\\(tools|libraries|boards.txt|platform.txt)$/i
-            : /.*\/(tools|libraries|boards.txt|platform.txt)$/i
-        )
+			? /.*\\(tools|libraries|boards.txt|platform.txt)$/i
+			: /.*\/(tools|libraries|boards.txt|platform.txt)$/i
+		)
 	});
 
 	var self = this;
@@ -285,6 +316,7 @@ Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
 			// var libName = relativePath.match (/[^\/]+/)[0];
 //			console.log (relativePath, relativePath.match (/[^\/]+\/[^\/]+\/libraries/));
 //			console.log (relativePath);
+			// TODO: bad assumption for runtime dir. we need to know exactly
 			if (relativePath === "tools") {
 				self.runtimeDir = fullPath.replace (path.sep+'hardware', "");
 				return;
