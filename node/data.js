@@ -26,14 +26,10 @@ var javaPlatformName = nodeToJavaPlatform [os.platform()];
 
 var Arduino = function (customRuntimeFolders, customSketchesFolder, fromScratch) {
 
-	console.log ('before check arduino data instance');
-
 	// TODO: additional user dirs
 	if (Arduino.instance && !fromScratch) {
 		return Arduino.instance;
 	}
-
-	console.log ('after check arduino data instance');
 
 	this.boardData = {};
 	this.boardDataKV = {};
