@@ -9,7 +9,7 @@ var EventEmitter = require ('events').EventEmitter;
 var common  = require ('./common');
 var ArduinoData = require ('./data');
 
-var sp = require("serialport");
+var sp;
 
 var Arduino;
 
@@ -57,6 +57,8 @@ function ArduinoUploader (compiler, platformId, boardId, boardVariant, options) 
 
 	common.pathToVar (tool, 'serial.port', options.serial.port);
 
+	this.initSerial ();
+
 	if (!tool.upload.protocol) {
 		// if no protocol is specified for this board, assume it lacks a
 		// bootloader and upload using the selected programmer.
@@ -70,6 +72,22 @@ function ArduinoUploader (compiler, platformId, boardId, boardVariant, options) 
 }
 
 util.inherits (ArduinoUploader, EventEmitter);
+
+ArduinoUploader.prototype.initSerial = function () {
+	try {
+		// https://github.com/voodootikigod/node-serialport
+		// HOWTO built THAT on mac (got idea from https://github.com/jasonsanjose/brackets-sass/tree/master/node):
+		// 1) cd <extension-folder>/node; npm install node-gyp node-pre-gyp serialport
+		// 2) cd node_modules/serialport
+		// 3) /Applications/devel/Brackets.app/Contents/MacOS/Brackets-node ../../node_modules/node-pre-gyp/bin/node-pre-gyp --arch=ia32 rebuild
+
+		// current binaries got from http://node-serialport.s3.amazonaws.com
+		sp = require("serialport");
+	} catch (e) {
+		console.log ("cannot load serialport module", e);
+	}
+}
+
 
 ArduinoUploader.prototype.prepareCmd = function (tool) {
 	var recipe = tool.upload.pattern;
