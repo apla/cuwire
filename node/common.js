@@ -171,7 +171,9 @@ function createDict (arduino, platformId, boardId, boardVariant, options, curren
 		conf = extend (true, {}, platform);
 	}
 
-	pathToVar (conf, 'runtime.ide.path', arduino.runtimeDir);
+	var runtimeFolder = options.runtimeFolder || arduino.acceptableRuntimes[0];
+
+	pathToVar (conf, 'runtime.ide.path', runtimeFolder);
 	// TODO: get version from mac os x bundle or from windows revisions.txt
 	pathToVar (conf, 'runtime.ide.version', "158");
 	pathToVar (conf, 'software', "ARDUINO");

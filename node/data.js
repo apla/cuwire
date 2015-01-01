@@ -35,20 +35,34 @@ var Arduino = function (customRuntimeFolders, customSketchesFolder, fromScratch)
 
 	console.log ('after check arduino data instance');
 
-	// useful for reloading
-	this.init (customRuntimeFolders, customSketchesFolder);
-
 	this.boardData = {};
 	this.boardDataKV = {};
 	this.libraryData = {};
 
 	this.folders = {};
 
-	this.on ('done', this.storeBoardsData.bind (this));
-	this.on ('done', this.storeLibraryData.bind (this));
+	// useful for reloading
+	this.init (customRuntimeFolders, customSketchesFolder);
 
-	this.on ('done', (function () {
+
+	this.on ('iodone', this.storeBoardsData.bind (this));
+	this.on ('iodone', this.storeLibraryData.bind (this));
+
+	this.on ('iodone', (function () {
 		Arduino.instance = this;
+
+		this.acceptableRuntimes = [];
+
+		// let's find runtime dir
+		Object.keys (this.folders).forEach ((function (folderName) {
+			if (this.folders[folderName].runtime && this.folders[folderName].modern) {
+				this.acceptableRuntimes.push (folderName);
+			}
+		}).bind (this));
+
+		this.emit ('done');
+
+//		console.log (this.folders);
 	}).bind (this));
 
 }
@@ -78,11 +92,33 @@ Arduino.prototype.ioDone = function (tag, dir) {
 		if (!ioWait)
 			setTimeout (function () {
 				if (!ioWait)
-					self.emit ('done'); // tags is not supported
+					self.emit ('iodone'); // tags is not supported
 			}, 100);
 	}.bind (this);
 }
 
+
+// arduino version is not defined properly on windows and linux
+// on mac
+
+Arduino.prototype.getRuntimeVersion = function (runtimeFolder, done, err, versionBuf) {
+	if (err || !versionBuf) {
+		// console.log ('arduino runtime not found at', runtimeFolder);
+		done('version');
+		return;
+	}
+
+	// linux sometime have mad strings, like "1:1.0.5+dfsg2-2"
+	var version = versionBuf.toString ().match (/\d+\.\d+\.\d+/);
+	var modern  = version[0].match (/^1\.5\./);
+
+	this.folders[runtimeFolder].runtime = version[0];
+	this.folders[runtimeFolder].modern  = modern ? true : false;
+
+	done ('version');
+
+//	console.log (this.folders[runtimeFolder]);
+}
 
 Arduino.prototype.processDirs = function (type, dirs) {
 
@@ -90,8 +126,22 @@ Arduino.prototype.processDirs = function (type, dirs) {
 
 	dirs.forEach (function (dirStr) {
 		var dir = path.resolve (dirStr);
+		self.folders[dir] = {
+			platform: {},
+			boards: {}
+		};
+		fs.readFile (path.join (dir, 'lib', 'version.txt'), self.getRuntimeVersion.bind (self, path.join (dir), self.ioDone ('version', dir)));
 		fs.stat (path.join (dir, 'hardware'),  self.enumerateHardware.bind  (self, path.join (dir, 'hardware'), self.ioDone ('hardware', dir)));
 		fs.stat (path.join (dir, 'libraries'), self.enumerateLibraries.bind (self, path.join (dir, 'libraries'), self.ioDone ('libraries', dir)));
+//		if (os.platform () === 'darwin') {
+//			var runtimeDir = path.resolve (dirStr.replace (/(Resources\/)?Java/, 'Info.plist'));
+//			fs.stat (runtimeDir, self.parseMacOSXVersion.bind (self, runtimeDir, self.ioDone ('runtime', dir)));
+			// search for
+			//<key>CFBundleShortVersionString</key>
+			//<string>1.5.8</string>
+			// within Arduino.app/Contents/Info.plist
+//		} else if (os.platform () === 'win32') {
+
 		// TODO: enumerateExamples
 		//		fs.stat (path.join (dir, 'examples'),  self.enumerateExamples.bind  (self, path.join (dir, 'examples'), self.ioDone ()));
 	});
@@ -204,10 +254,12 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 
 Arduino.prototype.enumerateLibraries = function (fullPath, done, err, data) {
 
+	// stinks
+	var instanceFolder = fullPath.replace (new RegExp (path.sep+'libraries'+'.*'), "");
+
 	if (err) {
-		this.folders[fullPath] = {
-			error: err.code,
-			scope: 'libraries'
+		this.folders[instanceFolder].libraries = {
+			error: err.code
 		};
 		done ('libraries');
 		return;
@@ -283,11 +335,12 @@ Arduino.prototype.enumerateLibraries = function (fullPath, done, err, data) {
 }
 
 Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
+	// stinks
+	var instanceFolder = fullPath.replace (new RegExp (path.sep+'hardware'+'.*'), "");
 
 	if (err) {
-		this.folders[fullPath] = {
-			error: err.code,
-			scope: 'hardware'
+		this.folders[instanceFolder].hardware = {
+			error: err.code
 		};
 
 		done ('hardware');
@@ -318,7 +371,7 @@ Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
 //			console.log (relativePath);
 			// TODO: bad assumption for runtime dir. we need to know exactly
 			if (relativePath === "tools") {
-				self.runtimeDir = fullPath.replace (path.sep+'hardware', "");
+//				self.runtimeDir = fullPath.replace (path.sep+'hardware', "");
 				return;
 			}
 			var pathChunks = relativePath.split (path.sep);
@@ -362,6 +415,8 @@ Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
 
 				self.boardData[platformId][type]   = fileData;
 				self.boardDataKV[platformId][type] = keyValue;
+
+				self.folders[instanceFolder][type][vendor+":"+arch] = true;
 
 				if (type === 'platform') {
 					common.pathToVar (
