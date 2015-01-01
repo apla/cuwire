@@ -1,6 +1,6 @@
 {
 	"name": "cuwire",
-	"version": "0.3.2",
+	"version": "0.3.3",
 	"title": "cuwire: IDE for microcontrollers",
 	"homepage": "https://github.com/apla/brackets-cuwire",
 	"description": "Now Brackets can be used to develop software for MCUs. Throw away you Arduino, Energia and others.",
@@ -12,7 +12,7 @@
 		"brackets": ">=0.36.0"
 	},
 	"scripts": {
-		"archive": "git archive --format zip -o cuwire-0.3.2.zip master",
+		"archive": "git archive --format zip -o cuwire-0.3.3.zip master",
 		"prepare-binaries": ""
 	}
 }

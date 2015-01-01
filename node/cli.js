@@ -217,7 +217,6 @@ var ArduinoCli = function (args) {
 		return;
 	}
 
-	// TODO: use --arduino option to pass arduino app path
 	this.arduino = new ArduinoData ([options.arduino || "/Applications/devel/Arduino.app"]);
 
 	this.arduino.on ('done', (function () {

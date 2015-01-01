@@ -313,21 +313,26 @@ define(function (require, exports, module) {
 		});
 
 		Dialogs.showModalDialog (
-			"cuwire-sketch-select",
-			"Runtime:",
-			message
-		).done(function (buttonId) {
-			var buttonMatch = buttonId.match (/cuwire-sketch-(\d+)/);
-			if (!buttonMatch) {
-				// don't care about another buttons
+			"cuwire-runtime-select",
+			"Runtime issue:",
+			message,
+			[{
+				className: Dialogs.DIALOG_BTN_CLASS_PRIMARY,
+				id: "select",
+				text: "Select runtime location"
+			}, {
+				className: Dialogs.DIALOG_BTN_CANCEL,
+				id: "cancel",
+				text: "Cancel"
+			}]
+		).done((function (buttonId) {
+//			var buttonMatch = buttonId.match (/cuwire-sketch-(\d+)/);
+			if (buttonId === "select") {
+				this.showSettings ();
 				return;
 			}
 
-			var sketchIdx = parseInt (buttonMatch[1]);
-
-			cb (null, fileList[sketchIdx].parentPath);
-
-		});
+		}).bind (this));
 
 	}
 

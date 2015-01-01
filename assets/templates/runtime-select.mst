@@ -1,9 +1,10 @@
 {{#noRuntimes}}
-<p>No runtimes found! Please install <a href="http://arduino.cc/en/Main/Software">Arduino 1.5.x</a>, then relaunch Brackets</p>
+<h4>No runtimes found! Please install <a href="http://arduino.cc/en/Main/Software">Arduino 1.5.x</a>,
+then relaunch Brackets</h4>
 {{/noRuntimes}}
 
 {{#manyRuntimes}}
-<p>We found multiple runtimes. Please select one:</p>
+<h4>We found multiple runtimes. Please select one:</h4>
 {{/manyRuntimes}}
 
 {{^noRuntimes}}
