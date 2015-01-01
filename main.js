@@ -18,10 +18,14 @@ define(function (require, exports, module) {
 
 	var basicDialogMst     = require("text!assets/templates/basic-dialog.mst"),
 		boardModsMst       = require("text!assets/templates/board-mods.mst"),
-		settingsMst        = require("text!assets/templates/settings.mst");
+		settingsMst        = require("text!assets/templates/settings.mst"),
+		sketchSelectMst    = require("text!assets/templates/sketch-select.mst"),
+		runtimeSelectMst   = require("text!assets/templates/runtime-select.mst");
 
-	var boardMods = Mustache.compile (boardModsMst);
-	var settingsRenderer = Mustache.compile (settingsMst);
+	var boardMods             = Mustache.compile (boardModsMst);
+	var settingsRenderer      = Mustache.compile (settingsMst);
+	var sketchSelectRenderer  = Mustache.compile (sketchSelectMst);
+	var runtimeSelectRenderer = Mustache.compile (runtimeSelectMst);
 
 	var prefs = PreferencesManager.getExtensionPrefs (moduleId);
 
@@ -300,10 +304,41 @@ define(function (require, exports, module) {
 		})
 	}
 
+	CuWireExt.prototype.showRuntimeDialog = function (folders, modernRuntimesCount) {
+
+		var message = runtimeSelectRenderer ({
+			runtime: folders,
+			noRuntimes: modernRuntimesCount === 0,
+			manyruntimes: modernRuntimesCount > 1,
+		});
+
+		Dialogs.showModalDialog (
+			"cuwire-sketch-select",
+			"Runtime:",
+			message
+		).done(function (buttonId) {
+			var buttonMatch = buttonId.match (/cuwire-sketch-(\d+)/);
+			if (!buttonMatch) {
+				// don't care about another buttons
+				return;
+			}
+
+			var sketchIdx = parseInt (buttonMatch[1]);
+
+			cb (null, fileList[sketchIdx].parentPath);
+
+		});
+
+	}
+
 	CuWireExt.prototype.getBoardMeta = function () {
 		// TODO: show spinner indicator
 
 		var self = this;
+
+		this.runtimes = [];
+
+		delete this.runtime;
 
 		// TODO: author's module location - use preferences for this
 		// TODO: when we can't find arduino ide in default locations gracefully degrade
@@ -316,7 +351,35 @@ define(function (require, exports, module) {
 			locations.push (prefs.get ('energia-ide'));
 		}
 		this.domain.exec("getBoardsMeta", locations, [])
-		.done(function (platforms) {
+		.done(function (cuwireData) {
+			var platforms = cuwireData[0];
+			var folders   = cuwireData[1];
+
+			var modernRuntimesCount = 0;
+
+			var dialogData = Object.keys (folders).filter (function (folderName) {
+				if (folders[folderName].runtime) {
+					return true;
+				}
+			}).map ((function (folderName) {
+				if (folders[folderName].modern) {
+					self.runtime = folders[folderName].modern;
+					modernRuntimesCount ++;
+				}
+				self.runtimes.push (folders[folderName]);
+				return {
+					folder: folderName,
+					readableFolder: folderName.replace (/\/Contents(?:\/Resources)?\/Java/, ""),
+					runtime: folders[folderName].runtime,
+					modern: folders[folderName].modern
+				}
+			}).bind (this));
+
+			if (modernRuntimesCount !== 1) {
+				self.showRuntimeDialog (dialogData, modernRuntimesCount);
+			}
+
+//			console.log("[brackets-cuwire-node] Folder stats:", folders);
 			console.log("[brackets-cuwire-node] Available boards:");
 
 			self.platforms = platforms;
@@ -520,27 +583,21 @@ define(function (require, exports, module) {
 				return;
 			}
 
-			// TODO: draw a dialog with buttons to handle this
-			var message = "<p>Our microcontroller cannot distinguish between available sketches displayed below. "
-			+"Please do it manually. We don\'t store your selection because path to the sketch file can be bigger "
-			+"than available memory. Sorry!</p><ul class=\"media-list\">";
-
-			message += fileList.sort().map (function (fileObject, fileObjectIdx) {
-				var sketchFolderPath = fileObject.parentPath.replace (/\/$/, "");
-				var sketchFolder = sketchFolderPath.substr (sketchFolderPath.lastIndexOf ('/') + 1);
-				return [
-					'<li class="media">',
-					'<div class="media-body">',
-					'<button data-button-id="cuwire-sketch-'
-					+fileObjectIdx
-					+'" class="dialog-button btn btn-large pull-right"> </button>',
-					'<h4 class="media-heading">'+sketchFolder+'</h4>',
-					'<p>'+getRelativeFilename (projectRoot.fullPath, sketchFolderPath)+'</p>',
-					'</div>',
-					'</li>',
-				].join ("\n");
+			var dialogData = fileList.sort().map (function (fileObject, fileObjectIdx) {
+				var sketchFolderPath = fileObject.parentPath.replace (path.sep + '$', "");
+				var sketchFolder = sketchFolderPath.substr (sketchFolderPath.lastIndexOf (path.sep) + 1);
+				var relativePath = getRelativeFilename (projectRoot.fullPath, sketchFolderPath);
+				return {
+					index: fileObjectIdx,
+					folder: sketchFolder,
+					relativePath: relativePath
+				};
 			}).join ('');
-			message += '</ul>';
+
+			// TODO: draw a dialog with buttons to handle this
+			var message = sketchSelectRenderer ({
+				sketch: dialogData
+			});
 
 			Dialogs.showModalDialog (
 				"cuwire-sketch-select",

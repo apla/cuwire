@@ -24,7 +24,7 @@
 			theCuWire = new CuWireData (runtimeFolders, sketchesFolder, true);
 
 			theCuWire.on ('done', function () {
-				cb (null, theCuWire.boardData);
+				cb (null, [theCuWire.boardData, theCuWire.folders]);
 			});
 //		} else {
 //			cb (null, theCuWire.boardData);
@@ -259,9 +259,11 @@
 				type: "array",
 				description: "folders for a sketches search"
 			}],
-			[{name: "boards", // return values
-			  type: "object",
-			  description: "board data"}]
+			[{
+				name: "arduinoData", // return values
+				type: "object",
+				description: "board data"
+			 }]
 		);
 		domainManager.registerCommand(
 			"cuwire",     // domain name

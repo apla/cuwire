@@ -1,0 +1,24 @@
+{{#noRuntimes}}
+<p>No runtimes found! Please install <a href="http://arduino.cc/en/Main/Software">Arduino 1.5.x</a>, then relaunch Brackets</p>
+{{/noRuntimes}}
+
+{{#manyRuntimes}}
+<p>We found multiple runtimes. Please select one:</p>
+{{/manyRuntimes}}
+
+{{^noRuntimes}}
+<p>What we found already:</p>
+{{/noRuntimes}}
+<ul class="media-list">
+	{{#runtime}}
+	<li class="media">
+		<div class="media-body">
+			{{#modern}}
+			<button data-button-id="{{folder}}" class="dialog-button btn btn-large pull-right">&nbsp;</button>
+			{{/modern}}
+			<h4 class="media-heading">{{readableFolder}}</h4>
+			<p>runtime version: {{runtime}}</p>
+		</div>
+	</li>
+	{{/runtime}}
+</ul>
