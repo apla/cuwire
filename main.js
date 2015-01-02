@@ -682,7 +682,7 @@ define(function (require, exports, module) {
 
 		myIcon.appendTo($("#main-toolbar .buttons"));
 
-		this.panel = WorkspaceManager.createBottomPanel (moduleId+".panel", $(require('text!bottom-panel.html')));
+		this.panel = WorkspaceManager.createBottomPanel (moduleId+".panel", $(require('text!bottom-panel.html')), 190);
 
 		this.enumerateSerialPorts ();
 		this.getBoardMeta ();

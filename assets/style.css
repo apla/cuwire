@@ -17,7 +17,9 @@
 }
 
 
-#cuwire-panel {}
+#cuwire-panel {
+	overflow: hidden;
+}
 #cuwire-panel .toolbar {
 	overflow: visible;
 }
@@ -46,7 +48,7 @@
 
 #cuwire-panel ul.dropdown-menu {
 	height: auto;
-	max-height: 300px;
+	max-height: 145px;
 	overflow-x: hidden;
 }
 
