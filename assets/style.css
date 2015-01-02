@@ -117,7 +117,7 @@
 }
 
 #cuwire-panel .process-state .label {
-	display: none;
+/*	display: none;*/
 	color: white;
 	font-size: 1rem;
 	margin-top: 1em;
@@ -126,28 +126,24 @@
 	width: 90%;
 }
 
-#cuwire-panel .process-state.success .label-success {
+#cuwire-panel .success .label {
 	display: inherit;
-}
-#cuwire-panel .label-success {
 	background-color: #39c0c4;
 }
 
 
-#cuwire-panel .process-state.failure .label-important {
+#cuwire-panel .failure .label {
 	display: inherit;
-}
-#cuwire-panel .label-important {
 	background-color: rgb(255, 94, 138);
 }
 
 
-#cuwire-panel .process-state.running .label-info {
+/*
+#cuwire-panel .process-state.running .label {
 	display: inherit;
-}
-#cuwire-panel .label-info {
 	background-color: rgb(54, 65, 80);
 }
+*/
 
 form#cuwire-board-mod label {
 	display: inline;

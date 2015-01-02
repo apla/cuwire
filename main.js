@@ -477,6 +477,13 @@ define(function (require, exports, module) {
 	}
 
 
+	CuWireExt.prototype.changeStatusLabel = function (message, status) {
+		var msgWrapperDiv = document.querySelector ('#cuwire-panel .process-state div.message-wrapper');
+		msgWrapperDiv.classList.remove ("success", "failure", "running");
+		msgWrapperDiv.classList.add (status);
+		msgWrapperDiv.children[0].textContent = message;
+	}
+
 	CuWireExt.prototype.compileOrUpload = function (mode) {
 		var boardMeta = prefs.get ('board');
 		var boardId = boardMeta[0];
@@ -496,9 +503,7 @@ define(function (require, exports, module) {
 
 		var fullPath = currentDoc.file.fullPath;
 
-		var processStateDiv = $('#cuwire-panel .process-state');
-		processStateDiv.removeClass ();
-		processStateDiv.addClass ('process-state span2 running');
+		this.changeStatusLabel ('Running', 'running');
 
 		// cleanup log before next compile
 		$('#cuwire-panel .table-container table tbody tr').remove();
@@ -512,17 +517,16 @@ define(function (require, exports, module) {
 				boardMod || {},
 				options || {}
 			])
-			.done (function (size) {
-				console.log (size);
+			.done ((function (size) {
 
-				processStateDiv.removeClass ();
-				processStateDiv.addClass ('process-state span2 success');
+				this.changeStatusLabel (mode === 'upload' ? 'Uploaded!' : 'Compiled!', 'success');
 
-			}).fail (function (error) {
-				processStateDiv.removeClass ();
-				processStateDiv.addClass ('process-state span2 failure');
+			}).bind (this)).fail ((function (error) {
+
+				this.changeStatusLabel ('Failed', 'failure');
+
 				console.log (error);
-			});
+			}).bind (this));
 		}).bind (this));
 	}
 
