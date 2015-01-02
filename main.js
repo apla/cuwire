@@ -83,7 +83,7 @@ define(function (require, exports, module) {
 			// user must select port prior to launch
 			console.log(
 				"[brackets-cuwire-node] Available ports:",
-				ports.map (function (port) {return port.name}).join (", ")
+				ports.map (function (port) {return port})
 			);
 			cuwirePortDD.empty ();
 			// tr = $('<tr />').appendTo('#cuwire-panel tbody');
@@ -493,7 +493,7 @@ define(function (require, exports, module) {
 
 		if (mode === 'upload') {
 			options.serial = {
-				port: prefs.get ('port')
+				port: prefs.get ('port').name
 			};
 		}
 
