@@ -251,7 +251,7 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 Arduino.prototype.enumerateLibraries = function (fullPath, done, err, data) {
 
 	// stinks
-	var instanceFolder = fullPath.replace (new RegExp (path.sep+'libraries'+'.*'), "");
+	var instanceFolder = fullPath.replace (new RegExp ('\\'+path.sep+'libraries'+'.*'), "");
 
 	if (err) {
 		this.folders[instanceFolder].libraries = {
@@ -332,7 +332,7 @@ Arduino.prototype.enumerateLibraries = function (fullPath, done, err, data) {
 
 Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
 	// stinks
-	var instanceFolder = fullPath.replace (new RegExp (path.sep+'hardware'+'.*'), "");
+	var instanceFolder = fullPath.replace (new RegExp ('\\'+path.sep+'hardware'+'.*'), "");
 
 	if (err) {
 		this.folders[instanceFolder].hardware = {
