@@ -39,7 +39,7 @@ define(function (require, exports, module) {
 //	prefs.definePreference ("patterns", "array", []).on("change", function () {
 //	});
 
-	var cuwireDomain = new NodeDomain ("cuwire", ExtensionUtils.getModulePath(module, "node/cuwireDomain"));
+	var cuwireDomain = new NodeDomain ("cuwire", ExtensionUtils.getModulePath (module, "node/cuwireDomain.js"));
 	ExtensionUtils.loadStyleSheet(module, "assets/style.css");
 
 	function CuWireExt (require, domain) {

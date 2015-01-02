@@ -4,15 +4,15 @@
 (function () {
 	"use strict";
 
-	var os = require("os");
+	var os   = require("os");
 	var fs   = require('fs');
 	var path = require ('path');
 
 	var _domainManager;
 
-	var CuWireData = require ('./data');
-	var CuWireCompiler = require ('./compiler');
-	var CuWireUploader = require ('./uploader');
+	var CuWireData     = require ('cuwire/data');
+	var CuWireCompiler = require ('cuwire/compiler');
+	var CuWireUploader = require ('cuwire/uploader');
 
 	var theCuWire;
 
