@@ -1,0 +1,84 @@
+<html>
+	<head>
+		<title>console monitor</title>
+		<script type="application/javascript" src="file:///Applications/devel/Brackets.app/Contents/www/xorigin.js"></script>
+
+		<link rel="stylesheet" type="text/css" href="file:///Applications/devel/Brackets.app/Contents/www/thirdparty/CodeMirror2/lib/codemirror.css">
+
+
+		<link rel="stylesheet" type="text/css" href="file:///Applications/devel/Brackets.app/Contents/www/styles/brackets.min.css">
+
+
+		<!-- JavaScript -->
+
+		<!-- Pre-load third party scripts that cannot be async loaded. -->
+		<script src="file:///Applications/devel/Brackets.app/Contents/www/thirdparty/thirdparty.min.js"></script>
+	</head>
+	<body>
+
+		<!-- HTML content is dynamically loaded and rendered by brackets.js.
+		Any modules that depend on or modify HTML during load should
+		require the "utils/AppInit" module and install a callback for
+		"htmlReady" (e.g. AppInit.htmlReady(handler)) before touching the DOM.
+		-->
+
+		<!-- All other scripts are loaded through require. -->
+		<script data-main="main" src="file:///Applications/devel/Brackets.app/Contents/www/thirdparty/requirejs/require.js"></script>
+		<h1>console monitor</h1>
+		<div id="cuwire-panel" class="top-panel vert-resizable top-resizer" style="overflow: visible;">
+			<div class="toolbar simple-toolbar-layout" style="overflow: visible;">
+				<span class="title">cuwire</span>
+				<div class="dropdown btn-group">
+
+					<button type="button" onclick="return false;" class="cuwire-port btn small with-plug btn-warning">Port</button>
+					<button title="Choose port" class="btn small dropdown-toggle" data-toggle="dropdown">
+						<!-- <i class="icon"> -->
+
+						<span class="caret"></span>
+					</button>
+					<ul class="dropdown-menu cuwire-port">
+						<li><a href="#">Loading…</a></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<pre>
+24 Dec 14:15:25 - [red] Loading palette nodes
+24 Dec 14:15:25 - ------------------------------------------
+24 Dec 14:15:25 - [red] Failed to register 8 node types
+24 Dec 14:15:25 - [red] Run with -v for details
+24 Dec 14:15:25 - ------------------------------------------
+24 Dec 14:15:25 - [red] Server now running at http://127.0.0.1:1880/
+24 Dec 14:15:25 - [red] Flows file not found : flows_kobuk.msk.rian.json
+24 Dec 14:15:56 - [red] Starting flows
+^C24 Dec 14:37:11 - [red] Stopping flows
+apla@kobuk:0/~/work/node-red $ vim public/
+bootstrap/         font-awesome/      index.html         orion/             spin.svg
+d3.v3.min.js       grip.png           jquery/            pw_maze_white.png  style.css
+favicon.ico        icons/             node-red.png       red/
+apla@kobuk:0/~/work/node-red $ vim public/orion/built-editor.
+built-editor.css     built-editor.min.js
+apla@kobuk:0/~/work/node-red $ vim public/orion/built-editor.min.js
+apla@kobuk:0/~/work/node-red $ vim public/
+bootstrap/         font-awesome/      index.html         orion/             spin.svg
+d3.v3.min.js       grip.png           jquery/            pw_maze_white.png  style.css
+favicon.ico        icons/             node-red.png       red/
+apla@kobuk:0/~/work/node-red $ vim public/red/
+comms.js       history.js     main.js        nodes.js       settings.js    ui/            validators.js
+apla@kobuk:0/~/work/node-red $ vim public/red/ui/
+editor.js         menu.js           sidebar.js        tab-info.js       view.js
+keyboard.js       notifications.js  state.js          tabs.js
+library.js        palette.js        tab-config.js     touch/
+apla@kobuk:0/~/work/node-red $ vim public/red/ui/view.js
+apla@kobuk:0/~/work/node-red $ vim public/orion/built-editor.min.js
+</pre>
+				<p id="log">
+		</p>
+
+		<script type="text/javascript">
+			var pLog = document.querySelector ('#log');
+			pLog.textContent = Object.keys (window).join (', ');
+			console.log (123456789);
+		</script>
+	</body>
+</html>

@@ -24,7 +24,9 @@
 			theCuWire = new CuWireData (runtimeFolders, sketchesFolder, true);
 
 			theCuWire.on ('done', function () {
+//				console.log (theCuWire.folders);
 				cb (null, [theCuWire.boardData, theCuWire.folders]);
+
 			});
 //		} else {
 //			cb (null, theCuWire.boardData);
@@ -173,6 +175,10 @@
 
 	}
 
+	function echo (message) {
+		var cb = arguments[arguments.length-1];
+		cb (null, message);
+	}
 
 	/**
 	 * function to enumerate serial ports
@@ -233,6 +239,19 @@
 			domainManager.registerDomain("cuwire", {major: 0, minor: 1});
 		}
 		_domainManager = domainManager;
+		domainManager.registerCommand(
+			"cuwire",       // domain name
+			"echo",    // command name
+			echo,   // command handler function
+			true,          // this command is asynchronous in Node
+			"Simple echo function",
+			[{name: "message",
+			 type: "string",
+			 description: "message"}],
+			[{name: "echo", // return values
+			  type: "string",
+			  description: "echoed message"}]
+		);
 		domainManager.registerCommand(
 			"cuwire",       // domain name
 			"enumerateSerialPorts",    // command name

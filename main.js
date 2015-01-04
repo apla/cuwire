@@ -680,6 +680,11 @@ define(function (require, exports, module) {
 //		});
 	}
 
+	CuWireExt.prototype.showSerialMonitor = function () {
+		var serialMonUrl = ExtensionUtils.getModuleUrl (module, "serial-monitor/main").replace ('main', 'index.html');
+		var w123 = window.open (serialMonUrl, "brackets-cuwire-serial", "width=" + 1000 + ",height=" + 500);
+	}
+
 	CuWireExt.prototype.createUI = function (require) {
 
 		var myIcon = $("<a href=\"#\" id=\"cuwire-sidebar-icon\"></a>");
@@ -709,6 +714,9 @@ define(function (require, exports, module) {
 
 		var titleButton = $('#cuwire-panel button.cuwire-board');
 		titleButton.on ('click', this.showBoardInfo.bind (this, null, null));
+
+		var portButton = $('#cuwire-panel button.cuwire-port');
+		portButton.on ('click', this.showSerialMonitor.bind (this, null, null));
 
 		var compileButton = $('#cuwire-panel button.cuwire-compile');
 		compileButton.on ('click', this.compileOrUpload.bind (this, "compile"));
