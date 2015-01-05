@@ -1,10 +1,10 @@
 // we can pass those variables along with window object
-var bracketsPath = "/Applications/devel/Brackets.app/";
-var extensionPath = "/Users/apla/work/mcu/brackets-arduino/";
-var serialMonitorPath = extensionPath + "serial-monitor/";
+
+var serialMonitorPath = decodeURIComponent (location.pathname).replace ('index.html', "");
+var extensionPath     = serialMonitorPath.replace ("serial-monitor/", "");
 
 require.config({
-	baseUrl: bracketsPath + "Contents/www/",
+	baseUrl: bracketsWwwPath,
 	paths: {
 		"utils/EventDispatcher":      serialMonitorPath + "utils/EventDispatcher",
 		"utils/NodeConnection":       serialMonitorPath + "utils/NodeConnection",
@@ -125,7 +125,7 @@ function resizeUI () {
 
 function onWindowResize(e) {
 	clearTimeout (resizeTimeoutId);
-	resizeTimeoutId = window.setTimeout (resizeUI, 50);
+	resizeTimeoutId = window.setTimeout (resizeUI, 10);
 }
 
 function uiHandler () {

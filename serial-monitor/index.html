@@ -3,34 +3,7 @@
 		<title>console monitor</title>
 		<link rel="stylesheet" type="text/css" id="brackets-min-css">
 		<script id="thirdparty-min-js"></script>
-		<script type="text/javascript">
-			var qs = (function(a) {
-				if (a == "") return {};
-				var b = {};
-				for (var i = 0; i < a.length; ++i)
-				{
-					var p=a[i].split('=', 2);
-					if (p.length == 1)
-						b[p[0]] = "";
-					else
-						b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
-				}
-				return b;
-			})(window.location.search.substr(1).split('&'));
-
-			window.bracketsWwwPath = qs.bracketsIndexPath.replace ('index.html', '');
-
-			document.getElementById ('brackets-min-css').href  = bracketsWwwPath + 'styles/brackets.min.css';
-			var thirdpartyJs = document.getElementById ('thirdparty-min-js');
-			thirdpartyJs.addEventListener ('load', function () {
-				if ("bodyParsed" in window) {
-					document.getElementById ('thirdparty-require-js').src = bracketsWwwPath + "thirdparty/requirejs/require.js";
-				} else {
-					window.thirdpartyLoaded = true;
-				}
-			}, false);
-			thirdpartyJs.src = bracketsWwwPath + 'thirdparty/thirdparty.min.js';
-		</script>
+		<script src="loader.js"></script>
 
 		<link rel="stylesheet" type="text/css" href="../assets/console.css"/>
 	</head>
@@ -45,11 +18,7 @@
 		<!-- All other scripts are loaded through require. -->
 		<script data-main="main" id="thirdparty-require-js"></script>
 		<script type="text/javascript">
-			if ('thirdpartyLoaded' in window) {
-				document.getElementById ('thirdparty-require-js').src = bracketsWwwPath + "thirdparty/requirejs/require.js";
-			} else {
-				window.bodyParsed = true;
-			}
+			setStage ("requireJsParsed");
 		</script>
 		<div id="cuwire-panel" class="top-panel vert-resizable top-resizer pull-right" style="overflow: visible;">
 			<div class="toolbar simple-toolbar-layout" style="overflow: visible;">
@@ -143,11 +112,5 @@ apla@kobuk:0/~/work/node-red $ vim public/orion/built-editor.min.js
 		</div>
 				<p id="log">
 		</p>
-
-		<script type="text/javascript">
-			var pLog = document.querySelector ('#log');
-			pLog.textContent = Object.keys (window).join (', ');
-			console.log (123456789);
-		</script>
 	</body>
 </html>
