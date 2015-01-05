@@ -1,0 +1,36 @@
+h1, h2, h3 {margin-left: 10px;}
+.btn-group>.btn+.dropdown-toggle {height: 25px;}
+.top-panel {margin-top: 10px;}
+#cuwire-console {
+	background: white;
+	padding-top: 10px;
+}
+#cuwire-console div.input-append input[type="text"] {
+	height: 28px;
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+.log-wrapper {
+	background-color: #f5f5f5;
+	border: 1px solid #ccc;
+	border: 1px solid rgba(0,0,0,0.15);
+	border-right: 0;
+	border-left: 0;
+	overflow: auto;
+	height: 300px;
+}
+.log-wrapper pre {
+	display: block;
+	padding: 8.5px;
+	margin: 0 0 9px;
+	font-size: 12px;
+	line-height: 18px;
+	word-break: break-all;
+	word-wrap: break-word;
+	white-space: pre;
+	white-space: pre-wrap;
+}
+#cuwire-panel button.with-plug {
+	padding-left: 24px;
+	background: url(../assets/plug.svg) 4px 4px no-repeat;
+}

@@ -1,18 +1,38 @@
 <html>
 	<head>
 		<title>console monitor</title>
-		<script type="application/javascript" src="file:///Applications/devel/Brackets.app/Contents/www/xorigin.js"></script>
+		<link rel="stylesheet" type="text/css" id="brackets-min-css">
+		<script id="thirdparty-min-js"></script>
+		<script type="text/javascript">
+			var qs = (function(a) {
+				if (a == "") return {};
+				var b = {};
+				for (var i = 0; i < a.length; ++i)
+				{
+					var p=a[i].split('=', 2);
+					if (p.length == 1)
+						b[p[0]] = "";
+					else
+						b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
+				}
+				return b;
+			})(window.location.search.substr(1).split('&'));
 
-		<link rel="stylesheet" type="text/css" href="file:///Applications/devel/Brackets.app/Contents/www/thirdparty/CodeMirror2/lib/codemirror.css">
+			window.bracketsWwwPath = qs.bracketsIndexPath.replace ('index.html', '');
 
+			document.getElementById ('brackets-min-css').href  = bracketsWwwPath + 'styles/brackets.min.css';
+			var thirdpartyJs = document.getElementById ('thirdparty-min-js');
+			thirdpartyJs.addEventListener ('load', function () {
+				if ("bodyParsed" in window) {
+					document.getElementById ('thirdparty-require-js').src = bracketsWwwPath + "thirdparty/requirejs/require.js";
+				} else {
+					window.thirdpartyLoaded = true;
+				}
+			}, false);
+			thirdpartyJs.src = bracketsWwwPath + 'thirdparty/thirdparty.min.js';
+		</script>
 
-		<link rel="stylesheet" type="text/css" href="file:///Applications/devel/Brackets.app/Contents/www/styles/brackets.min.css">
-
-
-		<!-- JavaScript -->
-
-		<!-- Pre-load third party scripts that cannot be async loaded. -->
-		<script src="file:///Applications/devel/Brackets.app/Contents/www/thirdparty/thirdparty.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="../assets/console.css"/>
 	</head>
 	<body>
 
@@ -23,11 +43,16 @@
 		-->
 
 		<!-- All other scripts are loaded through require. -->
-		<script data-main="main" src="file:///Applications/devel/Brackets.app/Contents/www/thirdparty/requirejs/require.js"></script>
-		<h1>console monitor</h1>
-		<div id="cuwire-panel" class="top-panel vert-resizable top-resizer" style="overflow: visible;">
+		<script data-main="main" id="thirdparty-require-js"></script>
+		<script type="text/javascript">
+			if ('thirdpartyLoaded' in window) {
+				document.getElementById ('thirdparty-require-js').src = bracketsWwwPath + "thirdparty/requirejs/require.js";
+			} else {
+				window.bodyParsed = true;
+			}
+		</script>
+		<div id="cuwire-panel" class="top-panel vert-resizable top-resizer pull-right" style="overflow: visible;">
 			<div class="toolbar simple-toolbar-layout" style="overflow: visible;">
-				<span class="title">cuwire</span>
 				<div class="dropdown btn-group">
 
 					<button type="button" onclick="return false;" class="cuwire-port btn small with-plug btn-warning">Port</button>

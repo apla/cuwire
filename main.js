@@ -682,7 +682,8 @@ define(function (require, exports, module) {
 
 	CuWireExt.prototype.showSerialMonitor = function () {
 		var serialMonUrl = ExtensionUtils.getModuleUrl (module, "serial-monitor/main").replace ('main', 'index.html');
-		var w123 = window.open (serialMonUrl, "brackets-cuwire-serial", "width=" + 1000 + ",height=" + 500);
+		serialMonUrl += '?' + 'bracketsIndexPath=' + encodeURIComponent (location.pathname);
+		var serialWindow = window.open (serialMonUrl, "brackets-cuwire-serial", "width=" + 1000 + ",height=" + 500);
 	}
 
 	CuWireExt.prototype.createUI = function (require) {
