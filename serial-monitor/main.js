@@ -17,6 +17,8 @@ require.config({
  * maxerr: 50, browser: true */
 /*global $, define, brackets */
 
+uiHandler ();
+
 brackets.getModule = require;
 
 requirejs (
@@ -45,7 +47,7 @@ requirejs (
 		var portEnumSub = false;
 
 		function setPort () {
-//			var titleButton = $('#cuwire-panel button.cuwire-board');
+//			var titleButton = $('#cuwire-panel button.cuwire-port');
 //			if (this.platforms[platformName])
 //				titleButton.text (boardMeta.name);
 		}
@@ -100,3 +102,34 @@ requirejs (
 
 		enumerateSerialPorts();
 });
+
+function getAbsoluteHeight(el) {
+	// Get the DOM Node if you pass in a string
+	el = (typeof el === 'string') ? document.querySelector(el) : el;
+
+	var styles = window.getComputedStyle(el);
+	var margin = parseFloat(styles['marginTop']) +
+		parseFloat(styles['marginBottom']);
+
+	return Math.ceil(el.offsetHeight + margin);
+}
+
+var resizeTimeoutId;
+
+function resizeUI () {
+	var occupiedHeight = getAbsoluteHeight ('h3') + getAbsoluteHeight ('#cuwire-console');
+	var logWrapper = document.querySelector ('.log-wrapper');
+	// 2 is border height
+	logWrapper.style.height = (window.innerHeight - occupiedHeight - 2) + "px";
+}
+
+function onWindowResize(e) {
+	clearTimeout (resizeTimeoutId);
+	resizeTimeoutId = window.setTimeout (resizeUI, 50);
+}
+
+function uiHandler () {
+	var controlsHeight;
+	window.addEventListener ('resize', onWindowResize);
+	resizeUI();
+}

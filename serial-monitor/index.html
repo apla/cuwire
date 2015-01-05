@@ -65,8 +65,50 @@
 						<li><a href="#">Loading…</a></li>
 					</ul>
 				</div>
+
+				<div class="dropdown btn-group">
+
+					<button type="button" onclick="return false;" class="cuwire-baudrate btn small btn-warning">Baudrate</button>
+					<button title="Choose baudrate" class="btn small dropdown-toggle" data-toggle="dropdown">
+						<!-- <i class="icon"> -->
+
+						<span class="caret"></span>
+					</button>
+					<ul class="dropdown-menu cuwire-baudrate">
+						<li><a href="#">75</a></li>
+						<li><a href="#">150</a></li>
+						<li><a href="#">300</a></li>
+						<li><a href="#">1200</a></li>
+						<li><a href="#">2400</a></li>
+						<li><a href="#">4800</a></li>
+						<li><a href="#">9600</a></li>
+						<li><a href="#">19200</a></li>
+						<li><a href="#">38400</a></li>
+						<li><a href="#">57600</a></li>
+						<li><a href="#">115200</a></li>
+						<li><a href="#">230400</a></li>
+					</ul>
+				</div>
+				<div class="btn-group">
+					<button type="button" onclick="return false;" class="btn small cuwire-com-connect">Connect</button>
+				</div>
 			</div>
 		</div>
+		<h3>cuwire console monitor</h3>
+		<div id="cuwire-console" class="footer navbar-fixed-bottom" style="overflow: visible;">
+			<div class="container-fluid">
+				<div class="input-append">
+					<input class="span10" id="appendedInputButton" type="text">
+					<button class="btn" type="button">Send</button>
+				</div>
+			</div>
+<!--
+			<div class="btn-group">
+				<button type="button" onclick="return false;" class="btn small cuwire-com-connect">Connect</button>
+			</div>
+-->
+		</div>
+		<div class="log-wrapper">
 		<pre>
 24 Dec 14:15:25 - [red] Loading palette nodes
 24 Dec 14:15:25 - ------------------------------------------
@@ -97,6 +139,8 @@ library.js        palette.js        tab-config.js     touch/
 apla@kobuk:0/~/work/node-red $ vim public/red/ui/view.js
 apla@kobuk:0/~/work/node-red $ vim public/orion/built-editor.min.js
 </pre>
+
+		</div>
 				<p id="log">
 		</p>
 
