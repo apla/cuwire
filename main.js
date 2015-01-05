@@ -624,7 +624,7 @@ define(function (require, exports, module) {
 					folder: sketchFolder,
 					relativePath: relativePath
 				};
-			}).join ('');
+			});
 
 			// TODO: draw a dialog with buttons to handle this
 			var message = sketchSelectRenderer ({

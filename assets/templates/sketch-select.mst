@@ -6,9 +6,9 @@ than available memory. Sorry!</p>
 	{{#sketch}}
 	<li class="media">
 		<div class="media-body">
-			<button data-button-id="cuwire-sketch-{{index}}" class="dialog-button btn btn-large pull-right">&nbsp;</button>
+			<button data-button-id="cuwire-sketch-{{index}}" class="dialog-button btn btn-large pull-right">Select</button>
 			<h4 class="media-heading">{{folder}}</h4>
-			<p>{{relativePath}}</p>
+			<p>folder: {{relativePath}}</p>
 		</div>
 	</li>
 	{{/sketch}}
