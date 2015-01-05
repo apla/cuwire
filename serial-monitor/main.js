@@ -3,6 +3,10 @@
 var serialMonitorPath = decodeURIComponent (location.pathname).replace ('index.html', "");
 var extensionPath     = serialMonitorPath.replace ("serial-monitor/", "");
 
+if (navigator.platform === "Win32") {
+    extensionPath = extensionPath.replace (/^\/([A-Z])\:/, "$1:")
+}
+
 require.config({
 	baseUrl: bracketsWwwPath,
 	paths: {
