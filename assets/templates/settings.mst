@@ -8,5 +8,9 @@
 			<label class="control-label" for="cuwire-pref-energiaIDE">Energia IDE location</label>
 			<input id="cuwire-pref-energiaIDE" name="energiaIDE" value="{{energiaIDE}}"/>
 		</div>
+		<div class="control-group">
+			<input id="cuwire-pref-verbose" name="verbose" value="true" type="checkbox"/>
+			<label class="control-label" for="cuwire-pref-verbose">be verbose</label>
+		</div>
 	</form>
 </div>

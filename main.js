@@ -252,11 +252,30 @@ define(function (require, exports, module) {
 			titleButton.text (boardMeta.name);
 	}
 
+	function setFormFields (formEl, fieldsData) {
+		for (var i = 0; i < formEl.elements.length; i ++) {
+			var formField = formEl.elements[i];
+			if (!(formField.name in fieldsData)) {
+				continue;
+			}
+
+			// TODO: multiple checkboxes value for one form field
+			if (formField.type === 'radio' || formField.type === 'checkbox') {
+				if (formField.value === fieldsData[formField.name]) {
+					formField.checked = true;
+				}
+			} else {
+				formField.value = fieldsData[formField.name];
+			}
+		}
+	}
+
 	function getFormFields (formEl) {
 		var formData = {};
 		for (var i = 0; i < formEl.elements.length; i ++) {
 			var formField = formEl.elements[i];
-			if ((formField.type === 'radio' && formField.checked) || formField.type !== 'radio') {
+			var checkedType = formField.type.match (/^(?:radio|checkbox)$/);
+			if ((checkedType && formField.checked) || !checkedType) {
 				formData[formField.name] = formField.value;
 			}
 		}
@@ -385,19 +404,18 @@ define(function (require, exports, module) {
 				self.showRuntimeDialog (dialogData, modernRuntimesCount);
 			}
 
-//			console.log("[brackets-cuwire-node] Folder stats:", folders);
-			console.log("[brackets-cuwire-node] Available boards:");
-
 			self.platforms = platforms;
 
 			$('#cuwire-panel ul.cuwire-board li').remove();
 			// tr = $('<tr />').appendTo('#cuwire-panel tbody');
 			var cuwireBoardDD = $('#cuwire-panel ul.cuwire-board');
 
-			console.log (Object.keys (platforms));
+			if (self.verbose) {
+				console.log("[brackets-cuwire-node]", "Available boards:", Object.keys (platforms).join (', '));
+			}
 
 			Object.keys (platforms).sort().forEach (function (platformName) {
-				console.log (platformName);
+				// console.log (platformName);
 				$('<li class="dropdown-header">'
 				  + platforms[platformName].platform.name + " "
 				  + platforms[platformName].platform.version
@@ -442,7 +460,8 @@ define(function (require, exports, module) {
 
 					}
 					boardDesc += ')';
-					console.log (boardDesc);
+					if (self.verbose)
+						console.log (boardDesc);
 
 
 				});
@@ -501,8 +520,6 @@ define(function (require, exports, module) {
 		options.includes = prefs.get ('includes');
 
 		var currentDoc = DocumentManager.getCurrentDocument();
-
-		var fullPath = currentDoc.file.fullPath;
 
 		this.changeStatusLabel ('Running', 'running');
 
@@ -634,7 +651,8 @@ define(function (require, exports, module) {
 
 		var messageData = {
 			"arduinoIDE": prefs.get ('arduino-ide'),
-			"energiaIDE": prefs.get ('energia-ide')
+			"energiaIDE": prefs.get ('energia-ide'),
+			"verbose":    prefs.get ('verbose')
 		};
 
 		var message = settingsRenderer (messageData);
@@ -653,6 +671,10 @@ define(function (require, exports, module) {
 				// CommandManager.execute("debug.refreshWindow");
 				prefs.set ('arduino-ide', formData.arduinoIDE);
 				prefs.set ('energia-ide', formData.energiaIDE);
+
+				this.verbose = "verbose" in formData;
+				prefs.set ('verbose', this.verbose);
+
 				this.getBoardMeta ();
 			}
 		}).bind (this));
@@ -664,6 +686,9 @@ define(function (require, exports, module) {
 		// setTimeout (function () {
 			boardPrefInputs = $("#cuwire-settings-panel input");
 			var formEl = boardPrefInputs[0].form;
+
+			setFormFields (formEl, messageData);
+
 			formData = getFormFields (formEl);
 
 		// }, 100);
@@ -697,6 +722,8 @@ define(function (require, exports, module) {
 
 		this.enumerateSerialPorts ();
 		this.getBoardMeta ();
+
+		this.verbose = prefs.get ('verbose');
 
 		this.panel.toggle = function () {
 			if (this.isVisible ()) {
