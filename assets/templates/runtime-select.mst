@@ -3,19 +3,17 @@
 then relaunch Brackets</h4>
 {{/noRuntimes}}
 
-{{#manyRuntimes}}
-<h4>We found multiple runtimes. Please select one:</h4>
-{{/manyRuntimes}}
-
 {{^noRuntimes}}
-<p>What we found already:</p>
+<h4>We found multiple runtimes. Please select runtime below</h4>
+<p><em>Actually</em>, not working at this time. First runtime folder from random ordered list is used.
+Rename folder to make this working.</p>
 {{/noRuntimes}}
 <ul class="media-list">
 	{{#runtime}}
 	<li class="media">
 		<div class="media-body">
 			{{#modern}}
-			<button data-button-id="{{folder}}" class="dialog-button btn btn-large pull-right">&nbsp;</button>
+			<button data-button-id="{{folder}}" class="dialog-button btn btn-large pull-right">Select</button>
 			{{/modern}}
 			<h4 class="media-heading">{{readableFolder}}</h4>
 			<p>runtime version: {{runtime}}</p>

@@ -40,7 +40,7 @@ define(function (require, exports, module) {
 //	});
 
 	var cuwireDomain = new NodeDomain ("cuwire", ExtensionUtils.getModulePath (module, "node/cuwireDomain.js"));
-	ExtensionUtils.loadStyleSheet(module, "assets/style.css");
+	ExtensionUtils.loadStyleSheet (module, "assets/style.css");
 
 	function CuWireExt (require, domain) {
 		this.domain = domain;
@@ -309,7 +309,7 @@ define(function (require, exports, module) {
 		var message = runtimeSelectRenderer ({
 			runtime: folders,
 			noRuntimes: modernRuntimesCount === 0,
-			manyruntimes: modernRuntimesCount > 1,
+			manyRuntimes: modernRuntimesCount > 1,
 		});
 
 		Dialogs.showModalDialog (
@@ -331,7 +331,8 @@ define(function (require, exports, module) {
 				this.showSettings ();
 				return;
 			}
-
+			// TODO: handle buttons and store runtimeFolder option.
+			// then provide options.runtimeFolder to compiler and uploader
 		}).bind (this));
 
 	}
@@ -373,10 +374,10 @@ define(function (require, exports, module) {
 				}
 				self.runtimes.push (folders[folderName]);
 				return {
-					folder: folderName,
+					folder:         folderName,
 					readableFolder: folderName.replace (/\/Contents(?:\/Resources)?\/Java/, ""),
-					runtime: folders[folderName].runtime,
-					modern: folders[folderName].modern
+					runtime:        folders[folderName].runtime,
+					modern:         folders[folderName].modern
 				}
 			}).bind (this));
 
