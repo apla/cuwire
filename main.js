@@ -180,6 +180,7 @@ define(function (require, exports, module) {
 			boardModInputs = $("#cuwire-board-mod input");
 
 			// if we had a new board, then we need to discard previous settings
+			// TODO: use setFormFields
 			boardModInputs.each (function (idx) {
 				var typeId = $(this).attr('name');
 				var modId  = $(this).attr('value');
@@ -582,12 +583,16 @@ define(function (require, exports, module) {
 
 			// selected file and current document can be different, so check context for both
 			var selectedFile = ProjectManager.getSelectedItem();
-			var selectedFilePath = selectedFile.fullPath;
+			if (selectedFile) {
+				var selectedFilePath = selectedFile.fullPath;
+			}
 			var currentDoc   = DocumentManager.getCurrentDocument();
-			var openedFile   = currentDoc.file;
-			var openedFilePath = openedFile.fullPath;
+			if (currentDoc) {
+				var openedFile   = currentDoc.file;
+				var openedFilePath = openedFile.fullPath;
+			}
 
-			console.log (getRelativeFilename (projectRoot.fullPath, selectedFile.fullPath, openedFile.fullPath));
+			// console.log (getRelativeFilename (projectRoot.fullPath, selectedFile.fullPath, openedFile.fullPath));
 
 			var currentSketchFolder;
 
@@ -611,8 +616,8 @@ define(function (require, exports, module) {
 			}
 
 			var dialogData = fileList.sort().map (function (fileObject, fileObjectIdx) {
-				var sketchFolderPath = fileObject.parentPath.replace (path.sep + '$', "");
-				var sketchFolder = sketchFolderPath.substr (sketchFolderPath.lastIndexOf (path.sep) + 1);
+				var sketchFolderPath = fileObject.parentPath.replace (/\/$/, "");
+				var sketchFolder = sketchFolderPath.substr (sketchFolderPath.lastIndexOf ('/') + 1);
 				var relativePath = getRelativeFilename (projectRoot.fullPath, sketchFolderPath);
 				return {
 					index: fileObjectIdx,
