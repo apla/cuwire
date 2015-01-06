@@ -130,6 +130,10 @@ requirejs (
 			cuwireDomain.on ('serialMessage', function (event, message) {
 
 				preNode.textContent += message;
+				setTimeout (function () {
+					preNode.parentElement.scrollTop = preNode.parentElement.scrollHeight;
+				}, 0);
+
 			});
 
 
