@@ -159,7 +159,7 @@ define(function (require, exports, module) {
 				removeAllMatches(eventRec, eventRec.eventName);
 			} else {
 				// If arg only gives a namespace, look at handler lists for all events
-				_.forEach(this._eventHandlers, function (handlerList, eventName) {
+				Object.keys (this._eventHandlers).forEach (function (eventName, eventIdx, handlerList) {
 					removeAllMatches(eventRec, eventName);
 				});
 			}

@@ -14,6 +14,8 @@
 	var CuWireCompiler = require ('cuwire/compiler');
 	var CuWireUploader = require ('cuwire/uploader');
 
+	var CuWireSerial   = require ('./cuwireSerialBrackets');
+
 	var theCuWire;
 
 	function getBoardsMeta (runtimeFolders, sketchesFolder) {
@@ -230,6 +232,42 @@
 
 	}
 
+	var serialComms = {};
+
+	function openSerialPort (params) {
+		var cb       = arguments[arguments.length - 1];
+		var port     = params.shift();
+		var baudrate = params.shift();
+
+		var cuwireSerial = new CuWireSerial.brackets ();
+		cuwireSerial.on ('data', _domainManager.emitEvent.bind (_domainManager, 'cuwire', 'serialMessage'));
+
+		if (port && port.name) {
+			port = port.name;
+		}
+
+		console.log (port, baudrate);
+
+		cuwireSerial.open (port, baudrate, cb);
+
+		// TODO: listen for errors
+
+		serialComms[params.port] = cuwireSerial;
+	}
+
+	function closeSerialPort (params) {
+		var cb = arguments[arguments.length - 1];
+		if (params.port in serialComms) {
+			var cuwireSerial = serialComms[params.port];
+			cuwireSerial.removeAllListeners ();
+			cuwireSerial.close (cb);
+		}
+	}
+
+	function sendMessageSerial () {
+
+	}
+
 	/**
 	* Initializes the domain
 	* @param {DomainManager} domainManager The DomainManager for the server
@@ -262,6 +300,53 @@
 			[{name: "ports", // return values
 			  type: "array",
 			  description: "serial port path names"}]
+		);
+		domainManager.registerCommand(
+			"cuwire",       // domain name
+			"openSerialPort",    // command name
+			openSerialPort,   // command handler function
+			true,          // this command is asynchronous in Node
+			"Connect to a serial port",
+			[{
+				name: "port",
+				type: "string",
+				description: "port name/path"
+			}, {
+				name: "baudrate",
+				type: "int",
+				description: "port baudrate"
+			}],
+			[]
+		);
+		domainManager.registerCommand(
+			"cuwire",       // domain name
+			"closeSerialPort",    // command name
+			closeSerialPort,   // command handler function
+			true,          // this command is asynchronous in Node
+			"Close a serial port",
+			[{
+				name: "port",
+				type: "string",
+				description: "port name/path"
+			}],
+			[]
+		);
+		domainManager.registerCommand(
+			"cuwire",       // domain name
+			"sendMessageSerial",    // command name
+			sendMessageSerial,   // command handler function
+			true,          // this command is asynchronous in Node
+			"Send message to a serial port",
+			[{
+				name: "port",
+				type: "string",
+				description: "port name/path"
+			}, {
+				name: "message",
+				type: "string",
+				description: "message to send to port"
+			}],
+			[]
 		);
 		domainManager.registerCommand(
 			"cuwire",       // domain name
@@ -361,6 +446,15 @@
 				name: "payload",
 				type: "object",
 				description: "log message payload"
+			}]
+		);
+		domainManager.registerEvent(
+			"cuwire",     // domain name
+			"serialMessage",         // event name
+			[{
+				name: "message",
+				type: "string",
+				description: "message"
 			}]
 		);
 	}

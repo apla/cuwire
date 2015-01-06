@@ -713,7 +713,13 @@ define(function (require, exports, module) {
 
 	CuWireExt.prototype.showSerialMonitor = function () {
 		var serialMonUrl = ExtensionUtils.getModuleUrl (module, "serial-monitor/main").replace ('main', 'index.html');
+		var serialPort = prefs.get ('port');
+
 		serialMonUrl += '?' + 'bracketsIndexPath=' + encodeURIComponent (location.pathname);
+		if (serialPort && serialPort.name) {
+			serialMonUrl += '&' + 'serialPort=' + encodeURIComponent (serialPort.name);
+		}
+
 		var serialWindow = window.open (serialMonUrl, "brackets-cuwire-serial", "width=" + 1000 + ",height=" + 500);
 	}
 

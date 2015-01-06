@@ -15,6 +15,9 @@ var qs = (function(a) {
 
 window.bracketsWwwPath = qs.bracketsIndexPath.replace ('index.html', '');
 
+// can be problem in future
+window.location.qs = qs;
+
 document.getElementById ('brackets-min-css').href  = bracketsWwwPath + 'styles/brackets.min.css';
 
 function setStage (stage) {

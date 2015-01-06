@@ -45,9 +45,31 @@ requirejs (
 			}
 
 			if (currentPort) {
-				titleButton.textContent = port.name.replace (/^\/dev\/(cu\.)?/, "");
+				titleButton.textContent = currentPort.name.replace (/^\/dev\/(cu\.)?/, "");
 			} else {
 				titleButton.textContent = "Port";
+			}
+		}
+
+		// TODO: fill baudrate list
+		var baudratesLi = [].slice.apply (document.querySelectorAll ('#cuwire-panel ul.cuwire-baudrate li'));
+		baudratesLi.forEach (function (li) {
+			li.addEventListener ('click', function (evt) {
+				setBaudRate (parseInt (evt.target.textContent));
+			}, false);
+		});
+
+		var currentBaudrate;
+
+		function setBaudRate (baudrate) {
+//			console.log (baudrate);
+			var titleButton = document.querySelector ('#cuwire-panel button.cuwire-baudrate');
+
+			if (baudrate) {
+				titleButton.textContent = baudrate;
+				currentBaudrate = baudrate;
+			} else {
+				titleButton.textContent = "Baudrate";
 			}
 		}
 
@@ -87,7 +109,13 @@ requirejs (
 					$('<li><a href="#">'+port.name+"</a></li>")
 					.on ('click', setPort.bind (this, port))
 					.appendTo(cuwirePortDD);
+					if (port.name === window.location.qs.serialPort) {
+						setPort (port);
+					}
 				});
+
+//				console.log (port.name, window.location.qs.serialPort);
+
 
 				//		$('<td />').text(err.message).appendTo(tr);
 				//		$('<td />').text(err.filename).appendTo(tr);
@@ -96,6 +124,39 @@ requirejs (
 				// TODO: show error indicator
 				console.error("[brackets-cuwire-node] failed to run cuwire.enumerateSerialPorts, error:", err);
 			});
+
+			var preNode = document.querySelector ('.log-wrapper pre');
+
+			cuwireDomain.on ('serialMessage', function (event, message) {
+
+				preNode.textContent += message;
+			});
+
+
+			var connectButton = document.querySelector ('button.cuwire-com-connect');
+			connectButton.addEventListener ('click', function () {
+				if (connectButton.textContent === "Disconnect") {
+					cuwireDomain.exec ("closeSerialPort", [
+						currentPort
+					]).done (function (ports) {
+						connectButton.textContent = "Connect";
+					}).fail(function (err) {
+						// TODO: show error indicator
+						console.error("[brackets-cuwire-node] failed to run cuwire.openSerialPort, error:", err);
+					});
+					return;
+				}
+				cuwireDomain.exec ("openSerialPort", [
+					currentPort,
+					currentBaudrate
+				]).done (function (ports) {
+					connectButton.textContent = "Disconnect";
+				}).fail(function (err) {
+					// TODO: show error indicator
+					console.error("[brackets-cuwire-node] failed to run cuwire.openSerialPort, error:", err);
+				});
+
+			}, false);
 
 		}
 

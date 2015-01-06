@@ -24,7 +24,7 @@
 			<div class="toolbar simple-toolbar-layout" style="overflow: visible;">
 				<div class="dropdown btn-group">
 
-					<button type="button" onclick="return false;" class="cuwire-port btn small with-plug btn-warning">Port</button>
+					<button type="button" onclick="return false;" class="cuwire-port btn small with-plug">Port</button>
 					<button title="Choose port" class="btn small dropdown-toggle" data-toggle="dropdown">
 						<!-- <i class="icon"> -->
 
@@ -37,7 +37,7 @@
 
 				<div class="dropdown btn-group">
 
-					<button type="button" onclick="return false;" class="cuwire-baudrate btn small btn-warning">Baudrate</button>
+					<button type="button" onclick="return false;" class="cuwire-baudrate btn small with-speed">Baudrate</button>
 					<button title="Choose baudrate" class="btn small dropdown-toggle" data-toggle="dropdown">
 						<!-- <i class="icon"> -->
 
@@ -66,9 +66,15 @@
 		<h3>cuwire console monitor</h3>
 		<div id="cuwire-console" class="footer navbar-fixed-bottom" style="overflow: visible;">
 			<div class="container-fluid">
+				<div class="btn-group">
 				<div class="input-append">
-					<input class="span10" id="appendedInputButton" type="text">
-					<button class="btn" type="button">Send</button>
+					<input class="span10" type="text">
+					<button class="btn cuwire-com-send" type="button">Send</button>
+				</div>
+				</div>
+				<div class="btn-group">
+					<button class="btn cuwire-log-mark" type="button">Mark</button>
+					<button class="btn cuwire-log-clear" type="button">Clear</button>
 				</div>
 			</div>
 <!--
