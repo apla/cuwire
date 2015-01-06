@@ -182,6 +182,8 @@
 		cb (null, message);
 	}
 
+	var serialComms = {};
+
 	/**
 	 * function to enumerate serial ports
 	 * @return {array} path names
@@ -216,7 +218,9 @@
 					name:         port.comName,
 					manufacturer: port.manufacturer,
 					vendorId:     port.vendorId,
-					productId:    port.productId
+					productId:    port.productId,
+					serial:       port.serial,
+					connected:    (port.comName in serialComms) ? true : false
 				});
 //				console.log(port.comName);
 //				console.log(port.pnpId);
@@ -232,36 +236,46 @@
 
 	}
 
-	var serialComms = {};
-
 	function openSerialPort (params) {
 		var cb       = arguments[arguments.length - 1];
 		var port     = params.shift();
 		var baudrate = params.shift();
 
+		// TODO: need to make decision
+		// 1) support multiple serial connections
+		// 2) only one connection, close previous before connecting to new one
+		// for now, only one port is supported
+		closeSerialPort ();
+
 		var cuwireSerial = new CuWireSerial.brackets ();
 		cuwireSerial.on ('data', _domainManager.emitEvent.bind (_domainManager, 'cuwire', 'serialMessage'));
+
+		cuwireSerial.on ('error', (function () {
+			delete serialComms[params.port];
+			// TODO: emit something
+		}).bind (this));
 
 		if (port && port.name) {
 			port = port.name;
 		}
 
-		console.log (port, baudrate);
-
 		cuwireSerial.open (port, baudrate, cb);
 
-		// TODO: listen for errors
-
-		serialComms[params.port] = cuwireSerial;
+		serialComms[port] = cuwireSerial;
 	}
 
 	function closeSerialPort (params) {
 		var cb = arguments[arguments.length - 1];
-		if (params.port in serialComms) {
-			var cuwireSerial = serialComms[params.port];
+		for (var portName in serialComms) {
+//      TODO: uncomment for multiple connections
+//		var portName = params.port;
+//		if (params.port in serialComms) {
+			var cuwireSerial = serialComms[portName];
 			cuwireSerial.removeAllListeners ();
-			cuwireSerial.close (cb);
+			cuwireSerial.close ();
+			delete serialComms[portName];
 		}
+		cb && cb ();
 	}
 
 	function sendMessageSerial () {

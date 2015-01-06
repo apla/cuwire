@@ -91,6 +91,8 @@ requirejs (
 				portEnumSub = true;
 			}
 
+			var connectButton = document.querySelector ('button.cuwire-com-connect');
+
 			$('<li><a href="#">Updating</a></li>').appendTo(cuwirePortDD);
 
 			cuwireDomain.exec("enumerateSerialPorts")
@@ -111,6 +113,9 @@ requirejs (
 					.appendTo(cuwirePortDD);
 					if (port.name === window.location.qs.serialPort) {
 						setPort (port);
+					}
+					if (port.connected) {
+						connectButton.textContent = "Disconnect";
 					}
 				});
 
@@ -136,8 +141,6 @@ requirejs (
 
 			});
 
-
-			var connectButton = document.querySelector ('button.cuwire-com-connect');
 			connectButton.addEventListener ('click', function () {
 				if (connectButton.textContent === "Disconnect") {
 					cuwireDomain.exec ("closeSerialPort", [
@@ -155,7 +158,7 @@ requirejs (
 					currentBaudrate
 				]).done (function (ports) {
 					connectButton.textContent = "Disconnect";
-				}).fail(function (err) {
+				}).fail (function (err) {
 					// TODO: show error indicator
 					console.error("[brackets-cuwire-node] failed to run cuwire.openSerialPort, error:", err);
 				});

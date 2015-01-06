@@ -3,10 +3,11 @@ h1, h2, h3 {margin-left: 10px;}
 .top-panel {margin-top: 10px;}
 #cuwire-console {
 	background: white;
-	padding-top: 10px;
+	padding: 10px 10px 0 10px;
+
 }
 #cuwire-console div.input-append input[type="text"] {
-	height: 28px;
+/*	height: 24px;*/
 	border-top-right-radius: 0;
 	border-bottom-right-radius: 0;
 }
@@ -29,8 +30,15 @@ h1, h2, h3 {margin-left: 10px;}
 	word-wrap: break-word;
 	white-space: pre;
 	white-space: pre-wrap;
+	border: 0;
+	background: transparent;
 }
 #cuwire-panel button.with-plug {
 	padding-left: 24px;
 	background: url(../assets/plug.svg) 4px 4px no-repeat #e5e9e9;
+}
+
+#cuwire-panel button.with-speed {
+	padding-left: 24px;
+	background: url(../assets/speed.svg) 4px 4px no-repeat #e5e9e9;
 }
