@@ -33,15 +33,22 @@ requirejs (
 		var moduleId = "me.apla.brackets-cuwire.console";
 		var cuwireDomain = new NodeDomain ("cuwire", extensionPath + "node/cuwireDomain.js");
 
-
-
-
 		var portEnumSub = false;
 
-		function setPort () {
-//			var titleButton = $('#cuwire-panel button.cuwire-port');
-//			if (this.platforms[platformName])
-//				titleButton.text (boardMeta.name);
+		var currentPort;
+
+		function setPort (port) {
+
+			var titleButton = document.querySelector ('#cuwire-panel button.cuwire-port');
+			if (port) {
+				currentPort = port;
+			}
+
+			if (currentPort) {
+				titleButton.textContent = port.name.replace (/^\/dev\/(cu\.)?/, "");
+			} else {
+				titleButton.textContent = "Port";
+			}
 		}
 
 		function enumerateSerialPorts () {

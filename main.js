@@ -114,7 +114,7 @@ define(function (require, exports, module) {
 		} else {
 			prefs.set ('port', port);
 		}
-		$('#cuwire-panel button.cuwire-port').text (port.name.replace (/^\/dev\/cu\./, ""));
+		$('#cuwire-panel button.cuwire-port').text (port.name.replace (/^\/dev\/(cu\.)?/, ""));
 	}
 
 	CuWireExt.prototype.showBoardInfo = function (boardId, platformName) {

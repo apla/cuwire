@@ -59,12 +59,12 @@
 
 #cuwire-panel button.with-chip {
 	padding-left: 24px;
-	background: url(chip.svg) 4px 4px no-repeat;
+	background: url(chip.svg) 4px 4px no-repeat #e5e9e9;
 }
 
 #cuwire-panel button.with-plug {
 	padding-left: 24px;
-	background: url(plug.svg) 4px 4px no-repeat;
+	background: url(plug.svg) 4px 4px no-repeat #e5e9e9;
 }
 
 #cuwire-panel .pie {
