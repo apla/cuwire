@@ -767,7 +767,7 @@ define(function (require, exports, module) {
 		var settingsButton = $('#cuwire-panel button.cuwire-settings');
 		settingsButton.on ('click', this.showSettings.bind (this));
 
-		$(this.domain).on ('log', function (event, scope, message, payload) {
+		this.domain.on ('log', function (event, scope, message, payload) {
 //			console.log (message);
 
 			var highlight = '';
@@ -785,12 +785,11 @@ define(function (require, exports, module) {
 			}
 
 			$('#cuwire-panel .table-container table tbody').append ("<tr class=\""+highlight+"\"><td>"+scope+"</td><td>"+message+"</td></tr>");
-			var rowpos = $('#cuwire-panel .table-container table tbody tr:last').position();
+			var scrollableContainer = $('#cuwire-panel .table-container')[0];
+			setTimeout (function () {
+				scrollableContainer.scrollTop = scrollableContainer.scrollHeight;
+			}, 0);
 
-			// TODO: fix scroll
-			// http://stackoverflow.com/questions/1805808/how-do-i-scroll-a-row-of-a-table-into-view-element-scrollintoview-using-jquery
-			// $('#container').scrollTop( $('#tr').offset().top - $('#td').offset().top )
-			$('#cuwire-panel .table-container').scrollTop(rowpos.top);
 		});
 	}
 

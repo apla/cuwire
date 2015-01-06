@@ -1,10 +1,10 @@
 #cuwire-sidebar-icon {
-	background-image: url(logo.svg);
+	background-image: url(i/logo.svg);
 	background-size: 24px;
 }
 
 .cuwire-settings, .cuwire-settings:hover, .cuwire-settings:active {
-	background: url(gear.svg) no-repeat 50% 50%;
+	background: url(i/gear.svg) no-repeat 50% 50%;
 	background-size: 16px;
 }
 
@@ -59,12 +59,12 @@
 
 #cuwire-panel button.with-chip {
 	padding-left: 24px;
-	background: url(chip.svg) 4px 4px no-repeat #e5e9e9;
+	background: url(i/chip.svg) 4px 4px no-repeat #e5e9e9;
 }
 
 #cuwire-panel button.with-plug {
 	padding-left: 24px;
-	background: url(plug.svg) 4px 4px no-repeat #e5e9e9;
+	background: url(i/plug.svg) 4px 4px no-repeat #e5e9e9;
 }
 
 #cuwire-panel .pie {
@@ -156,7 +156,7 @@ form#cuwire-board-mod label {
 	color: white;
 */
 /*
-	background-image: url(logo.svg);
+	background-image: url(i/logo.svg);
 	background-size: 36px;
 	background-repeat: no-repeat;
 	background-position: 50% 50%;

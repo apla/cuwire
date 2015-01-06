@@ -35,10 +35,10 @@ h1, h2, h3 {margin-left: 10px;}
 }
 #cuwire-panel button.with-plug {
 	padding-left: 24px;
-	background: url(../assets/plug.svg) 4px 4px no-repeat #e5e9e9;
+	background: url(../assets/i/plug.svg) 4px 4px no-repeat #e5e9e9;
 }
 
 #cuwire-panel button.with-speed {
 	padding-left: 24px;
-	background: url(../assets/speed.svg) 4px 4px no-repeat #e5e9e9;
+	background: url(../assets/i/speed.svg) 4px 4px no-repeat #e5e9e9;
 }
