@@ -4,7 +4,7 @@ var serialMonitorPath = decodeURIComponent (location.pathname).replace ('index.h
 var extensionPath     = serialMonitorPath.replace ("serial-monitor/", "");
 
 if (navigator.platform === "Win32") {
-    extensionPath = extensionPath.replace (/^\/([A-Z])\:/, "$1:")
+	extensionPath = extensionPath.replace (/^\/([A-Z])\:/, "$1:")
 }
 
 require.config({
@@ -31,22 +31,10 @@ requirejs (
 		"use strict";
 
 		var moduleId = "me.apla.brackets-cuwire.console";
-		console.log (123);
-
 		var cuwireDomain = new NodeDomain ("cuwire", extensionPath + "node/cuwireDomain.js");
 
-		console.log (456);
 
-		var result = cuwireDomain.exec ("echo", "789");
 
-		result.done(function (value) {
-			console.log (value);
-			// the command succeeded!
-		});
-
-		result.fail(function (err) {
-			// the command failed; act accordingly!
-		});
 
 		var portEnumSub = false;
 
