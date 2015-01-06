@@ -47,17 +47,33 @@ void setup() {
 	analogReference(INTERNAL);
 }
 
+int delaySeconds = 5;
+
 // the loop function runs over and over again forever
 void loop() {
 	digitalWrite(13, HIGH);   // turn the LED on (HIGH is the voltage level)
 	delay(1000);              // wait for a second
 	digitalWrite(13, LOW);    // turn the LED off by making the voltage LOW
 	// read the input on analog pin 0:
-	int sensorValue = analogRead(A0);
+//	int sensorValue = analogRead(A0);
 	// Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
 	long voltage = readVcc();
 	// print out the value you read:
 	Serial.print(voltage);
 	Serial.println(" mV");
-	delay(5000);
+
+	if (Serial.available())
+	{
+		char ch = Serial.read();
+		if (ch >= '1' && ch <= '7')
+		{
+			delaySeconds = ch - '0';
+
+			Serial.print("Now delay is ");
+			Serial.print(delaySeconds);
+			Serial.println(" seconds");
+		}
+	}
+
+	delay(delaySeconds * 1000);
 }
