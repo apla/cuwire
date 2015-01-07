@@ -165,6 +165,19 @@ requirejs (
 
 			}, false);
 
+			var sendButton = document.querySelector ('button.cuwire-com-send');
+			sendButton.addEventListener ('click', function () {
+				var commandText = sendButton.previousElementSibling.value;
+				cuwireDomain.exec ("sendMessageSerial", [
+					currentPort,
+					commandText
+				]).done (function () {
+
+				}).fail (function (err) {
+					// TODO: show error indicator
+					console.error("[brackets-cuwire-node] failed to run cuwire.sendMessageSerial, error:", err);
+				});
+			}, false);
 		}
 
 		enumerateSerialPorts();

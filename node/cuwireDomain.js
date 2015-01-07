@@ -268,7 +268,7 @@
 		var cb = arguments[arguments.length - 1];
 		for (var portName in serialComms) {
 //      TODO: uncomment for multiple connections
-//		var portName = params.port;
+//		var portName = params.shift();
 //		if (params.port in serialComms) {
 			var cuwireSerial = serialComms[portName];
 			cuwireSerial.removeAllListeners ();
@@ -278,8 +278,22 @@
 		cb && cb ();
 	}
 
-	function sendMessageSerial () {
-
+	function sendMessageSerial (params) {
+		var cb = arguments[arguments.length - 1];
+		var port    = params.shift();
+		var message = params.shift();
+		if (port && port.name) {
+			port = port.name;
+		}
+		console.log (port, message);
+		if (port in serialComms) {
+			console.log ("port found");
+			var cuwireSerial = serialComms[port];
+			cuwireSerial.send (message);
+		} else {
+			cb && cb (new Error ('no such port'));
+		}
+		cb && cb ();
 	}
 
 	/**
