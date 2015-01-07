@@ -771,8 +771,9 @@ define(function (require, exports, module) {
 //			console.log (message);
 
 			var highlight = '';
-			if (payload && payload.stderr) {
+			if (payload && ("stderr" in payload)) {
 				highlight = 'error';
+                message += " " + (payload.stderr || payload.cmd)
 			} else if (payload && payload.maxText) {
 //				var textSizeP = Math.round (payload.text / payload.maxText * 100);
 				createGradient ($('.pie.pie-text'), $('.pie-label.pie-text .value'), $('.pie-label.pie-text .full'), payload.text, payload.maxText);
