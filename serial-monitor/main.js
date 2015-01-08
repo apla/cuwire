@@ -25,13 +25,16 @@ uiHandler ();
 
 brackets.getModule = require;
 
+var moduleId = "me.apla.brackets-cuwire.console";
+var cuwireDomain;
+
 requirejs (
 	['utils/EventDispatcher', 'utils/NodeConnection', 'utils/NodeDomain', 'widgets/bootstrap-dropdown'],
 	function   (EventDispatcher, NodeConnection, NodeDomain) {
 		"use strict";
 
-		var moduleId = "me.apla.brackets-cuwire.console";
-		var cuwireDomain = new NodeDomain ("cuwire", extensionPath + "node/cuwireDomain.js");
+
+		cuwireDomain = new NodeDomain ("cuwire", extensionPath + "node/cuwireDomain.js");
 
 		var portEnumSub = false;
 
@@ -166,22 +169,43 @@ requirejs (
 			}, false);
 
 			var sendButton = document.querySelector ('button.cuwire-com-send');
-			sendButton.addEventListener ('click', function () {
-				var commandText = sendButton.previousElementSibling.value;
-				cuwireDomain.exec ("sendMessageSerial", [
-					currentPort,
-					commandText
-				]).done (function () {
+			// little dirty
+			var messageInput = sendButton.previousElementSibling;
 
-				}).fail (function (err) {
-					// TODO: show error indicator
-					console.error("[brackets-cuwire-node] failed to run cuwire.sendMessageSerial, error:", err);
-				});
+			sendButton.addEventListener ('click', function () {
+				sendMessageSerial (currentPort, messageInput.value);
+				messageInput.select ();
+			}, false);
+
+
+			messageInput.addEventListener ('keyup', function (evt) {
+//				console.log (evt.keyCode);
+				if (evt.keyCode === 13) {
+					sendMessageSerial (currentPort, messageInput.value);
+					messageInput.select ();
+					return false;
+				}
+//				var commandText = sendButton.previousElementSibling.value;
+//
 			}, false);
 		}
 
 		enumerateSerialPorts();
 });
+
+function sendMessageSerial (port, commandText) {
+
+	cuwireDomain.exec ("sendMessageSerial", [
+		port,
+		commandText
+	]).done (function () {
+
+	}).fail (function (err) {
+		// TODO: show error indicator
+		console.error("[brackets-cuwire-node] failed to run cuwire.sendMessageSerial, error:", err);
+	});
+
+}
 
 function getAbsoluteHeight(el) {
 	// Get the DOM Node if you pass in a string
