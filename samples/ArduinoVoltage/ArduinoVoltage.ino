@@ -6,6 +6,16 @@
  This example code is in the public domain.
  */
 
+// actually, arduino IDE inserts includes just before first statement
+// but RFDUINO definition is in variants/RFduino/variant.h,
+// so we insert a dummy string here
+
+int dummyIntForRfduino;
+
+#ifdef RFDUINO
+#include <RFduinoBLE.h>
+#endif
+
 // http://provideyourown.com/2012/secret-arduino-voltmeter-measure-battery-voltage/
 
 //float internal11Ref = 1.1 * Vcc1 (per voltmeter) / Vcc2 (per readVcc() function)
@@ -13,8 +23,21 @@
 
 #define scale_constant internal11Ref * 1023 * 1000
 
+// http://stackoverflow.com/questions/17723733/arduino-due-conditional-compilation-constant-for-custom-library
+
+void setupVcc() {
+#ifdef __AVR__
+	#ifdef INTERNAL1V1
+	analogReference(INTERNAL1V1);
+	#elif INTERNAL
+	analogReference(INTERNAL);
+	#endif
+#endif
+}
+
 long readVcc() {
-	// Read 1.1V reference against AVcc
+#ifdef __AVR__
+		// Read 1.1V reference against AVcc
 	// set the reference to Vcc and the measurement to the internal 1.1V reference
 	#if defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 	ADMUX = _BV(REFS0) | _BV(MUX4) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
@@ -37,6 +60,33 @@ long readVcc() {
 
 	result = scale_constant / result; // Calculate Vcc (in mV); 1125300 = 1.1*1023*1000
 	return result; // Vcc in millivolts
+
+#endif
+#ifdef RFDUINO
+
+	char out_ch[7];
+	analogReference(VBG); // Sets the Reference to 1.2V band gap
+	analogSelection(VDD_1_3_PS);  //Selects VDD with 1/3 prescaling as the analog source
+	NRF_ADC->TASKS_START = 1;
+	int sensorValue = analogRead(1); // the pin has no meaning, it uses VDD pin
+
+	analogSelection(AIN_1_3_PS); // Selects the ananlog inputs with 1/3 prescaling as the analog source
+	analogReference(DEFAULT); // switch back to default reference
+	NRF_ADC->TASKS_STOP = 1;
+
+	float batteryVoltage = sensorValue * (3.6 / 1023.0); // convert value to voltage
+	snprintf(out_ch, 7, "%f", batteryVoltage);
+
+	return sensorValue * 3.6 * 1000 / 1023;
+
+//	RFduinoBLE.advertisementData = out_ch;
+//	RFduinoBLE.deviceName = "b1234";
+//
+//	RFduinoBLE.begin();
+//	RFduino_ULPDelay( SECONDS(5) );
+//	RFduinoBLE.end();
+
+#endif
 }
 
 // the setup routine runs once when you press reset:
@@ -44,7 +94,8 @@ void setup() {
 	// initialize serial communication at 9600 bits per second:
 	Serial.begin(9600);
 	pinMode(13, OUTPUT);
-	analogReference(INTERNAL);
+
+	setupVcc();
 }
 
 int delaySeconds = 5;
