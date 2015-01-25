@@ -56,26 +56,27 @@ function javaScriptFunctionProvider(hostEditor, pos) {
 	* @param {number} chTo column end position
 	* @param {string} functionName
 	*/
-	function FileLocation(fullPath, line, chFrom, chTo, functionName) {
+	function FileLocation(fullPath, lineFrom, chFrom, lineTo, chTo, functionName) {
 		this.fullPath = fullPath;
-		this.line = line;
-		this.chFrom = chFrom;
-		this.chTo = chTo;
+		this.lineFrom = lineFrom;
+		this.chFrom   = chFrom;
+		this.lineTo   = lineTo;
+		this.chTo     = chTo;
 		this.functionName = functionName;
 	}
 
 	function posFromIndex (source, off) {
 		var ch, lineNo = 0, sz = -1;
 		while (1) {
-
-			ch = off - sz + 1;
+			ch = off - (sz + 1); // nex symbol after \n
 			sz = source.indexOf ('\n', sz+1);
-//			var line = source.substr (sz, 150);
-			if (sz > off) break;
-			// off -= sz;
+			if (sz === -1)
+				break;
+			if (sz > off) {
+				break;
+			}
 			++lineNo;
 		}
-		console.log ({line: lineNo, ch: ch});
 		return {line: lineNo, ch: ch};
 	}
 
@@ -131,7 +132,7 @@ function javaScriptFunctionProvider(hostEditor, pos) {
 
 		var lastCommentBeforeFunction = 0;
 
-		var functionRe = /^[\s\n\r]*((unsigned|signed|static)[\s\n\r]+)?(void|int|char|short|long|float|double|word|bool)[\s\n\r]+(\w+)[\s\n\r]*\(([^\)]*)\)[\s\n\r]*\{/gm;
+		var functionRe = /^([\s\n\r]*)((unsigned|signed|static)[\s\n\r]+)?(void|int|char|short|long|float|double|word|bool)[\s\n\r]+(\w+)[\s\n\r]*\(([^\)]*)\)[\s\n\r]*\{/gm;
 		while ((matchArray = functionRe.exec (source)) !== null) {
 			var skip = false;
 			// TODO: comments stored in
@@ -156,12 +157,14 @@ function javaScriptFunctionProvider(hostEditor, pos) {
 			// matchArray.index
 //			funcs.push ();
 
-			var functionProto = [matchArray[1] || "", matchArray[3], matchArray[4], '('+matchArray[5]+')'].join (" ");
+			var functionProto = [matchArray[2] || "", matchArray[4], matchArray[5], '('+matchArray[6]+')'].join (" ");
 
-			var pos = posFromIndex (source, matchArray.index);
-			var chTo = pos.ch + functionProto.length;
+			// no more whitespace
+			var posFrom = posFromIndex (source, matchArray.index + matchArray[1].length);
+			// remove curly brackets
+			var posTo   = posFromIndex (source, matchArray.index + matchArray[0].length - 1);
 
-			funcs.push(new FileLocation(null, pos.line, 0, 0, functionProto));
+			funcs.push(new FileLocation(null, posFrom.line, posFrom.ch, posTo.line, posTo.ch, functionProto));
 
 			//console.log (matchArray[1] || "", matchArray[3], matchArray[4], '(', matchArray[5], ');');
 		}
@@ -235,8 +238,8 @@ function javaScriptFunctionProvider(hostEditor, pos) {
 		}
 		var selectorInfo = selectedItem.selectorInfo;
 
-		var from = {line: selectorInfo.line, ch: selectorInfo.chFrom};
-		var to = {line: selectorInfo.line, ch: selectorInfo.chTo};
+		var from = {line: selectorInfo.lineFrom, ch: selectorInfo.chFrom};
+		var to = {line: selectorInfo.lineTo, ch: selectorInfo.chTo};
 		EditorManager.getCurrentFullEditor().setSelection(from, to, true);
 	}
 

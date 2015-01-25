@@ -27,6 +27,11 @@ define(function (require, exports, module) {
 	var sketchSelectRenderer  = Mustache.compile (sketchSelectMst);
 	var runtimeSelectRenderer = Mustache.compile (runtimeSelectMst);
 
+	// completion in another file, easy to move code to external project
+	var completion = require ([ExtensionUtils.getModulePath (module, 'completion.js')], function () {
+		console.log ("loaded completion");
+	});
+
 	var prefs = PreferencesManager.getExtensionPrefs (moduleId);
 
 //	prefs.definePreference ("board", "object", {});
