@@ -27,9 +27,11 @@ define(function (require, exports, module) {
 	var sketchSelectRenderer  = Mustache.compile (sketchSelectMst);
 	var runtimeSelectRenderer = Mustache.compile (runtimeSelectMst);
 
+	var getModulePath = ExtensionUtils.getModulePath.bind (ExtensionUtils, module);
+
 	// completion in another file, easy to move code to external project
-	var completion = require ([ExtensionUtils.getModulePath (module, 'completion.js')], function () {
-		console.log ("loaded completion");
+	var completion = require ([getModulePath ('completion.js')], function (completion) {
+
 	});
 
 	var prefs = PreferencesManager.getExtensionPrefs (moduleId);
@@ -44,7 +46,7 @@ define(function (require, exports, module) {
 //	prefs.definePreference ("patterns", "array", []).on("change", function () {
 //	});
 
-	var cuwireDomain = new NodeDomain ("cuwire", ExtensionUtils.getModulePath (module, "node/cuwireDomain.js"));
+	var cuwireDomain = new NodeDomain ("cuwire", getModulePath ("node/cuwireDomain.js"));
 	ExtensionUtils.loadStyleSheet (module, "assets/style.css");
 
 	function CuWireExt (require, domain) {
