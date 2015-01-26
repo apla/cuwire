@@ -47,7 +47,7 @@ define(function (require, exports, module) {
 		};
 	}
 
-	function matchFunctionNamesAsync (files, functionName) {
+	function matchFunctionNamesClang (files, functionName) {
 		var result = new $.Deferred();
 
 		var foundFunctions = [];
@@ -79,10 +79,102 @@ define(function (require, exports, module) {
 
 			return oneResult.promise();
 		}).always(function () {
+			//			https://github.com/adobe/brackets/blob/6affa7907fdc820f7b9083bc0ff7c9fb87fb3e57/src/language/JSUtils.js
+			result.resolve(foundFunctions);
+		});
+		return result.promise();
+	}
+
+	function functionEnd (text, codeMirror, offset) {
+//		console.log (CodeMirror, CodeMirror.constructor);
+		var mode = CodeMirror.getMode(CodeMirror.defaults, "clike");
+		function splitLines(string){ var splits = string.split(/(\r?\n|\r)/); return splits;};
+		var lines = splitLines(text);
+		var state = CodeMirror.startState(mode);
+		var bracketCount = 0;
+
+		var currentOffset = 0;
+
+		for (var i = 0, e = lines.length; i < e; ++i) {
+//			if (i) callback("\n");
+			if (i % 2 === 1) {
+				currentOffset += lines[i].length;
+				continue;
+			}
+			var stream = new CodeMirror.StringStream(lines[i]);
+//		var stream = new CodeMirror.StringStream(text);
+
+		if (!stream.string && mode.blankLine) mode.blankLine(state);
+		while (!stream.eol()) {
+			var style = mode.token(stream, state);
+			if ((currentOffset + stream.pos) >= offset) {
+				if (stream.current() === '{') bracketCount ++;
+				if (stream.current() === '}') bracketCount --;
+				if (bracketCount === 0) {
+					return currentOffset + stream.start
+				}
+			}
+//			if (!stream.current().match (/^\s+$/m)) {
+//				console.log("token", stream.current(), '=>', style, stream.start, stream.pos)// mode, state);
+//			}
+			stream.start = stream.pos;
+		}
+			currentOffset += lines[i].length;
+		}
+		return currentOffset + stream.pos
+	}
+
+	function SourceDeclaration () {
+
+	}
+
+	SourceDeclaration.prototype.forQuickEdit = function (functionName) {
+
+	}
+
+	SourceDeclaration.prototype.forQuickEdit = function (functionName) {
+
+	}
+
+	function matchFunctionNamesAsync (files, functionName, codeMirror) {
+		var result = new $.Deferred();
+
+		var foundFunctions = [];
+
+		Async.doInParallel(files, function (fileInfo) {
+			var oneResult = new $.Deferred();
+
+			DocumentManager.getDocumentForPath (fileInfo.fullPath).done (function (doc) {
+//				var langObj = LanguageManager.getLanguageForPath(fileInfo.fullPath);
+//				console.log (langObj);
+//				console.log (doc);
+				var text = doc.getText();
+				var funcs = extractFunctions (text);
+				funcs.forEach (function (func) {
+					if (func.functionName === functionName) {
+						foundFunctions.push ({
+							path: fileInfo.fullPath,
+							name: functionName,
+							document: doc,
+							func: func,
+							lineStart: func.lineFrom,
+							// TODO: use static analyzer tool
+							// TODO: move to extractFunctions
+							lineEnd:   posFromIndex (text, functionEnd (text, codeMirror, func.offsetTo)).line
+						});
+					}
+				});
+			}).always(function (error) {
+				// If one file fails, continue to search
+				oneResult.resolve();
+			});
+
+			return oneResult.promise();
+		}).always(function () {
 //			https://github.com/adobe/brackets/blob/6affa7907fdc820f7b9083bc0ff7c9fb87fb3e57/src/language/JSUtils.js
 			result.resolve(foundFunctions);
 		});
-		return result;
+		return result.promise();
 	}
 
 	/**
@@ -93,9 +185,10 @@ define(function (require, exports, module) {
 	* @param {!string} functionName
 	* @return {$.Promise} a promise that will be resolved with an array of function offset information
 	*/
-	function _findInProject(functionName, openDocument) {
+	function _findInProject(functionName, hostEditor) {
 		var result = new $.Deferred();
 
+		var openDocument  = hostEditor.document;
 		var openDocFolder = openDocument.file.parentPath;
 
 		function _sameDirCppFilter(file) {
@@ -115,8 +208,7 @@ define(function (require, exports, module) {
 
 		ProjectManager.getAllFiles (_sameDirCppFilter)
 		.done(function (files) {
-			console.log (files);
-			matchFunctionNamesAsync (files, functionName).done (function (funcs) {
+			matchFunctionNamesAsync (files, functionName, hostEditor._codeMirror).done (function (funcs) {
 				result.resolve(funcs);
 			});
 //			JSUtils.findMatchingFunctions(functionName, files)
@@ -151,8 +243,7 @@ define(function (require, exports, module) {
 
 //		console.log (hostEditor);
 
-		_findInProject(functionName, hostEditor.document).done(function (functions) {
-			console.log ('!!!!!!!', functions);
+		_findInProject(functionName, hostEditor).done(function (functions) {
 			if (functions && functions.length > 0) {
 				var cInlineEditor = new MultiRangeInlineEditor(functions);
 				cInlineEditor.load(hostEditor);
@@ -249,7 +340,7 @@ define(function (require, exports, module) {
 	*/
 	function cFunctionProvider(hostEditor, pos) {
 		// Only provide a JavaScript editor when cursor is in JavaScript content
-		console.log ("inline editor mode:", hostEditor.getModeForSelection());
+//		console.log ("inline editor mode:", hostEditor.getModeForSelection());
 		if (hostEditor.getModeForSelection() !== "text/x-c++src") {
 			return null;
 		}
@@ -404,6 +495,8 @@ define(function (require, exports, module) {
 			var posTo   = posFromIndex (source, matchArray.index + matchArray[0].length - 1);
 
 			funcs.push(new FileLocation(null, posFrom.line, posFrom.ch, posTo.line, posTo.ch, functionProto, functionName));
+			funcs[funcs.length - 1].offsetFrom = matchArray.index + matchArray[1].length;
+			funcs[funcs.length - 1].offsetTo   = matchArray.index + matchArray[0].length;
 
 			//console.log (matchArray[1] || "", matchArray[3], matchArray[4], '(', matchArray[5], ');');
 		}
