@@ -12,7 +12,9 @@ define(function (require, exports, module) {
 		LanguageManager     = brackets.getModule("language/LanguageManager"),
 		ProjectManager      = brackets.getModule("project/ProjectManager"),
 		Async               = brackets.getModule("utils/Async"),
-		MultiRangeInlineEditor = brackets.getModule ("editor/MultiRangeInlineEditor").MultiRangeInlineEditor;
+		MultiRangeInlineEditor = brackets.getModule ("editor/MultiRangeInlineEditor").MultiRangeInlineEditor,
+		Commands            = brackets.getModule('command/Commands'),
+		CommandManager      = brackets.getModule('command/CommandManager');
 
 
 	/**
@@ -185,7 +187,7 @@ define(function (require, exports, module) {
 	* @param {!string} functionName
 	* @return {$.Promise} a promise that will be resolved with an array of function offset information
 	*/
-	function _findInProject(functionName, hostEditor) {
+	function _findInProject(functionName, hostEditor, callback) {
 		var result = new $.Deferred();
 
 		var openDocument  = hostEditor.document;
@@ -206,20 +208,26 @@ define(function (require, exports, module) {
 			return false;
 		}
 
-		ProjectManager.getAllFiles (_sameDirCppFilter)
+		ProjectManager
+		.getAllFiles (_sameDirCppFilter)
 		.done(function (files) {
 			matchFunctionNamesAsync (files, functionName, hostEditor._codeMirror).done (function (funcs) {
-				result.resolve(funcs);
+				if (!funcs || !funcs.length) {
+					result.reject();
+					return;
+				}
+				// TODO: callback can return promise
+				var cbResult = callback && callback (funcs, result);
+				if (cbResult) {
+					if (cbResult === result) {
+						// callback will resolve promise itself
+						return;
+					}
+					result.resolve (cbResult);
+					return;
+				}
+				result.reject ();
 			});
-//			JSUtils.findMatchingFunctions(functionName, files)
-//			.done(function (functions) {
-//				PerfUtils.addMeasurement(PerfUtils.JAVASCRIPT_FIND_FUNCTION);
-//				result.resolve(functions);
-//			})
-//			.fail(function () {
-//				PerfUtils.finalizeMeasurement(PerfUtils.JAVASCRIPT_FIND_FUNCTION);
-//				result.reject();
-//			});
 		})
 		.fail(function () {
 			result.reject();
@@ -228,38 +236,61 @@ define(function (require, exports, module) {
 		return result.promise();
 	}
 
-	/**
-	* @private
-	* For unit and performance tests. Allows lookup by function name instead of editor offset .
-	*
-	* @param {!Editor} hostEditor
-	* @param {!string} functionName
-	* @return {?$.Promise} synchronously resolved with an InlineWidget, or
-	*         {string} if js other than function is detected at pos, or
-	*         null if we're not ready to provide anything.
-	*/
-	function _createInlineEditor(hostEditor, functionName) {
-		var result = new $.Deferred();
+	function checkSelectionContext (hostEditor, pos) {
+		// Only provide a editor when cursor is in proper content
+		// console.log ("inline editor mode:", hostEditor.getModeForSelection());
+		if (hostEditor.getModeForSelection() !== "text/x-c++src") {
+			return null;
+		}
 
-//		console.log (hostEditor);
+		// Only provide editor if the selection is within a single line
+		var sel = hostEditor.getSelection();
+		if (sel.start.line !== sel.end.line) {
+			return null;
+		}
 
-		_findInProject(functionName, hostEditor).done(function (functions) {
-			if (functions && functions.length > 0) {
-				var cInlineEditor = new MultiRangeInlineEditor(functions);
-				cInlineEditor.load(hostEditor);
-
-				result.resolve(cInlineEditor);
-			} else {
-				// No matching functions were found
-				result.reject();
-			}
-		}).fail(function () {
-			result.reject();
-		});
-
-		return result.promise();
+		return sel;
 	}
 
+	function jumpProvider (hostEditor, pos) {
+
+		var sel = checkSelectionContext (hostEditor, pos);
+		if (sel === null)
+			return null;
+
+		var functionResult = _getFunctionName(hostEditor, sel.start);
+		if (!functionResult.functionName) {
+			return functionResult.reason || null;
+		}
+
+		function jumpCallback (functions, result) {
+			if (functions.length > 1) {
+				// TODO: show matches
+				console.log ('multiple functions match for "' + functionResult.functionName + '", using first one');
+			}
+
+			var firstMatch = functions[0];
+			console.log (firstMatch);
+			if (hostEditor.getFile().fullPath !== firstMatch.document.file.fullPath) {
+				console.log ('jump to file');
+				CommandManager.execute(Commands.FILE_OPEN, firstMatch.document.file).done(function () {
+					var editor = EditorManager.getFocusedEditor();
+					editor.setCursorPos(firstMatch.func.lineFrom, firstMatch.func.chFrom, true, true);
+					result.resolve (true);
+				});
+				return result;
+			} else {
+				console.log ('internal jump');
+				hostEditor.setCursorPos(firstMatch.func.lineFrom, firstMatch.func.chFrom, true, true);
+				return true;
+			}
+		}
+
+		var finderPromise = _findInProject(functionResult.functionName, hostEditor, jumpCallback);
+
+//		finderPromise
+
+	}
 
 	/**
 	* This function is registered with EditorManager as an inline editor provider. It creates an inline editor
@@ -271,18 +302,9 @@ define(function (require, exports, module) {
 	* @return {$.Promise} a promise that will be resolved with an InlineWidget
 	*      or null if we're not ready to provide anything.
 	*/
-	function cFunctionProvider(hostEditor, pos) {
-		// Only provide a JavaScript editor when cursor is in JavaScript content
-//		console.log ("inline editor mode:", hostEditor.getModeForSelection());
-		if (hostEditor.getModeForSelection() !== "text/x-c++src") {
-			return null;
-		}
+	function quickEditProvider (hostEditor, pos) {
 
-		// Only provide JavaScript editor if the selection is within a single line
-		var sel = hostEditor.getSelection();
-		if (sel.start.line !== sel.end.line) {
-			return null;
-		}
+		var sel = checkSelectionContext (hostEditor, pos);
 
 		// Always use the selection start for determining the function name. The pos
 		// parameter is usually the selection end.
@@ -291,10 +313,17 @@ define(function (require, exports, module) {
 			return functionResult.reason || null;
 		}
 
-		return _createInlineEditor(hostEditor, functionResult.functionName);
+		function inlineEditor (functions) {
+			var cInlineEditor = new MultiRangeInlineEditor(functions);
+			cInlineEditor.load(hostEditor);
+			return cInlineEditor;
+		}
+
+		return _findInProject(functionResult.functionName, hostEditor, inlineEditor);
 	}
 
-	EditorManager.registerInlineEditProvider(cFunctionProvider);
+	EditorManager.registerInlineEditProvider (quickEditProvider);
+	EditorManager.registerJumpToDefProvider (jumpProvider);
 
 //var codeHints = require ('./codehints').exports; // WTF???
 ////	console.log (codeHints);
