@@ -16,6 +16,23 @@ define(function (require, exports, module) {
 		Commands            = brackets.getModule('command/Commands'),
 		CommandManager      = brackets.getModule('command/CommandManager');
 
+	var ClangDomain = new NodeDomain ("clang", ExtensionUtils.getModulePath (module, "node/clang-domain.js"));
+
+	function Clang (require, domain) {
+//		this.domain = domain;
+//		this.createUI (require);
+	}
+
+	var app = brackets.getModule('utils/AppInit');
+	var theClang;
+
+	app.appReady(function(){
+		//		$(brackets.getModule('document/DocumentManager')).on('documentSaved', onDocumentSaved);
+
+		var theClang = new Clang (require, ClangDomain);
+
+		console.log ("clang ready");
+	});
 
 	/**
 	* Return the token string that is at the specified position.
