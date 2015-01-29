@@ -1,28 +1,45 @@
-<img width="40px" src="assets/logo.svg"> cuwire: IDE for microcontrollers
+# cuwire
+cli tool for microcontroller firmware
 ====================
 
-This is a [Brackets](http://brackets.io) plugin, which provides an [Arduino](http://arduino.cc)-like
-environement for editing, compiling and uploading sketches. Current version supports
-Arduino 3rd party hardware spec. The plugin was written by Ivan Baktsheev in 2014.
+cuwire is a command line toolkit for working with microcontroller firmware.
 
-Brackets is a new generation code editor, based on HTML5 and JS. This plugin will provide same functionality
-as Arduino IDE to write code and upload it to the microcontroller. The plugin was written in pure javascript,
-and it will probably runs on Windows, Mac OS X, and Linux (untested). A additional libraries like
-[serialport](https://github.com/voodootikigod/node-serialport) is used in this plugin,
-the codes are belonging to their own authors. Precompiled versions of those libraries is included along with
-plugin distribution.
+Currently cuwire supports Arduino AVR/SAM and other hardware, compatible with
+Arduino 3rd party hardware specification.
 
-## Requirements
-#### 1. [Brackets](http://brackets.io)
-Developed and tested under version 1.0
+It allows you to:
 
-#### 2. [Arduino](http://arduino.cc/en/Main/Software)
-You need an Arduino IDE version 1.5 and later
+ * Build a firmware from source
+ * Upload the firmware to a device
+ * Perform serial communication with a device (aka serial monitor)
+ * Sister project, brackets-cuwire, is intended to give you a complete replacement for Arduino IDE.
+
+## Features
+
+ * Simple. No build scripts are necessary.
+ * Out-of-source builds. Directories with source files are not cluttered with intermediate object files.
+ * Support for `.ino` and `.pde` sketches as well as raw `.c` and `.cpp`.
+ * Support for Arduino Software version 1.5.
+ * Automatic dependency tracking. Referred libraries are automatically included in the build process. Changes in `.h` files lead to recompilation of sources which include them.
+ * Pretty colorful output.
+ * Support for all boards that are supported by Arduino IDE.
+ * (WIP) Fast. Discovered tool paths and other stuff is cached across runs. If nothing has changed, nothing is build.
+ * Flexible. Support for config file to setup machine-specific info like used Arduino model, Arduino distribution path, etc just once.
 
 ## Installation
-Please install using plugin manager
 
-After installation, coil icon ![logo](assets/logo.svg) will appear on sidebar
+Please install using npm
+
+`npm install -g cuwire`
+
+## Usage
+
+``` sh
+cuwire compile -b <board name>
+cuwire upload -b <board name> -p
+cuwire ports
+cuwire boards
+```
 
 ## Set Arduino Install Location
 
@@ -30,35 +47,39 @@ Arduino default locations for hardware and libraries will be scanned automatical
 
 * On Mac OS X `/Applications/Arduino.app`
 
-* On Windows `C:\Program Files\Arduino`
+* On Windows `C:\Program Files\Arduino` and `C:\Program Files (x86)\Arduino`
+
+* On Linux `/usr/share/arduino`
 
 * User's `Documents/Arduino` directory
 
 You can add non-standard Arduino IDE location using preferences.
+
+### User preferences
+
+Where does cuwire keep settings data?
+
+cuwire stores settings in a user-specific directory called the user data directory. The name and location of this directory varies depending on the operating system:
+
+ * Windows Vista, Windows 7, Windows 8 or newer `<user home folder>\AppData\Local\cuwire.json`
+ * Linux `<user home folder>/.cuwire.json`
+ * Mac OS X `<user home folder>/Library/Application Support/cuwire.json`
+
+Supported preferences (please take a look to my own [prefs file](https://gist.github.com/apla/6fe7410fd5de58a8ee71)):
+
+ * arduino: non-standard Arduino IDE location
+ * sketches: predefined sketches configuration
 
 ## Features
 
  * Compilation and Upload
  * Board images
  * Multiple sketches in one project
- *
+ * Serial Monitor
 
 ## TODO
 
-### Serial Monitor
-Scan code for a proper baud rate.
-
-### Settings
-Setting custom location for IDE
-
-### Examples
-Searchable examples
-
-### Libraries
-Search and add libraries without IDE reload
-
-### IDE features
-Code completion, quick edit, compilation errors highlight in code
+ * Sketch from example
 
 ### External programmer support
 
@@ -154,4 +175,3 @@ DEALINGS IN THE SOFTWARE.
 ## Website
 GitHub (http://github.com/apla/)
 
-Sublime Text Plugin (https://github.com/Robot-Will/Stino)
