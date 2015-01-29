@@ -1,0 +1,103 @@
+{
+	"verbose": {
+		"alias": "v",
+		"boolean": true,
+		"description": "verbose output",
+		"default": false
+	},
+	"sketch": {
+		"description": "sketch folder, config file or template name",
+		"alias": "s"
+	},
+	"board": {
+		"description": "board identifier",
+		"alias": "b"
+	},
+	"model": {
+		"description": "board model",
+		"alias": "m"
+	},
+	"arduino": {
+		"description": "arduino app location",
+		"env": "ARDUINO_APP",
+		"alias": "a"
+	},
+	"dryRun": {
+		"alias": [
+			"n",
+			"dry-run"
+		],
+		"boolean": true,
+		"description": "just show commands, don't do anything",
+		"default": false
+	},
+	"upload": {
+		"description": "compile, then upload hex file using provided port",
+		"run": [
+			"compile",
+			"upload"
+		],
+		"arduino": true
+	},
+	"boards": {
+		"description": "show available boards",
+		"run": "showBoards",
+		"arduino": true
+	},
+	"ports": {
+		"description": "show com ports",
+		"run": "showPorts"
+	},
+	"compile": {
+		"description": "compile sketch in provided dir",
+		"run": "compile",
+		"arduino": true
+	},
+	"clean": {
+		"description": "[WIP] clean compiled files",
+		"run": "clean",
+		"arduino": true
+	},
+	"prepare": {
+		"description": "[WIP] generate .cpp file from .ino",
+		"run": "prepare",
+		"arduino": true
+	},
+	"compile3": {
+		"run": [
+			"compile",
+			"compile",
+			"compile"
+		],
+		"arduino": true
+	},
+	"baudrate": {
+		"description": "serial port baudrate",
+		"alias": "r"
+	},
+	"port": {
+		"description": "serial port",
+		"alias": "p"
+	},
+	"console": {
+		"description": "serial console",
+		"run": "console"
+	},
+	"help": {
+		"alias": "h",
+		"anyway": true,
+		"banner": [
+			"usage: cuwire command [options]",
+			"",
+			"Cuwire is a command-line toolkit to work with microcontrollers.",
+			"",
+			"It is intended to replace Arduino IDE UI for those who prefer to work in",
+			"terminal or want to integrate Arduino development in a 3rd party IDE.",
+			"",
+			"Cuwire can build sketches, libraries, upload firmwares, establish",
+			"serial communication.",
+			"",
+			"Commands:"
+		]
+	}
+}
