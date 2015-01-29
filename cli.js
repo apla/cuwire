@@ -270,7 +270,7 @@ function guessSketch (arduino, options) {
 		result = userConfig.sketch[options.sketch];
 	}
 
-	if (!result.board || !options.board) {
+	if (!result.board && !options.board) {
 		console.error ('you must provide board name for compilation and upload');
 		exit(1);
 	}

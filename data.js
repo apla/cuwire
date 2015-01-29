@@ -118,6 +118,8 @@ var Arduino = function (customRuntimeFolders, customSketchesFolder, fromScratch)
 	this.on ('iodone', (function () {
 		Arduino.instance = this;
 
+		this.createAccessors ();
+
 		this.acceptableRuntimes = [];
 
 		// let's find runtime dir
@@ -715,32 +717,12 @@ PlatformConf.prototype.parse = function () {
 	}
 }
 
-Arduino.prototype.lookupBoard = function (boardName, model) {
-	var platform, name, match;
+Arduino.prototype.createAccessors = function () {
 
 	var hw = this.hardware;
 
-	if (match = boardName.match (/^(\w+\:\w+)\:(\w+)$/)) {
-		platform = match[1];
-		name     = match[2];
-		var model, modelFixup;
-		if (hw && hw[platform] && hw[platform].boards[name]) {
-			// result contains modelFixup and modelOptions
-			var result = hw[platform].boards.validateModel (name, model);
-
-			if (result) {
-				return {
-					platform: platform,
-					board:    name,
-					model:    result[1]
-				}
-			}
-		}
-		return;
-	}
-
-	match = [];
-	var boardsData   = this.boardData;
+	var boardNameMatch = {};
+	var boardUSBMatch  = {};
 
 	for (var platformId in hw) {
 		if (!hw.hasOwnProperty(platformId)) {
@@ -750,18 +732,50 @@ Arduino.prototype.lookupBoard = function (boardName, model) {
 			if (!hw[platformId].boards.hasOwnProperty(boardId)) {
 				continue;
 			}
-			if (boardId.toLowerCase() === boardName.toLowerCase()) {
-				var boardMatch = {
-					platform: platformId,
-					board: boardId
-				};
-				match.push (boardMatch);
+			var boardDesc = {
+				platform: platformId,
+				board: boardId
+			};
 
+			var boardIdLC = boardId.toLowerCase();
+			if (!boardNameMatch[boardIdLC])
+				boardNameMatch[boardIdLC] = [];
+			boardNameMatch[boardIdLC].push (boardDesc);
+
+			var boardConfig = hw[platformId].boards[boardId];
+
+			var usbIdIdx = 0;
+			while (boardConfig["vid."+usbIdIdx]) {
+				var usbPair = [boardConfig["vid."+usbIdIdx], boardConfig["pid."+usbIdIdx]].join (':');
+				boardUSBMatch[usbPair] = boardDesc;
+				usbIdIdx ++;
 			}
 		}
 	}
 
-	if (!match.length) {
+	this.boardNameMatch = boardNameMatch;
+	this.boardUSBMatch  = boardUSBMatch;
+}
+
+
+Arduino.prototype.lookupBoard = function (boardName, model) {
+	var platform, name, match;
+
+	var hw = this.hardware;
+
+	if (match = boardName.match (/^(\w+\:\w+)\:(\w+)$/)) {
+		match = [{
+			platform: match[1],
+			name:     match[2]
+		}];
+	} else if (match = this.boardNameMatch[boardName]) {
+//		platform = match.platform;
+//		name     = match.board;
+	} else {
+
+	}
+
+	if (!match || !match.length) {
 		console.log ("no boards found for name:", boardName);
 		return null;
 	} else if (match.length > 1) {
@@ -778,7 +792,7 @@ Arduino.prototype.lookupBoard = function (boardName, model) {
 			return null;
 		}
 
-		boardMatch.model = result[1];
+		match[0].model = result[1];
 
 		return match[0];
 	}
