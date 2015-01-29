@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 var ArduinoData = require ('./data');
 
 var ArduinoCompiler = require ('./compiler');
