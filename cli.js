@@ -271,8 +271,13 @@ function guessSketch (arduino, options) {
 	}
 
 	if (!result.board && !options.board) {
-		console.error ('you must provide board name for compilation and upload');
-		exit(1);
+		console.error (paint.cuwire(), paint.error ('you must provide board name for compilation and upload'));
+		process.exit (1);
+	}
+
+	if (!result.folder) {
+		console.error (paint.cuwire(), paint.error ('you must provide sketch folder'));
+		process.exit (2);
 	}
 
 	return result;
