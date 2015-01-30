@@ -1,41 +1,44 @@
 # Site settings
-title: cuwire, better microcontroller IDE
+title: cuwire
+name: cuwire
 email: your-email@domain.com
 description: > # this means to ignore newlines until "baseurl:"
-  Write an awesome description for your new site here. You can edit this
-  line in _config.yml. It will appear in your document head meta (for
-  Google search results) and in your feed.xml site description.
+  better microcontroller IDE.
 baseurl: "/brackets-cuwire" # the subpath of your site, e.g. /blog/
 url: "http://apla.github.io" # the base hostname & protocol for your site
-#twitter_username: 
+#twitter_username:
 #github_username:  apla
 #avatar: https://pbs.twimg.com/profile_images/1779775150/bitty-icon_bigger.gif
 
+include: [wiki]
+
+safe: true
+
 # Includes an icon in the footer for each username you enter
 footer-links:
-  dribbble: 
-  email: 
-  facebook: 
-  flickr: 
+  dribbble:
+  email:
+  facebook:
+  flickr:
   github: apla
-  instagram: 
-  linkedin: 
-  pinterest: 
+  instagram:
+  linkedin:
+  pinterest:
   rss: # just type anything here for a working RSS icon, make sure you set the "url" above!
-  twitter: 
+  twitter:
   stackoverflow: # your stackoverflow profile, e.g. "users/50476/bart-kiers"
 
 # Your disqus shortname, entering this will enable commenting on posts
-disqus: 
+disqus:
 
 # Enter your Google Analytics web tracking code (e.g. UA-2110908-2) to activate tracking
-google_analytics: 
+google_analytics: UA-59158239-1
 
 # Your website URL (e.g. http://barryclark.github.io or http://www.barryclark.co)
 # Used for Sitemap.xml and your RSS feed
 url: http://apla.github.io
 
-# If you're hosting your site at a Project repository on GitHub pages 
+# If you're hosting your site at a Project repository on GitHub pages
 # (http://yourusername.github.io/repository-name)
 # and NOT your User repository (http://yourusername.github.io)
 # then add in the baseurl here, like this: "/repository-name"
@@ -45,7 +48,7 @@ baseurl: "/brackets-cuwire"
 # !! You don't need to change any of the configuration flags below !!
 #
 
-markdown: kramdown
+markdown: redcarpet
 highlighter: pygments
 #permalink: /:title/
 
@@ -71,7 +74,7 @@ exclude:
 
 
 # Build settings
-markdown: kramdown
+
 gollum:
   folder: '_wiki'
   page_yaml:
