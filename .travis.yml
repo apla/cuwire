@@ -1,0 +1,14 @@
+language: ruby
+rvm:
+- 2.2
+before_script: git submodule init && git submodule update
+script: bundle exec rake deploy
+cache: bundler
+sudo: false
+branches:
+  only:
+  - gh-pages
+env:
+  global:
+  - NOKOGIRI_USE_SYSTEM_LIBRARIES=true
+  - secure: HxN+Nzg/k3mP4JEV+zDjmlw5R+isi5qbuP96ohHjVxVv6IVS0tZrHrTsn7isiZhPMqK4m7WOuxBMelPWRkocFlNJ0uOz/j44vXUNdJa7WUcVuTE42V/4GR3A2WSF7tTEbzTUb5qQL+Un4/i25EdhSMawSCqFqLkIN8H5vBRBLC4=
