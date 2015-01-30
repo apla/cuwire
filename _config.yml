@@ -23,8 +23,6 @@ version: v1.0.0
 
 #avatar: https://pbs.twimg.com/profile_images/1779775150/bitty-icon_bigger.gif
 
-include: [wiki]
-exclude: [vendor]
 
 safe: true
 
@@ -58,12 +56,15 @@ sass:
 #  - jemoji # Emoji please!
 #  - jekyll-sitemap # Create a sitemap using the official Jekyll sitemap gem
 
+include: [wiki]
+
 # Exclude these files from your production _site
 exclude:
     - Gemfile
     - Gemfile.lock
     - LICENSE
     - README.md
+    - vendor
 
 username: apla
 repo: https://github.com/apla/cuwire
