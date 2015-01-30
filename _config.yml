@@ -24,6 +24,7 @@ version: v1.0.0
 #avatar: https://pbs.twimg.com/profile_images/1779775150/bitty-icon_bigger.gif
 
 include: [wiki]
+exclude: [vendor]
 
 safe: true
 
@@ -63,3 +64,7 @@ exclude:
     - Gemfile.lock
     - LICENSE
     - README.md
+
+username: apla
+repo: https://github.com/apla/cuwire
+branch: gh-pages
