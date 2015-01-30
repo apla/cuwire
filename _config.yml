@@ -4,7 +4,7 @@ name: cuwire
 email: your-email@domain.com
 description: > # this means to ignore newlines until "baseurl:"
   better microcontroller IDE.
-baseurl: "/brackets-cuwire" # the subpath of your site, e.g. /blog/
+baseurl: "/cuwire" # the subpath of your site, e.g. /blog/
 url: "http://apla.github.io" # the base hostname & protocol for your site
 #twitter_username:
 #github_username:  apla
@@ -71,14 +71,3 @@ exclude:
     - Gemfile.lock
     - LICENSE
     - README.md
-
-
-# Build settings
-
-gollum:
-  folder: '_wiki'
-  page_yaml:
-    layout: page
-  post_yaml:
-    layout: post
-
