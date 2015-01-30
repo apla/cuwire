@@ -1,0 +1,2 @@
+gem "rake"
+gem "jekyll"
