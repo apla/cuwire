@@ -28,12 +28,16 @@ layout: home
 
 		<div class="entry">
 			<p>{{ post.desc }}</p>
-<!--         {{ post.content | truncatewords:40}}
- -->  </div>
+			{% if post.lead %}
+				{{ post.lead | truncatewords:40}}
+			{% else %}
+				{{ post.content | truncatewords:40}}
+			{% endif %}
+		</div>
 
-	  {{ if post.proj-url }}
+		{% if post.proj-url and post.proj-url != "" and post.proj-url != nil %}
 		<a href="{{ post.proj-url }}" class="small-link primary-link" target="_blank">View Project Site <i class="fa fa-external-link"></i></a>
-		{{ endif }}
+		{% endif %}
 		<a href="{{ site.baseurl }}{{ post.url }}" class="small-link">Read details</a>
 	</article>
 	{% endfor %}
