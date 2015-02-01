@@ -3,7 +3,7 @@ var ArduinoData = require ('./data');
 
 var ArduinoCompiler = require ('./compiler');
 var ArduinoUploader = require ('./uploader');
-var CuwireSerial    = require ('./console');
+var CuwireSerial    = require ('./serial');
 
 var argv = require ('yargs').argv;
 
