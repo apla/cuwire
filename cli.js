@@ -187,21 +187,37 @@ ArduinoCli.prototype.launchCommand = function (cmdName, options) {
 
 }
 
-ArduinoCli.prototype.showPorts = function () {
-	var sp = require("serialport");
-
+ArduinoCli.prototype.showPorts = function (options, cb) {
 	// TODO: hilight port for board if board defined an port match usb pid/vid
+	var usbMatch;
+	if (this.arduino) {
+		usbMatch = this.arduino.boardUSBMatch;
+		if (options.board) {
 
-	var err, result = [];
-	sp.list (function (err, ports) {
+		}
+	}
+
+	CuwireSerial.list (function (err, ports) {
 		console.log (paint.cuwire(), 'serial ports available:');
 		ports.forEach (function (port) {
-			console.log (paint.path (port.comName));
+			var usbPair = [port.vendorId, port.productId].join (':');
+			var deviceName;
+			if (usbMatch[usbPair]) {
+				deviceName = usbMatch[usbPair].board
+			}
+			console.log (
+				paint.path (port.comName),
+				(usbPair !== ':' ? usbPair : ''),
+				paint.path (deviceName),
+				port.serialNumber ? '#' + port.serialNumber : '',
+				paint.yellow (port.manufacturer)
+			);
 			//console.log(port.comName);
 			//console.log(port.pnpId);
 			//console.log(port.manufacturer);
 		});
-	});
+	})
+
 }
 
 ArduinoCli.prototype.console = function (options) {

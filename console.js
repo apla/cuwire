@@ -1,6 +1,7 @@
 var EventEmitter = require ('events').EventEmitter;
 
-var SerialPort = require ("serialport").SerialPort;
+var sp = require ("serialport");
+var SerialPort = sp.SerialPort;
 
 var util = require ('util');
 
@@ -16,6 +17,55 @@ function CuwireSerial (options) {
 }
 
 util.inherits (CuwireSerial, EventEmitter);
+
+function parsePnpId (port) {
+	var pnpId   = port.pnpId;
+	var pnpDesc = pnpId.split ('\\');
+	var pnpBus  = pnpDesc[0];
+
+	var pnpDevice;
+
+	if (pnpBus === 'USB') {
+		pnpDevice = pnpDesc[1].split('&');
+		port.serialNumber = pnpDesc[2];
+	} else if (pnpBus === 'FTDIBUS') {
+		pnpDevice = pnpDesc[1].split('+');
+	} else {
+		return;
+	}
+
+	pnpDevice.forEach (function (chunk, idx) {
+		var m = chunk.match (/^(VID|PID)_([a-fA-F0-9]{4})/);
+		if (pnpBus === 'FTDIBUS' && idx === 3) return port.serialNumber = chunk;
+		if (!m) return;
+		if (m[1] === 'VID') return port.vendorId  = m[2];
+		if (m[1] === 'PID') return port.productId = m[2];
+	});
+}
+
+function zFill (num, pad, radix) {
+	var string = num.toString(radix);
+	if (pad <= string.length) {
+		return string;
+	}
+	return Array(pad - string.length + 1).join('0')+string;
+}
+
+function parseVidPid (port) {
+	if (port.vendorId)  port.vendorId  = '0x' + zFill (parseInt (port.vendorId, 16), 4, 16);
+	if (port.productId) port.productId = '0x' + zFill (parseInt (port.productId, 16), 4, 16);
+}
+
+CuwireSerial.list = function (cb) {
+	sp.list(function (err, ports) {
+		if (!err)
+		ports.forEach(function(port) {
+			if (port.pnpId) parsePnpId (port);
+			parseVidPid (port);
+		});
+		cb (err, ports);
+	});
+}
 
 CuwireSerial.prototype.send = function (message) {
 	if (!this.port) {

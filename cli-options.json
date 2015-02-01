@@ -46,7 +46,8 @@
 	},
 	"ports": {
 		"description": "show com ports",
-		"run": "showPorts"
+		"run": "showPorts",
+		"arduino": true
 	},
 	"compile": {
 		"description": "compile sketch in provided dir",
