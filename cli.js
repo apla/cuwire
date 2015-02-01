@@ -151,7 +151,7 @@ var ArduinoCli = function (args) {
 	}
 
 	// TODO: store app folder in configuration data
-	this.arduino = new ArduinoData ([options.arduino || "/Applications/devel/Arduino.app"]);
+	this.arduino = new ArduinoData (options.arduino);
 
 	this.arduino.on ('done', (function () {
 

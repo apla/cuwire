@@ -1,6 +1,6 @@
 {
 	"name": "cuwire",
-	"version": "0.5.2",
+	"version": "0.5.3",
 
 	"title": "tool to compile and upload mcu firmware",
 	"homepage": "https://github.com/apla/cuwire",
@@ -9,7 +9,8 @@
 	"author": "Ivan Baktsheev <dot.and.thing@gmail.com>",
 	"license": "MIT",
 	"peerDependencies": {
-		"serialport": ">=1.4.10"
+		"serialport": ">=1.4.10",
+		"yargs": "*"
 	},
 	"bin": { "cuwire": "cli.js" }
 }
