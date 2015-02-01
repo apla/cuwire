@@ -6,7 +6,7 @@ permalink: /install/
 
 ## Environment
 
-cuwire installation requires Arduino IDE 1.5.8 and later installed.
+cuwire installation requires [Arduino IDE 1.5.8](http://arduino.cc/en/Main/Software) or later installed.
 
 ## Install how to
 
@@ -14,23 +14,39 @@ cuwire can be installed for command line usage and as plugin for Brackets IDE.
 
 ### Command line usage
 
-You'll need to install nodejs. Then, simply launch
+Please install [nodejs](http://nodejs.org) if you don't have it installed already.
+Then, open terminal app and launch
 
 ``` sh
 npm install -g cuwire
 ```
 
+Basic commands is `compile`, `upload`, `ports`, `boards`
+
+For example, to compile and upload your sketch to plugged in Arduino Uno,
+go to sketch folder and run:
+
+``` sh
+cuwire upload -b uno
+```
+
+You can see detailed guide and more examples at [Cli guide]({{ site.baseurl }}/cli/Guide)
+section of documentation
+
 ### Plugin for Brackets IDE
+
+Please install [Brackets](http://brackets.io) if you don't have it installed already.
 
 ![install plugin]({{ site.baseurl }}/images/brackets-plugin-install.png)
 
-Fork this Jekyll-Grid on Github: [https://github.com/femmebot/jekyll-grid](https://github.com/femmebot/jekyll-grid)
+After installation, you'll see round orange icon on brackets sidebar.
+Click on this icon and you will get an access to cuwire panel.
 
-Part of the [25x52](http://25x52.com) initiative, this theme is based on [Jekyll Now](https://github.com/barryclark/jekyll-now). Refer to the following original instructions for help with the setup:
+![cuwire panel]({{ site.baseurl }}/images/brackets-plugin-panel.png)
 
-> Next you can update your site name, avatar and other options using the _config.yml file in the root of your repository (shown below :point_down:).
+Using this panel you can select target board to compile sketch and
+target port to upload firmware. Gear icon allow you to set custom location
+for Arduino IDE and some other params.
 
-> ![_config.yml]({{ site.baseurl }}/images/config.png)
-
-> The easiest way to make your first post is to edit this one. Go into /_posts/ and update the Hello World markdown file. For more instructions head over to the [Jekyll Now repository](https://github.com/barryclark/jekyll-now) on GitHub.
-
+You can see detailed guide at [GUI guide]({{ site.baseurl }}/gui/Guide)
+section of documentation
