@@ -203,7 +203,7 @@ ArduinoCli.prototype.showPorts = function (options, cb) {
 			var usbPair = [port.vendorId, port.productId].join (':');
 			var deviceName;
 			if (usbMatch[usbPair]) {
-				deviceName = usbMatch[usbPair].board
+				deviceName = usbMatch[usbPair].boardName
 			}
 			console.log (
 				paint.path (port.comName),

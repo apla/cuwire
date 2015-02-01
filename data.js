@@ -732,17 +732,19 @@ Arduino.prototype.createAccessors = function () {
 			if (!hw[platformId].boards.hasOwnProperty(boardId)) {
 				continue;
 			}
+
+			var boardConfig = hw[platformId].boards[boardId];
+
 			var boardDesc = {
 				platform: platformId,
-				board: boardId
+				board: boardId,
+				boardName: boardConfig.name
 			};
 
 			var boardIdLC = boardId.toLowerCase();
 			if (!boardNameMatch[boardIdLC])
 				boardNameMatch[boardIdLC] = [];
 			boardNameMatch[boardIdLC].push (boardDesc);
-
-			var boardConfig = hw[platformId].boards[boardId];
 
 			var usbIdIdx = 0;
 			while (boardConfig["vid."+usbIdIdx]) {
