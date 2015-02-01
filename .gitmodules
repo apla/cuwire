@@ -1,3 +1,6 @@
 [submodule "gui"]
 	path = gui
 	url = https://github.com/apla/brackets-cuwire.wiki
+[submodule "cli"]
+	path = cli
+	url = https://github.com/apla/cuwire.wiki
