@@ -1,0 +1,51 @@
+.terminal {
+	background-color: $darkerGray;
+	padding: 5px 10px;
+	margin: 20px 0;
+}
+
+.terminal pre {
+	/* overflow: scroll; Prefer no word wrap? Uncomment this line and comment out the 2 lines below. */
+	word-break: break-all;
+	word-wrap: break-word;
+	font-family: Consolas, monospace;
+}
+
+.terminal {
+
+	white-space: pre;
+	overflow: auto;
+	word-wrap: normal; /* horizontal scrolling */
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	border-radius: 3px;
+	padding: 20px;
+	background: #343642;
+	color: #C1C2C3;
+
+	color: #eee;
+
+	.cuwire {
+		color: lime;
+	}
+
+	.yellow {
+		color: yellow;
+	}
+
+	.prompt {
+	}
+
+	.cmd {
+		color: white;
+	}
+
+	.err {
+		color: red;
+		background-color: #eee;
+	}
+
+	.path {
+		color: deepskyblue;
+	}
+}

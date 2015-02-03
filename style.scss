@@ -368,11 +368,13 @@ footer {
 #screenshot-slider {
 	height: 461px;
 	margin-bottom: 30px;
+
+	.iis-slide {
+		background-size: auto 461px;
+	}
 }
 
-#screenshot-slider .iis-slide {
-	background-size: auto 461px;
-}
+@import "_terminal";
 
 // Settled on moving the import of syntax highlighting to the bottom of the CSS
 // ... Otherwise it really bloats up the top of the CSS file and makes it difficult to find the start
