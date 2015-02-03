@@ -198,6 +198,15 @@ ArduinoCli.prototype.showPorts = function (options, cb) {
 	}
 
 	CuwireSerial.list (function (err, ports) {
+		if (err) {
+			console.log (paint.cuwire(), 'serial ports enumeration error:');
+			console.log (paint.error (err));
+			return;
+		}
+		if (!ports || !ports.length) {
+			console.log (paint.cuwire(), 'no serial ports available');
+			return;
+		}
 		console.log (paint.cuwire(), 'serial ports available:');
 		ports.forEach (function (port) {
 			var usbPair = [port.vendorId, port.productId].join (':');
