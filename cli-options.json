@@ -37,7 +37,8 @@
 			"compile",
 			"upload"
 		],
-		"arduino": true
+		"arduino": true,
+		"runtimeRequired": true
 	},
 	"boards": {
 		"description": "show available boards",
@@ -52,7 +53,13 @@
 	"compile": {
 		"description": "compile sketch in provided dir",
 		"run": "compile",
-		"arduino": true
+		"arduino": true,
+		"runtimeRequired": true
+	},
+	"build": {
+		"run": "compile",
+		"arduino": true,
+		"runtimeRequired": true
 	},
 	"clean": {
 		"description": "[WIP] clean compiled files",
@@ -70,7 +77,8 @@
 			"compile",
 			"compile"
 		],
-		"arduino": true
+		"arduino": true,
+		"runtimeRequired": true
 	},
 	"baudrate": {
 		"description": "serial port baudrate",

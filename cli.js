@@ -171,12 +171,15 @@ var ArduinoCli = function (args) {
 					paint.error ('found multiple runtimes #multipleRuntimesErr, cannot continue. runtime folders:'),
 					runtimeFound.map (function (r) {return paint.error (r[0])}).join (',')
 				);
-				process.exit (1);
+				if (cliConfig[haveCommand].runtimeRequired)
+					process.exit (1);
 			}
 			console.log (paint.cuwire (), 'using runtime from', paint.path (runtimeFound[0][0]));
 		} else {
 			// TODO: add error explantions to wiki
 			console.log (paint.cuwire (), paint.error ('no runtimes found #noRuntimesErr'));
+			if (cliConfig[haveCommand].runtimeRequired)
+				process.exit (1);
 		}
 
 		if (options.board) {
