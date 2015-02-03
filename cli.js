@@ -237,14 +237,17 @@ ArduinoCli.prototype.showPorts = function (options, cb) {
 		console.log (paint.cuwire(), 'serial ports available:');
 		ports.forEach (function (port) {
 			var usbPair = [port.vendorId, port.productId].join (':');
-			var deviceName;
+			var deviceName, deviceId;
 			if (usbMatch[usbPair]) {
-				deviceName = usbMatch[usbPair].boardName
+				deviceName = usbMatch[usbPair].boardName;
+				deviceId   = usbMatch[usbPair].board;
 			}
 			console.log (
 				paint.path (port.comName),
-				(usbPair !== ':' ? usbPair : ''),
-				paint.path (deviceName),
+				(deviceName
+				 	? deviceName + ' ('+paint.path (deviceId)+')'
+				 	: usbPair !== ':' ? usbPair : ''
+				),
 				port.serialNumber ? '#' + port.serialNumber : '',
 				paint.yellow (port.manufacturer)
 			);
