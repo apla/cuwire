@@ -155,6 +155,30 @@ var ArduinoCli = function (args) {
 
 	this.arduino.on ('done', (function () {
 
+		var runtimeFound = [];
+		for (var folderName in this.arduino.folders) {
+			var folderData = this.arduino.folders[folderName];
+			if (folderData.runtime && folderData.modern) {
+				runtimeFound.push ([folderName, folderData]);
+			}
+		}
+
+		if (runtimeFound.length) {
+			if (runtimeFound.length > 1) {
+				console.log (
+					paint.cuwire (),
+					// TODO: add error explantions to wiki
+					paint.error ('found multiple runtimes #multipleRuntimesErr, cannot continue. runtime folders:'),
+					runtimeFound.map (function (r) {return paint.error (r[0])}).join (',')
+				);
+				process.exit (1);
+			}
+			console.log (paint.cuwire (), 'using runtime from', paint.path (runtimeFound[0][0]));
+		} else {
+			// TODO: add error explantions to wiki
+			console.log (paint.cuwire (), paint.error ('no runtimes found #noRuntimesErr'));
+		}
+
 		if (options.board) {
 			options.board = this.arduino.lookupBoard (options.board, options.model);
 			if (!options.board)
@@ -191,7 +215,7 @@ ArduinoCli.prototype.showPorts = function (options, cb) {
 	// TODO: hilight port for board if board defined an port match usb pid/vid
 	var usbMatch;
 	if (this.arduino) {
-		usbMatch = this.arduino.boardUSBMatch;
+		usbMatch = this.arduino.boardUSBMatch || {};
 		if (options.board) {
 
 		}
@@ -247,7 +271,7 @@ ArduinoCli.prototype.console = function (options) {
 }
 
 ArduinoCli.prototype.showBoards = function () {
-	var platforms = this.arduino.boardData;
+	var platforms = this.arduino.hardware;
 
 	console.log (paint.cuwire(), 'boards available:');
 
@@ -263,19 +287,18 @@ ArduinoCli.prototype.showBoards = function () {
 			var boardMeta = boards[boardId];
 
 			var boardDesc = boardMeta.name + ' (' + paint.path (boardId);
-			if ("menu" in boardMeta) {
-				boardDesc += ', modifications: ';
-				var modTypes = [];
-				for (var modType in boardMeta.menu) {
-					var mods = [];
-					for (var modK in boardMeta.menu[modType]) {
-						mods.push (boardMeta.menu.cpu[modK][modType + '_modification']);
+			if ("models" in boardMeta) {
+				var models = [];
+				for (var modType in boardMeta.models) {
+					for (var modK in boardMeta.models[modType]) {
+						models.push (paint.yellow(modType+':'+modK) + ' [' + boardMeta.models[modType][modK][''] + ']');
 					}
-					modTypes.push (paint.yellow(modType) + ': ' + mods.join (", "));
-
 				}
 
-				boardDesc += modTypes.join (", ");
+				if (models.length) {
+					boardDesc += ', models: ' + models.join (", ");
+				}
+
 			}
 			boardDesc += ')';
 
