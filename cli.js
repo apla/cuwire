@@ -126,6 +126,7 @@ function findCommand (options) {
 	// ino, leo and so on compatibility
 	if (!haveCommand && haveParams[0] && cliConfig[haveParams[0]].run) {
 		haveCommand = haveParams.shift();
+		options[haveCommand] = true;
 	}
 
 	return haveCommand;
@@ -216,25 +217,40 @@ ArduinoCli.prototype.launchCommand = function (cmdName, options) {
 
 ArduinoCli.prototype.showPorts = function (options, cb) {
 	// TODO: hilight port for board if board defined an port match usb pid/vid
+	var matchBoard = false;
+	var self  = this;
 	var usbMatch;
 	if (this.arduino) {
 		usbMatch = this.arduino.boardUSBMatch || {};
-		if (options.board) {
+		if (!options.ports) {
+
+			if (options.port || !options.board) {
+				cb();
+				return;
+			}
+
+			matchBoard = true;
+
+			// we call boards list from another command
+			// if port not defined, but defined board name we
+			// must guess port name by board name
 
 		}
 	}
 
 	CuwireSerial.list (function (err, ports) {
 		if (err) {
-			console.log (paint.cuwire(), 'serial ports enumeration error:');
-			console.log (paint.error (err));
+			if (!matchBoard) console.log (paint.cuwire(), 'serial ports enumeration error:');
+			if (!matchBoard) console.log (paint.error (err));
+			cb();
 			return;
 		}
 		if (!ports || !ports.length) {
-			console.log (paint.cuwire(), 'no serial ports available');
+			if (!matchBoard) console.log (paint.cuwire(), 'no serial ports available');
+			cb();
 			return;
 		}
-		console.log (paint.cuwire(), 'serial ports available:');
+		if (!matchBoard) console.log (paint.cuwire(), 'serial ports available:');
 		ports.forEach (function (port) {
 			var usbPair = [port.vendorId, port.productId].join (':');
 			var deviceName, deviceId;
@@ -242,19 +258,31 @@ ArduinoCli.prototype.showPorts = function (options, cb) {
 				deviceName = usbMatch[usbPair].boardName;
 				deviceId   = usbMatch[usbPair].board;
 			}
-			console.log (
+			var portMessage = [
 				paint.path (port.comName),
 				(deviceName
-				 	? deviceName + ' ('+paint.path (deviceId)+')'
-				 	: usbPair !== ':' ? usbPair : ''
+				 ? deviceName + ' ('+paint.path (deviceId)+')'
+				 : usbPair !== ':' ? usbPair : ''
 				),
 				port.serialNumber ? '#' + port.serialNumber : '',
 				paint.yellow (port.manufacturer)
-			);
+			];
+			if (matchBoard && deviceId === options.board.board) {
+				if (options.port) {
+					console.error (paint.cuwire (), paint.error ('you must provide serial port name'));
+					process.exit(2);
+				}
+				options.port = port.comName;
+//				portMessage.unshift ('guessed serial port:');
+//				console.log.apply (console, portMessage);
+				return;
+			}
+			if (!matchBoard) console.log.apply (console, portMessage);
 			//console.log(port.comName);
 			//console.log(port.pnpId);
 			//console.log(port.manufacturer);
 		});
+		cb();
 	})
 
 }
@@ -318,10 +346,15 @@ function guessSketch (arduino, options) {
 	// 1) path to the sketch dir
 	// 2) key to describe sketch config in ~/.cuwire.json file
 
-	var result = {folder: options.sketch};
+	var result = {};
 
-	if (options.sketch && userConfig.sketch[options.sketch]) {
+	if (options.sketch) {
+		if (userConfig.sketch[options.sketch]) {
+		// sketch template
 		result = userConfig.sketch[options.sketch];
+		} else {
+			result.folder = options.sketch.replace (/[^.\/]+?\.(pde|ino)/, '');
+		}
 	}
 
 	if (!result.board && !options.board) {
@@ -370,10 +403,14 @@ ArduinoCli.prototype.compile = function (options, cb) {
 	compiler.on ('done', cb);
 }
 
-ArduinoCli.prototype.upload = function (options) {
-	var buildMeta = guessSketch (options);
+ArduinoCli.prototype.upload = function (options, cb) {
+	var buildMeta = guessSketch (this.arduino, options);
 
-	console.log (paint.cuwire(), 'upload', paint.path (buildMeta.folder));
+	console.log (
+		paint.cuwire(),
+		'upload', paint.path (buildMeta.folder),
+		'using port', paint.path (options.port)
+	);
 
 	var uploader = new ArduinoUploader (
 		this.compiler,
@@ -382,7 +419,7 @@ ArduinoCli.prototype.upload = function (options) {
 		options.board.model    || buildMeta.model,
 		{
 			serial: {
-				port: options.upload
+				port: options.port
 			},
 			verbose: options.verbose
 		}

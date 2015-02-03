@@ -35,6 +35,7 @@
 		"description": "compile, then upload hex file using provided port",
 		"run": [
 			"compile",
+			"showPorts",
 			"upload"
 		],
 		"arduino": true,
@@ -90,7 +91,11 @@
 	},
 	"console": {
 		"description": "serial console",
-		"run": "console"
+		"run": [
+			"showPorts",
+			"console"
+		],
+		"arduino": true
 	},
 	"help": {
 		"alias": "h",
