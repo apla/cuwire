@@ -30,7 +30,7 @@ go to sketch folder and run:
 cuwire upload -b uno
 ```
 
-You can see detailed guide and more examples at [Cli guide]({{ site.baseurl }}/cli/Guide)
+You can see detailed guide and more examples at [Cli guide]({{ site.baseurl }}/cli/Usage)
 section of documentation
 
 ### Plugin for Brackets IDE
@@ -48,5 +48,5 @@ Using this panel you can select target board to compile sketch and
 target port to upload firmware. Gear icon allow you to set custom location
 for Arduino IDE and some other params.
 
-You can see detailed guide at [GUI guide]({{ site.baseurl }}/gui/Guide)
+You can see detailed guide at [GUI guide]({{ site.baseurl }}/gui/Usage)
 section of documentation
