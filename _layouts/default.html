@@ -1,40 +1,22 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0'>
+	<head>
+		{% include common-head.html %}
+	</head>
 
-    <title>{% if page.title %}{{ page.title }} – {% endif %}{{ site.name }} – {{ site.description }}</title>
+	<body>
+	<div class="content-wrapper">
 
-    <meta name="author" content="{{ site.name }}" />
-    <meta name="description" content="{{ site.description }}">
+		{% include masthead.html %}
 
-    <!--[if lt IE 9]>
-      <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+		<div id="main" role="main" class="container">
+		{{ content }}
+		</div>
 
-    <link rel="stylesheet" type="text/css" href="{{ site.baseurl }}/style.css" />
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
-    <link rel="alternate" type="application/rss+xml" title="{{ site.name }} - {{ site.description }}" href="{{ site.baseurl }}/feed.xml" />
-	  <link rel="stylesheet" type="text/css" href="{{ site.baseurl }}/assets/pygments-darkly.css" />
+	</div><!-- /content-wrapper -->
 
-    <!-- Created with Jekyll Now - http://github.com/barryclark/jekyll-now -->
-  </head>
+	{% include footer.html %}
 
-  <body>
-    <div class="content-wrapper">
-
-      {% include masthead.html %}
-
-      <div id="main" role="main" class="container">
-        {{ content }}
-      </div>
-
-    </div><!-- /content-wrapper -->
-
-    {% include footer.html %}
-
-    {% include analytics.html %}
-  </body>
+	{% include analytics.html %}
+	</body>
 </html>
