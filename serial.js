@@ -121,11 +121,15 @@ util.inherits (CuwireSerialStdIO, CuwireSerial);
 
 CuwireSerial.stdio = CuwireSerialStdIO;
 
+var paint;
+
 CuwireSerialStdIO.prototype.onOpen = function (sp, cb) {
+
+	if (!paint) paint = require ('./color');
 
 	this.port = sp;
 
-	this.emit ('log', scope, 'Console open, use Ctr-c to exit.\r\n');
+	console.log (paint.cuwire ('console open, use Ctrl-c to exit.\r\n'));
 
 	process.stdin.setEncoding ('utf8');
 
@@ -143,7 +147,7 @@ CuwireSerialStdIO.prototype.onOpen = function (sp, cb) {
 
 
 	this.port.on ('data', function (buf) {
-		process.stdout.write (buf.toString());
+		process.stdout.write (paint.yellow (buf.toString()));
 	});
 
 	cb && cb ();
