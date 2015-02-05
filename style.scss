@@ -83,20 +83,24 @@ h1 {
 	font-weight: 700;
 }
 
-#home h1.site-name {
-	font-size: 72px;
-	line-height: 74px;
+h1.site-name {
+	font-size: 40px;
+	line-height: 42px;
 	font-weight: 700;
 	max-width: 600px;
-	margin-top: 30px;
+	margin-top: 10px;
 	margin-bottom: 20px;
 	letter-spacing: -.03em;
 	a {
 	color: $darkGray;
 	}
 	@include mobile {
-	margin: 30px 20px 0;
+	margin: 10px 20px 0;
 	}
+}
+
+#home .site-description {
+	margin-top: 20px;
 }
 
 h2 {
@@ -117,6 +121,19 @@ h4 {
 
 p {
 	margin: 15px 0;
+}
+
+a.huge {
+	width: 40%;
+	margin-left: 5%;
+	margin-top: 20px;
+	font-size: 30px;
+	font-weight: 600;
+	display: inline-block;
+	text-align: center;
+	border: 1px solid gray;
+	padding: 20px;
+	border-radius: 5px;
 }
 
 #home p.site-description {
@@ -275,7 +292,8 @@ nav {
 	float: right;
 	margin-top: 23px;
 	font-family: $helveticaNeue;
-	font-size: 12px;
+	font-size: 16px;
+
 
 	@include mobile {
 	float: none;
@@ -289,15 +307,39 @@ nav {
 	// width: 225px;
 	display: block;
 	float: right;
+	line-height: 35px;
 
-	@include mobile {
-		display: inline-block;
-		float: none;
-		margin: 0 10px;
-		color: $darkGray;
-		// width: 150px;
-		text-align: left;
+		@include mobile {
+			display: inline-block;
+			float: none;
+			margin: 0 10px;
+			color: $darkGray;
+			// width: 150px;
+			text-align: left;
+		}
 	}
+
+	a.brackets {
+		padding-left: 30px;
+		background: url(assets/brackets.svg) 0% 100% / 2em auto no-repeat;
+	}
+
+	div {
+		margin-left: 20px;
+		color: black;
+		// width: 225px;
+		display: block;
+		float: right;
+		line-height: 35px;
+
+		@include mobile {
+			display: inline-block;
+			float: none;
+			margin: 0 10px;
+			color: black;
+			// width: 150px;
+			text-align: left;
+		}
 	}
 }
 
