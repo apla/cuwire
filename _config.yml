@@ -3,7 +3,8 @@ title: cuwire
 name: cuwire
 email: your-email@domain.com
 description: > # this means to ignore newlines until "baseurl:"
-  better microcontroller IDE.
+  Better microcontroller IDE.
+  Available for Mac, Windows and Linux.
 baseurl: "/cuwire"
 # Your website URL (e.g. http://barryclark.github.io or http://www.barryclark.co)
 # Used for Sitemap.xml and your RSS feed

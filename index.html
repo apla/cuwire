@@ -19,12 +19,17 @@ layout: home
 	slider.start();
 </script>
 
+<h2>Try it!</h2>
+
+<a class="huge" href="{{ site.baseurl }}/cli">Install cli</a><a class="huge" href="{{ site.baseurl }}/gui">Install GUI</a>
+
+<h2>News</h2>
 
 <div class="posts clearfix">
 	{% for post in site.posts %}
 	<article class="post">
 		<div class="eyebrow">{{ post.date | date: "%d %b %Y" }}</div>
-		<h1><a href="{{ site.baseurl }}{{ post.url }}">{{ post.title }}</a></h1>
+		<h3><a href="{{ site.baseurl }}{{ post.url }}">{{ post.title }}</a></h3>
 
 		<div class="entry">
 			<p>{{ post.desc }}</p>
