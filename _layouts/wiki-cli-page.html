@@ -3,17 +3,9 @@ layout: wiki-cli
 ---
 
 <article class="post">
-	<h1>{{ page.title }}</h1>
-	{% if page.proj-url and page.proj-url != "" and page.proj-url != nil %}
-	<a href="{{ page.proj-url }}" class="large-link" target="_blank">View Project Site <i class="fa fa-external-link"></i></a>
-	{% endif %}
-	<div class="date">Posted {{ page.date | date: "%B %e, %Y" }}</div>
-
-
 	<div class="entry">
 	{{ content }}
 	</div>
-
 
 	{% include disqus.html disqus_identifier=page.disqus_identifier %}
 </article>

@@ -1,28 +1,11 @@
 <!DOCTYPE html>
 <html>
 	<head>
-	<meta charset="utf-8" />
-	<meta http-equiv='X-UA-Compatible' content='IE=edge'>
-	<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0'>
-
-	<title>{% if page.title %}{{ page.title }} – {% endif %}{{ site.name }} – {{ site.description }}</title>
-
-	<meta name="author" content="{{ site.name }}" />
-	<meta name="description" content="{{ site.description }}">
-
-	<!--[if lt IE 9]>
-		<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-	<![endif]-->
 
 	<link rel="stylesheet" type="text/css" href="{{ site.baseurl }}//assets/ideal-image-slider.css" />
 	<link rel="stylesheet" type="text/css" href="{{ site.baseurl }}//assets/ideal-image-slider-theme-default.css" />
-	<link rel="stylesheet" type="text/css" href="{{ site.baseurl }}/style.css" />
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
-	<link rel="alternate" type="application/rss+xml" title="{{ site.name }} - {{ site.description }}" href="{{ site.baseurl }}/feed.xml" />
-
-	<script src="{{ site.baseurl }}/assets/ideal-image-slider.min.js"></script>
-
-	<!-- Created with Jekyll Now - http://github.com/barryclark/jekyll-now -->
+		{% include common-head.html %}
+		<script src="{{ site.baseurl }}/assets/ideal-image-slider.min.js"></script>
 	</head>
 
 	<body id="home">
@@ -32,7 +15,6 @@
 
 
 	<div class="container">
-		<h1 class="site-name"><a href="/">{{ site.name }}</a></h1>
 		<p class="site-description">{{ site.description }}</p>
 	</div>
 
