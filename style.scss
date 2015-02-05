@@ -288,6 +288,11 @@ img {
 	}
 }
 
+a.brackets {
+	padding-left: 30px;
+	background: url(assets/brackets.svg) 0% 100% / 2em auto no-repeat;
+}
+
 nav {
 	float: right;
 	margin-top: 23px;
@@ -319,10 +324,6 @@ nav {
 		}
 	}
 
-	a.brackets {
-		padding-left: 30px;
-		background: url(assets/brackets.svg) 0% 100% / 2em auto no-repeat;
-	}
 
 	div {
 		margin-left: 20px;
