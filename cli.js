@@ -307,6 +307,10 @@ ArduinoCli.prototype.showBoards = function () {
 
 	Object.keys (platforms).sort().forEach (function (platformName) {
 		if (!platforms.hasOwnProperty(platformName)) return;
+		if (!platforms[platformName].platform) {
+			console.error (platformName, "isn't platform");
+			return;
+		}
 		var platformVer = platforms[platformName].platform.version;
 		console.log (
 			paint.yellow (platforms[platformName].platform.name) +' ('+platformName+')',
@@ -317,6 +321,10 @@ ArduinoCli.prototype.showBoards = function () {
 		Object.keys (boards).sort().map (function (boardId) {
 			if (!boards.hasOwnProperty(boardId)) return;
 			var boardMeta = boards[boardId];
+			if (!boardMeta.name) {
+				console.error (boardId, "isn't a board");
+				return;
+			}
 
 			var boardDesc = boardMeta.name + ' (' + paint.path (boardId);
 			if ("models" in boardMeta) {
