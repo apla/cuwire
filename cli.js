@@ -5,8 +5,6 @@ var ArduinoCompiler = require ('./compiler');
 var ArduinoUploader = require ('./uploader');
 var CuwireSerial    = require ('./serial');
 
-var argv = require ('yargs').argv;
-
 var fs   = require ('fs');
 var os   = require ('os');
 var path = require ('path');
@@ -30,8 +28,6 @@ function getPrefsFile() {
 	};
 	return path.join (home, prefs[os.platform()]);
 }
-
-var cliConfig = require ('./cli-options.json');
 
 var userConfig;
 try {
@@ -310,6 +306,7 @@ ArduinoCli.prototype.showBoards = function () {
 	console.log (paint.cuwire(), 'boards available:');
 
 	Object.keys (platforms).sort().forEach (function (platformName) {
+		if (!platforms.hasOwnProperty(platformName)) return;
 		var platformVer = platforms[platformName].platform.version;
 		console.log (
 			paint.yellow (platforms[platformName].platform.name) +' ('+platformName+')',
@@ -318,6 +315,7 @@ ArduinoCli.prototype.showBoards = function () {
 
 		var boards = platforms[platformName].boards;
 		Object.keys (boards).sort().map (function (boardId) {
+			if (!boards.hasOwnProperty(boardId)) return;
 			var boardMeta = boards[boardId];
 
 			var boardDesc = boardMeta.name + ' (' + paint.path (boardId);
