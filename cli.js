@@ -308,7 +308,7 @@ ArduinoCli.prototype.showBoards = function () {
 	Object.keys (platforms).sort().forEach (function (platformName) {
 		if (!platforms.hasOwnProperty(platformName)) return;
 		if (!platforms[platformName].platform) {
-			console.error (platformName, "isn't platform");
+			console.error ("not a platform:", platformName);
 			return;
 		}
 		var platformVer = platforms[platformName].platform.version;
@@ -322,7 +322,7 @@ ArduinoCli.prototype.showBoards = function () {
 			if (!boards.hasOwnProperty(boardId)) return;
 			var boardMeta = boards[boardId];
 			if (!boardMeta.name) {
-				console.error (boardId, "isn't a board");
+				console.error ("not a board:", boardId);
 				return;
 			}
 
