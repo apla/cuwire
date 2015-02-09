@@ -1,6 +1,6 @@
 {
 	"name": "cuwire",
-	"version": "0.5.5",
+	"version": "0.5.6",
 
 	"title": "tool to compile and upload mcu firmware",
 	"homepage": "https://github.com/apla/cuwire",
