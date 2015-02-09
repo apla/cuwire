@@ -291,11 +291,13 @@ ArduinoCli.prototype.console = function (options) {
 
 	serialMon.open (options.port, options.baudrate);
 
-	serialMon.on ('close', function () {
+	serialMon.on ('close', function (err) {
+		console.log (paint.cuwire ('port is closed'));
 		process.exit ();
 	});
 
-	serialMon.on ('error', function () {
+	serialMon.on ('error', function (err) {
+		console.log (paint.cuwire ('port error:'), paint.error (err));
 		process.exit (1);
 	});
 }

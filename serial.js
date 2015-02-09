@@ -163,31 +163,4 @@ CuwireSerialStdIO.prototype.onOpen = function (sp, cb) {
 	cb && cb ();
 }
 
-CuwireSerialStdIO.prototype.onClose = function (sp, cb, err) {
-
-	if (!paint) paint = require ('./color');
-
-	this.port = sp;
-
-	console.log (paint.cuwire ('port is closed'), paint.error (err));
-
-	process.exit (1);
-
-	cb && cb ();
-}
-
-CuwireSerialStdIO.prototype.onError = function (sp, cb, err) {
-
-	if (!paint) paint = require ('./color');
-
-	this.port = sp;
-
-	console.log (paint.cuwire ('port error:'), paint.error (err));
-
-	process.exit (1);
-
-	cb && cb ();
-}
-
-
 module.exports = CuwireSerial;
