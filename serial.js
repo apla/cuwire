@@ -103,7 +103,17 @@ CuwireSerial.prototype.open = function (port, baudrate, cb) {
 
 	sp.on ('error', (function(err){
 		this.emit ('error', scope, err);
-		cb && cb (err);
+		this.onError
+			? this.onError (sp, cb, err)
+			: cb && cb (err);
+		// process.exit(2);
+	}).bind (this));
+
+	sp.on ('close', (function(err){
+		this.emit ('close', scope, err);
+		this.onClose
+			? this.onClose (sp, cb, err)
+			: cb && cb (err);
 		// process.exit(2);
 	}).bind (this));
 
@@ -152,5 +162,32 @@ CuwireSerialStdIO.prototype.onOpen = function (sp, cb) {
 
 	cb && cb ();
 }
+
+CuwireSerialStdIO.prototype.onClose = function (sp, cb, err) {
+
+	if (!paint) paint = require ('./color');
+
+	this.port = sp;
+
+	console.log (paint.cuwire ('port is closed'), paint.error (err));
+
+	process.exit (1);
+
+	cb && cb ();
+}
+
+CuwireSerialStdIO.prototype.onError = function (sp, cb, err) {
+
+	if (!paint) paint = require ('./color');
+
+	this.port = sp;
+
+	console.log (paint.cuwire ('port error:'), paint.error (err));
+
+	process.exit (1);
+
+	cb && cb ();
+}
+
 
 module.exports = CuwireSerial;
