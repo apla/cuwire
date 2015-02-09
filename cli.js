@@ -404,8 +404,16 @@ ArduinoCli.prototype.compile = function (options, cb) {
 		console.log (paint.yellow (scope) + "\t", message.match (/^done/) ? paint.green (message) : message);
 	});
 
-	compiler.on ('error', function (scope, message) {
-		console.log (paint.error (scope) + "\t", message);
+	compiler.on ('error', function (error, message) {
+		if (error.files && error.files.length) {
+			console.log (paint.cuwire(), 'compilation failed:')
+			error.files.forEach (function (fileDesc) {
+				console.log ('error in', paint.path (fileDesc[1])+(['',fileDesc[2], fileDesc[3]].join(':')), paint.error (fileDesc[4]));
+			});
+			console.log (paint.yellow ('command'), error.cmd)
+			return;
+		}
+		console.log (paint.error (error) + "\t", message);
 	});
 
 	compiler.on ('done', cb);

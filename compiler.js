@@ -68,7 +68,7 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 //		console.log (scope, pos + '/' + length);
 	});
 	this.on ('queue-failed', function (scope, err) {
-		console.log (scope, 'failed:', err);
+//		console.log (scope, 'failed:', err);
 	});
 
 	this._done = {};
@@ -255,6 +255,22 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 				// console.log('stdout: ' + stdout);
 				// console.log('stderr: ' + stderr);
 				if (error !== null) {
+//					ArduinoVoltage.ino:134:2: error: 'XXX' was not declared in this scope
+//					ArduinoVoltage.ino:135:1: error: expected ';' before '}' token
+					error.files = [];
+					error.sketchFolder = this.sketchFolder;
+					error.buildFolder  = this.buildFolder;
+					var stderrStrings = stderr.split(/\r\n|\r|\n/);
+					stderrStrings.forEach (function (stderrChunk) {
+
+						var err = stderrChunk.match (/^([^:]+)\:(\d+)\:(\d+)\:\s*error\:\s*(.*)/);
+						if (err) {
+
+							err[1] = err[1].replace (new RegExp ('^' + error.sketchFolder + '(\\' + path.sep+')?'), "");
+							error.files.push (err);
+//							console.log ('found error:', err[4], 'at', err[1], err[2], err[3]);
+						}
+					});
 					error.scope  = scope;
 					error.cmd    = cmd;
 					error.stderr = stderr;
@@ -638,11 +654,18 @@ ArduinoCompiler.prototype.processIno = function (inoFile, fileMeta) {
 
 //		console.log (this.buildFolder, '_' + this.projectName + '_generated.cpp');
 
+		var inoBeforeFirstStatement = inoContents.substr (0, firstStatementOffset);
+		var lineNumber = inoBeforeFirstStatement.split(/\r\n|\r|\n/).length;
+
+		fs.writeFile (path.join (this.buildFolder, this.projectName + '.ino'), inoContents);
+
 		fs.writeFile (
 			projectFile,
-			[inoContents.substr (0, firstStatementOffset),
-			"\n#include \"Arduino.h\"\n" + funcs.join (";\n") + ";",
-			inoContents.substr (firstStatementOffset)].join ("\n"),
+			[
+				inoBeforeFirstStatement,
+				"\n#include \"Arduino.h\"\n" + funcs.join (";\n") + ";\n#line " + lineNumber + ' "' + this.projectName + '.ino"',
+				inoContents.substr (firstStatementOffset)
+			].join ("\n"),
 			(function (err, done) {
 				if (err) {
 					this.emit ('error', 'project', ['file write failed', projectFile, err.code].join (' '));
