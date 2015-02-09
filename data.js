@@ -693,7 +693,8 @@ function BoardsConf (data) {
 		for (var menuSection in menus) {
 			model[menuSection] = menus[menuSection].sliceByFirstChunk();
 		}
-		this[boardId].models = model;
+		if (Object.keys (model).length)
+			this[boardId].models = model;
 		if (boardId !== boardId.toLowerCase())
 			Object.defineProperty(this, boardId.toLowerCase(), {
 				value: this[boardId]
@@ -718,17 +719,23 @@ BoardsConf.prototype.validateModel = function (boardName, model) {
 		modelOptions[optionSplit[0]] = optionSplit[1];
 	});
 
-	for (var option in this[boardName].models) {
-		if (!(option in modelOptions) || this[boardName].models[modelOptions[option]]) {
-			console.log ('model of', option, "not defined for board", boardName, '. available options:', Object.keys (this[boardName].models[option]).join (", "));
-			return;
+	if (this[boardName].models)
+		for (var option in this[boardName].models) {
+			if (!(option in modelOptions) || this[boardName].models[modelOptions[option]]) {
+				console.log (
+					'model of', option, "not defined for board",
+					boardName + '. available options:',
+					Object.keys (this[boardName].models[option]).join (", ")
+				);
+				console.log ("please define", option, "model as -m", option + ':' + Object.keys(this[boardName].models[option])[0]);
+				return;
+			}
+			var fixup = this[boardName].models[modelOptions[option]];
+			for (var k in fixup) {
+				// TODO: overwrite error handling
+				modelFixup[k] = fixup[k];
+			}
 		}
-		var fixup = this[boardName].models[modelOptions[option]];
-		for (var k in fixup) {
-			// TODO: overwrite error handling
-			modelFixup[k] = fixup[k];
-		}
-	}
 
 	return [modelFixup, modelOptions];
 }
