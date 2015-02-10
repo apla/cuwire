@@ -22,7 +22,7 @@ using libclang, with current implementation as fast fallback.
 
 Many other things fixes:
 
- * Serial port auto speed selection (not complete, see [full story]())
+ * Serial port auto speed selection (not complete, see [full story](https://github.com/apla/cuwire/issues/1))
  * Serial port device name display
  * Error text selection in log
  * Vector board images (still useless, but have ports information)
