@@ -1,6 +1,30 @@
 ---
 layout: wiki-gui
+wikiurl: https://github.com/apla/brackets-cuwire/wiki/
+wikipath: "/gui/"
 ---
+
+<nav class="wiki-breadcrumbs">
+	<ul>
+		<li>cuwire plugin for Brackets IDE guide:</li>
+		{% for htpage in site.html_pages %}
+		{% if htpage.url contains "/gui/" %}
+		<li>
+			{% if htpage.url == page.url %}
+			<a class="current" href="{{ site.baseurl }}{{ htpage.url }}">{{ htpage.name | replace:'.md','' }}</a>
+			{% else %}
+			<a href="{{ site.baseurl }}{{ htpage.url }}">{{ htpage.name | replace:'.md','' }}</a>
+			{% endif %}
+			<!--lastmod>{{ site.time | date: "%Y-%m-%d" }}</lastmod-->
+		</li>
+
+		{% endif %}
+		{% endfor %}
+	</ul>
+</nav>
+
+<div class="origin"><a href="{{ page.wikiurl }}{{ page.name | replace:'.md','' }}">Page source</a></div>
+
 
 <article class="post">
 	<div class="entry">

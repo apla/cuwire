@@ -1,6 +1,25 @@
 ---
 layout: wiki-cli
+wikiurl: https://github.com/apla/cuwire/wiki/
+wikipath: "/cli/"
 ---
+
+<nav class="wiki-breadcrumbs">
+	<ul>
+		<li>cuwire guide:</li>
+		{% for page in site.html_pages %}
+		{% if page.url contains '/cli/' %}
+		<li>
+			<a href="{{ site.baseurl }}{{ page.url }}">{{ page.name | replace:'.md','' }}</a>
+			<!--lastmod>{{ site.time | date: "%Y-%m-%d" }}</lastmod-->
+		</li>
+
+		{% endif %}
+		{% endfor %}
+	</ul>
+</nav>
+
+<div class="origin"><a href="{{ page.wikiurl }}{{ page.name | replace:'.md','' }}">Page source</a></div>
 
 <article class="post">
 	<div class="entry">
@@ -9,3 +28,4 @@ layout: wiki-cli
 
 	{% include disqus.html disqus_identifier=page.disqus_identifier %}
 </article>
+
