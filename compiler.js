@@ -266,7 +266,7 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 						var err = stderrChunk.match (/^([^:]+)\:(\d+)\:(\d+)\:\s*error\:\s*(.*)/);
 						if (err) {
 
-							err[1] = err[1].replace (new RegExp ('^' + error.sketchFolder + '(\\' + path.sep+')?'), "");
+							err[1] = err[1].replace (new RegExp ('^' + error.buildFolder + '(\\' + path.sep+')?'), "");
 							error.files.push (err);
 //							console.log ('found error:', err[4], 'at', err[1], err[2], err[3]);
 						}
