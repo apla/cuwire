@@ -95,7 +95,7 @@ KeyValue.prototype.sliceByFirstChunk = function (className) {
 	return result;
 }
 
-var Arduino = function (customRuntimeFolders, customSketchesFolder, fromScratch) {
+var Arduino = function (customRuntimeFolders, customSketchesFolder, fromScratch, options) {
 
 	// TODO: additional user dirs
 	if (Arduino.instance && !fromScratch) {
@@ -107,6 +107,9 @@ var Arduino = function (customRuntimeFolders, customSketchesFolder, fromScratch)
 	this.libraryData = {};
 
 	this.folders = {};
+
+	if (options.verbose) this.verbose = options.verbose;
+	if (options.debug)   this.debug   = options.debug;
 
 	// useful for reloading
 	this.init (customRuntimeFolders, customSketchesFolder);
@@ -131,7 +134,7 @@ var Arduino = function (customRuntimeFolders, customSketchesFolder, fromScratch)
 
 		this.emit ('done');
 
-//		console.log (this.folders);
+		if (this.debug) console.log ('debug', "folders information", this.folders);
 	}).bind (this));
 
 }
@@ -164,10 +167,13 @@ Arduino.prototype.ioDone = function (tag, dir) {
 	if (!ioWait[tag])
 		ioWait[tag] = 0;
 	ioWait[tag]++;
-//	console.log ('ioWait++', ioWait[tag], tag || 'done', dir);
+
+	var debug = this.debug;
+
+	if (debug) console.log ('debug', 'ioWait++', ioWait[tag], tag || 'done', dir);
 	return function () {
 		ioWait[tag] --;
-//		console.log ('ioWait--', ioWait[tag], tag || 'done', dir);
+		if (debug) console.log ('debug', 'ioWait--', ioWait[tag], tag || 'done', dir);
 		if (!ioWait[tag]) {
 			if (ioTimeout) {
 				clearTimeout (ioTimeout);
@@ -205,6 +211,8 @@ Arduino.prototype.getRuntimeVersion = function (runtimeFolder, done, err, versio
 
 	this.folders[runtimeFolder].runtime = version[0];
 	this.folders[runtimeFolder].modern  = modern ? true : false;
+
+	if (this.debug) console.log ('debug', runtimeFolder, 'version:', version[0], 'modern:', modern ? true : false);
 
 	done ('version');
 

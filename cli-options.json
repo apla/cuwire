@@ -5,6 +5,12 @@
 		"description": "verbose output",
 		"default": false
 	},
+	"debug": {
+		"alias": "d",
+		"boolean": true,
+		"description": "debug messages",
+		"default": false
+	},
 	"sketch": {
 		"description": "sketch folder, config file or template name",
 		"alias": "s"
