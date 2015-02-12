@@ -277,8 +277,8 @@ function appendStandardLocations (type, locations) {
 				// 1.0 /Applications/Arduino.app/Contents/Resources/Java/hardware/arduino/boards.txt
 				// 1.5 /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/boards.txt
 				// 1.6 /Applications/Arduino.app/Contents/Resources/Java/hardware/arduino/avr/boards.txt
-				locations[idx] = location.replace (/Arduino\.app\/?$/, "Arduino.app/Contents/Java");
-				locations.push (location.replace (/Arduino\.app\/?$/, "Arduino.app/Contents/Resources/Java"));
+				locations[idx] = location.replace (/\.app\/?$/, ".app/Contents/Java");
+				locations.push (location.replace (/\.app\/?$/, ".app/Contents/Resources/Java"));
 			}
 
 		});
