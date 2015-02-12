@@ -108,6 +108,8 @@ var Arduino = function (customRuntimeFolders, customSketchesFolder, fromScratch,
 
 	this.folders = {};
 
+	options = options || {};
+
 	if (options.verbose) this.verbose = options.verbose;
 	if (options.debug)   this.debug   = options.debug;
 
