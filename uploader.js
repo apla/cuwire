@@ -18,44 +18,26 @@ function ArduinoUploader (compiler, platformId, boardId, boardVariant, options) 
 	// TODO: make use of instance property (instance populated on successful config read)
 	Arduino = new ArduinoData ();
 
-	var boardsData = Arduino.boardData[platformId];
-
-	var platform = boardsData.platform; // arduino:avr.platform
-	var board = JSON.parse (JSON.stringify (boardsData.boards[boardId])); // arduino:avr.boards.uno
-
-	var boardBuild = board.build; // arduino:avr.boards.uno.build
-
-	this.boardsData = boardsData;
-
 	this.platformId = platformId;
-
-	this.platform = platform; // arduino:avr.platform
 
 	var currentStage = "upload";
 
 	var tool = common.createDict (Arduino, platformId, boardId, boardVariant, options, currentStage);
 
-	common.pathToVar (tool, 'build.path', compiler.buildFolder);
-	common.pathToVar (tool, 'build.project_name', compiler.projectName);
+	tool['build.path'] = compiler.buildFolder;
+	tool['build.project_name'] = compiler.projectName;
 
-	//	common.pathToVar (conf, 'build.arch', platformId.split (':')[1]);
-	common.pathToVar (tool, 'build.arch', platformId.split (':')[1].toUpperCase ());
-
-//	console.log (conf.upload);
-//
-//	console.log (conf.tools[conf.upload.tool]);
-
-//	console.log (tool);
-
-	if (tool.upload.params && tool.upload.params.verbose) {
+	if (tool['upload.params.verbose']) {
 		if (options.verbose) {
-			tool.upload.verbose = tool.upload.params.verbose; // or quiet
+			tool['upload.verbose'] = tool['upload.params.verbose']; // or quiet
 		} else {
-			tool.upload.verbose = tool.upload.params.quiet;
+			tool['upload.verbose'] = tool['upload.params.quiet'];
 		}
+	} else {
+		tool['upload.verbose'] = "";
 	}
 
-	common.pathToVar (tool, 'serial.port', options.serial.port);
+	tool['serial.port'] = options.serial.port;
 
 	this.initSerial ();
 
@@ -90,17 +72,17 @@ ArduinoUploader.prototype.initSerial = function () {
 
 
 ArduinoUploader.prototype.prepareCmd = function (tool) {
-	var recipe = tool.upload.pattern;
+	var recipe = tool['upload.pattern'];
 
-	this.emit ('log', 'upload', "using port: "+tool.serial.port);
+	this.emit ('log', 'upload', "using port: "+tool['serial.port']);
 
-	console.log (recipe);
+	console.log (tool, recipe);
 
 	var cmd = common.replaceDict (recipe, tool);
 
 	console.log (cmd);
 
-	if (tool.upload.use_1200bps_touch) {
+	if (tool['upload.use_1200bps_touch']) {
 		this.emit ('log', 'upload', "dancing 1200 bod");
 		this.danceSerial1200 (tool, this.runCmd.bind (this, cmd, tool));
 	} else {
@@ -123,7 +105,7 @@ ArduinoUploader.prototype.danceSerial1200 = function (tool, cb) {
 					console.log ("did a successful close");
 					console.log ("closed at 1200bd");
 					//wait 300ms
-					if (tool.upload.wait_for_upload_port) {
+					if (tool['upload.wait_for_upload_port']) {
 						setTimeout (function() {
 							console.log ("doing a second list");
 							//scan for ports again
@@ -150,8 +132,8 @@ ArduinoUploader.prototype.runCmd = function (cmd, tool) {
 	this.emit ('log', scope, cmd);
 
 	var env = common.prepareEnv (
-		path.resolve (tool.runtime.ide.path),
-		path.resolve (tool.runtime.platform.path)
+		path.resolve (tool['runtime.ide.path']),
+		path.resolve (tool['runtime.platform.path'])
 	);
 
 	var child = exec(cmd, {env: env}, (function (error, stdout, stderr) {

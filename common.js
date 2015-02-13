@@ -233,6 +233,7 @@ function createDict (arduino, platformId, boardId, boardModel, options, currentS
 
 	var dict = {};
 
+	var hwNode = arduino.hardware[platformId];
 	var hwPlatform = arduino.hardware[platformId].platform;
 	var hwBoard = arduino.hardware[platformId].boards[boardId];
 
@@ -240,12 +241,12 @@ function createDict (arduino, platformId, boardId, boardModel, options, currentS
 		var toolName = hwBoard['upload.tool'];
 		var tool = hwPlatform.tools[toolName]; // arduino:avr platform.txt tools.<toolName>
 		// TODO: remove
-		pathToVar (conf, 'runtime.platform.path', arduino.hardware['folders.root']);
-		pathToVar (conf, 'runtime.hardware.path', path.dirname (arduino.hardware['folders.root']));
+		dict['runtime.platform.path'] = hwNode['folders.root'];
+		dict['runtime.hardware.path'] = path.dirname (hwNode['folders.root']);
 		for (var toolK in tool) {
 			// TODO: better solution to get real keys
 			if (typeof tool[toolK] === 'string')
-				dict[platformK] = tool[toolK];
+				dict[toolK] = tool[toolK];
 		}
 	} else if (currentStage === 'build') {
 		for (var platformK in hwPlatform) {
