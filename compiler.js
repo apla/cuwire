@@ -16,50 +16,38 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 	// TODO: make use of instance property (instance populated on successful config read)
 	Arduino = new ArduinoData ();
 
-	var boardsData = Arduino.boardData[platformId];
+	var hw = Arduino.hardware;
 
-	var platform = boardsData.platform;
-	var board = common.extend (true, {}, boardsData.boards[boardId]);
-
-	var boardBuild = board.build;
-
-	this.boardsData = boardsData;
-
-	this.platformId = platformId;
-
-	// TODO: replace by temporary folder
 	this.buildFolder = options.buildFolder || common.buildFolder (sketchFolder);
-
-	this.platform = platform;
 
 	this.objectFiles = [];
 
+	var currentStage = 'build';
+
+	var dict = common.createDict (Arduino, platformId, boardId, boardVariant, options, currentStage);
+
+	var hwNode = Arduino.hardware[platformId];
+	var hwPlatform = hwNode.platform;
+	var hwBoard = Arduino.hardware[platformId].boards[boardId];
+
+	// TODO: get from build.core.path and build.variant.path
 	this.coreIncludes = [
-		boardsData.folders.root + '/cores/' + board.build.core,
-		boardsData.folders.root + '/variants/' + board.build.variant
+		hwNode['folders.root'] + '/cores/' + dict['build.core'],
+		hwNode['folders.root'] + '/variants/' + dict['build.variant']
 	];
 
 	if (options.includes) {
 		this.coreIncludes = this.coreIncludes.concat (options.includes);
 	}
 
-	var currentStage = 'build';
-
-	var conf = common.createDict (Arduino, platformId, boardId, boardVariant, options, currentStage);
-
-	common.pathToVar (conf, 'build.path', this.buildFolder);
-
-//	console.log (this.coreIncludes);
-
-
-	//	console.log ('BUILD', conf.build, platform.recipe.cpp.o.pattern);
+	dict['build.path'] = this.buildFolder;
 
 	//	The uno.build.board property is used to set a compile-time variable ARDUINO_{build.board}
 	//	to allow use of conditional code between #ifdefs. The Arduino IDE automatically generate
 	//	a build.board value if not defined. In this case the variable defined at compile time will
 	//	be ARDUINO_AVR_UNO.
 
-	this.config = conf;
+	this.dict = dict;
 
 	// TODO: use dataflows
 	this.on ('queue-completed', this.runNext.bind (this));
@@ -79,6 +67,7 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 
 	this.sketchFolder = sketchFolder;
 
+	this.platform = hwPlatform;
 
 	fs.mkdir (this.buildFolder, (function (err) {
 		if (err && err.code !== "EEXIST") {
@@ -90,11 +79,11 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 			nameMatch: /[^\/]+\.(c(?:pp)|h|ino|pde)?$/i
 		});
 
-		common.pathWalk (path.join (boardsData.folders.root, 'cores', board.build.core), this.setCoreFiles.bind (this), {
+		common.pathWalk (path.join (hwNode['folders.root'], 'cores', dict['build.core']), this.setCoreFiles.bind (this), {
 			nameMatch: /[^\/]+\.c(pp)?$/i
 		});
 
-		common.pathWalk (path.join (boardsData.folders.root, 'variants', board.build.variant), this.setCoreFiles.bind (this), {
+		common.pathWalk (path.join (hwNode['folders.root'], 'variants', dict['build.variant']), this.setCoreFiles.bind (this), {
 			nameMatch: /[^\/]+\.c(pp)?$/i
 		});
 
@@ -117,7 +106,7 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 util.inherits (ArduinoCompiler, EventEmitter);
 
 ArduinoCompiler.prototype.setProjectName = function (name) {
-	common.pathToVar (this.config, 'build.project_name', name);
+	this.dict['build.project_name'] = name;
 	this.projectName = name;
 
 }
@@ -243,8 +232,8 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 //			console.log ("child exec launch: %s", cmd);
 
 			var env = common.prepareEnv (
-				path.resolve (this.config.runtime.ide.path),
-				path.resolve (this.config.runtime.platform.path)
+				path.resolve (this.dict['runtime.ide.path']),
+				path.resolve (this.dict['runtime.platform.path'])
 			);
 
 			var child = exec (cmd, {env: env}, (function (error, stdout, stderr) {
@@ -297,9 +286,14 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 
 }
 
-ArduinoCompiler.prototype.getConfig = function () {
+ArduinoCompiler.prototype.getDict = function () {
 	// speed doesn't matter here
-	return common.extend (true, {}, this.config);
+	var newDict = {};
+	for (var k in this.dict) {
+		newDict[k] = this.dict[k];
+	}
+
+	return newDict;
 }
 
 function wrapInclude (includePath) {
@@ -429,26 +423,26 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 		return;
 	}
 
-	var conf = this.getConfig ();
+	var dict = this.getDict ();
 
 	Object.keys (coreFileList).forEach ((function (srcFile) {
 		var baseName  = path.basename (srcFile);
 		var ext       = path.extname (srcFile).substr (1);
 		var localName = path.basename (baseName, '.'+ext);
 
-		conf.source_file = srcFile;
+		dict.source_file = srcFile;
 		// TODO: build dir
-		conf.object_file = path.join (this.buildFolder, localName + '.' + ext + '.o');
-		conf.includes = [].concat (this.coreIncludes).map (wrapInclude).join (" ");
-		var compileCmd = common.replaceDict (this.platform.recipe[ext].o.pattern, conf, null, "platform.recipe."+ext+".o.pattern");
+		dict.object_file = path.join (this.buildFolder, localName + '.' + ext + '.o');
+		dict.includes = [].concat (this.coreIncludes).map (wrapInclude).join (" ");
+		var compileCmd = common.replaceDict (this.platform.recipe[ext+'.o.pattern'], dict, null, "platform.recipe."+ext+".o.pattern");
 
 		this.enqueueCmd ('mkdir', this.ioMkdir (this.buildFolder));
 
 		var cmdDesc = ['compile', this.platformId, localName + '.' + ext].join (" ");
 		this.enqueueCmd ('core', compileCmd, null, cmdDesc);
 
-		conf.archive_file = 'core.a';
-		var archiveCmd = common.replaceDict (this.platform.recipe.ar.pattern, conf, null, "platform.recipe.ar.pattern");
+		dict.archive_file = 'core.a';
+		var archiveCmd = common.replaceDict (this.platform.recipe['ar.pattern'], dict, null, "platform.recipe.ar.pattern");
 
 		cmdDesc = ['archive', this.platformId, localName + '.' + ext].join (" ");
 		this.enqueueCmd ('core', archiveCmd, null, cmdDesc);
@@ -461,15 +455,15 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 }
 
 ArduinoCompiler.prototype.processSketch = function () {
-	var conf = this.getConfig ();
+	var dict = this.getDict ();
 
 	Object.keys (this.sketchFiles).forEach ((function (srcFile) {
 		var baseName  = path.basename (srcFile);
 		var ext       = path.extname (srcFile).substr (1);
 		var localName = path.basename (baseName, '.'+ext);
 
-		conf.source_file = srcFile;
-		conf.object_file = path.join (this.buildFolder, localName + '.o');
+		dict.source_file = srcFile;
+		dict.object_file = path.join (this.buildFolder, localName + '.o');
 
 		var allIncludes = [];
 
@@ -479,19 +473,19 @@ ArduinoCompiler.prototype.processSketch = function () {
 		}
 
 		var includes = [].concat (this.coreIncludes, allIncludes).map (wrapInclude).join (" ");
-		conf.includes = includes;
+		dict.includes = includes;
 
-		if (!(ext in this.platform.recipe))
+		if (!this.platform.recipe[ext+'.o.pattern'])
 			return;
 
-		var compileCmd = common.replaceDict (this.platform.recipe[ext].o.pattern, conf, null, "platform.recipe."+ext+".o.pattern");
+		var compileCmd = common.replaceDict (this.platform.recipe[ext+'.o.pattern'], dict, null, "platform.recipe."+ext+".o.pattern");
 
 		// this.enqueueCmd ('mkdir', this.ioMkdir (this.buildFolder));
 
 		var cmdDesc = ["compile", localName + '.' + ext].join (" ");
 		this.enqueueCmd ('project', compileCmd, null, cmdDesc);
 
-		this.objectFiles.push (conf.object_file);
+		this.objectFiles.push (dict.object_file);
 
 		if (this.verbose)
 			console.log (compileCmd);
@@ -685,7 +679,7 @@ ArduinoCompiler.prototype.processIno = function (inoFile, fileMeta) {
 ArduinoCompiler.prototype.processCpp = function (cppFile, fileMeta) { // also for a c, h files
 	// read file
 
-	// TODO: create subdirs if any
+	// TODO: Arduino don't process subdirs. inverstigate need to create subdirs if any
 	var cppRelPath = path.relative (this.sketchFolder, cppFile);
 	var cppFolder = path.join (this.buildFolder, path.dirname (cppRelPath));
 	var sourceFile = path.join (this.buildFolder, cppRelPath);
@@ -773,14 +767,14 @@ ArduinoCompiler.prototype.processCpp = function (cppFile, fileMeta) { // also fo
 
 ArduinoCompiler.prototype.linkAll = function () {
 
-	var conf = this.getConfig ();
+	var dict = this.getDict ();
 
-	conf.archive_file = 'core.a';
+	dict.archive_file = 'core.a';
 
-	conf.object_files = '"' + this.objectFiles.join ("\" \"") + '"';
+	dict.object_files = '"' + this.objectFiles.join ("\" \"") + '"';
 	//		dict.put("ide_version", "" + Base.REVISION);
 
-	var linkCmd = common.replaceDict (this.platform.recipe.c.combine.pattern, conf, null, "platform.recipe.c.combine.pattern");
+	var linkCmd = common.replaceDict (this.platform.recipe['c.combine.pattern'], dict, null, "platform.recipe.c.combine.pattern");
 	this.enqueueCmd ('link', linkCmd, null, 'all together');
 
 	if (this.verbose)
@@ -789,25 +783,25 @@ ArduinoCompiler.prototype.linkAll = function () {
 }
 
 ArduinoCompiler.prototype.objCopy = function () {
-	var conf = this.getConfig ();
+	var dict = this.getDict ();
 
-	var eepCmd = common.replaceDict (this.platform.recipe.objcopy.eep.pattern, conf, null, "platform.recipe.objcopy.eep.pattern");
+	var eepCmd = common.replaceDict (this.platform.recipe['objcopy.eep.pattern'], dict, null, "platform.recipe.objcopy.eep.pattern");
 	this.enqueueCmd ('obj-eep', eepCmd, null, 'objcopy eep');
 
-	var hexCmd = common.replaceDict (this.platform.recipe.objcopy.hex.pattern, conf, null, "platform.recipe.objcopy.hex.pattern");
+	var hexCmd = common.replaceDict (this.platform.recipe['objcopy.hex.pattern'], dict, null, "platform.recipe.objcopy.hex.pattern");
 	this.enqueueCmd ('obj-hex', hexCmd, null, 'objcopy hex');
 }
 
 ArduinoCompiler.prototype.checkSize = function () {
-	var conf = this.getConfig ();
+	var dict = this.getDict ();
 
-	var sizeCmd = common.replaceDict (this.platform.recipe.size.pattern, conf, null, "platform.recipe.size.pattern");
-	var sizeRegexp = new RegExp (this.platform.recipe.size.regex.toString (), 'gm');
+	var sizeCmd = common.replaceDict (this.platform.recipe['size.pattern'], dict, null, "platform.recipe.size.pattern");
+	var sizeRegexp = new RegExp (this.platform.recipe['size.regex'], 'gm');
 	var sizeDataRegexp, sizeEepromRegexp;
-	if (this.platform.recipe.size.regex.data)
-		sizeDataRegexp = new RegExp (this.platform.recipe.size.regex.data, 'gm');
-	if (this.platform.recipe.size.regex.eeprom)
-		sizeEepromRegexp = new RegExp (this.platform.recipe.size.regex.eeprom, 'gm');
+	if (this.platform.recipe['size.regex.data'])
+		sizeDataRegexp = new RegExp (this.platform.recipe['size.regex.data'], 'gm');
+	if (this.platform.recipe['size.regex.eeprom'])
+		sizeEepromRegexp = new RegExp (this.platform.recipe['size.regex.eeprom'], 'gm');
 	this.enqueueCmd ('size', sizeCmd, (function (error, stdout, stderr) {
 		// console.log ('[size]', stdout);
 		var size = 0, sizeData = 0, sizeEeprom = 0;
@@ -826,9 +820,9 @@ ArduinoCompiler.prototype.checkSize = function () {
 
 		this.compiledSize = {
 			text: size,
-			maxText: parseInt (conf.upload.maximum_size),
+			maxText: parseInt (dict['upload.maximum_size']),
 			data: sizeData,
-			maxData: parseInt (conf.upload.maximum_data_size),
+			maxData: parseInt (dict['upload.maximum_data_size']),
 			eeprom: sizeEeprom
 		};
 
@@ -841,7 +835,7 @@ ArduinoCompiler.prototype.checkSize = function () {
 		//		console.log ('[size]', 'text', size, 'data', sizeData, 'eeprom', sizeEeprom);
 
 
-		// TODO:
+		// TODO: warn_data_percentage instabilities
 //		int warnDataPercentage = Integer.parseInt(prefs.get("build.warn_data_percentage"));
 //		if (maxDataSize > 0 && dataSize > maxDataSize*warnDataPercentage/100)
 //			System.err.println(_("Low memory available, stability problems may occur."));

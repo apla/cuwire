@@ -126,11 +126,13 @@ var Arduino = function (customRuntimeFolders, customSketchesFolder, fromScratch,
 		this.createAccessors ();
 
 		this.acceptableRuntimes = [];
+		this.acceptableVersions = [];
 
 		// let's find runtime dir
 		Object.keys (this.folders).forEach ((function (folderName) {
 			if (this.folders[folderName].runtime && this.folders[folderName].modern) {
 				this.acceptableRuntimes.push (folderName);
+				this.acceptableVersions.push (this.folders[folderName].runtime);
 			}
 		}).bind (this));
 
@@ -752,6 +754,10 @@ BoardsConf.prototype.validateModel = function (boardName, model) {
 
 function PlatformConf (data) {
 	this.initWith (data);
+
+	this.tools = this.sliceAndRemove ('tools', undefined, KeyValue).sliceByFirstChunk();
+
+	this.recipe = this.sliceAndRemove ('recipe', undefined, KeyValue);
 }
 
 util.inherits (PlatformConf, KeyValue);

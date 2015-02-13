@@ -85,7 +85,7 @@ function replaceDict (str, conf, count, meta) {
 	var replacementRe = /{(\w+\.)*\w+}/g;
 	var replacement = str.replace (replacementRe, function (match) {
 		var varPath = match.substring (1, match.length - 1);
-		var result = pathToVar (conf, varPath);
+		var result = conf[varPath];
 		if (result === undefined) {
 			throw "no interpolation found for '"+varPath + "' in '" + meta + "'"
 		} else if (result.constructor !== String && result.constructor !== Number) {
@@ -149,7 +149,7 @@ function pathWalk (dir, done, options) {
 	});
 };
 
-function createDict (arduino, platformId, boardId, boardVariant, options, currentStage) {
+function createDictOld (arduino, platformId, boardId, boardVariant, options, currentStage) {
 
 	var boardsData = arduino.boardData[platformId];
 
@@ -189,13 +189,13 @@ function createDict (arduino, platformId, boardId, boardVariant, options, curren
 		conf = extend (true, {}, platform);
 	}
 
-	var runtimeFolder = options.runtimeFolder || arduino.acceptableRuntimes[0];
+	// if we have runtimeFolder, it is accessible via arduino.acceptableRuntimes[0]
+	var runtimeFolder = arduino.acceptableRuntimes[0];
 
 	pathToVar (conf, 'runtime.ide.path', runtimeFolder);
 	// TODO: get version from mac os x bundle or from windows revisions.txt
-	pathToVar (conf, 'runtime.ide.version', "158");
+	pathToVar (conf, 'runtime.ide.version', arduino.acceptableVersions[0].replace (/\./g, ""));
 	pathToVar (conf, 'software', "ARDUINO");
-
 
 	//	Preferences.set("runtime.platform.path", platformFolder.getAbsolutePath());
 	//	Preferences.set("runtime.hardware.path", platformFolder.getParentFile().getAbsolutePath());
@@ -208,15 +208,15 @@ function createDict (arduino, platformId, boardId, boardVariant, options, curren
 
 	"upload bootloader build".split (" ").forEach (function (stageName) {
 		for (var buildK in board[stageName]) {
-//			var debugFlag = false;
-//			if (conf[stageName] && conf[stageName][buildK]){
-//				console.log ("key '"+stageName+"."+buildK+"' will be overwritten:", conf[stageName][buildK], " => ", board[stageName][buildK]);
-//				debugFlag = true;
-//			}
+			//			var debugFlag = false;
+			//			if (conf[stageName] && conf[stageName][buildK]){
+			//				console.log ("key '"+stageName+"."+buildK+"' will be overwritten:", conf[stageName][buildK], " => ", board[stageName][buildK]);
+			//				debugFlag = true;
+			//			}
 			pathToVar (conf, [stageName, buildK], board[stageName][buildK]);
-//			if (debugFlag){
-//				console.log (conf[stageName][buildK], conf[stageName][buildK].path);
-//			}
+			//			if (debugFlag){
+			//				console.log (conf[stageName][buildK], conf[stageName][buildK].path);
+			//			}
 		}
 	});
 
@@ -227,6 +227,81 @@ function createDict (arduino, platformId, boardId, boardVariant, options, curren
 	pathToVar (conf, 'build.arch', platformId.split (':')[1].toUpperCase ());
 
 	return conf;
+}
+
+function createDict (arduino, platformId, boardId, boardModel, options, currentStage) {
+
+	var dict = {};
+
+	var hwPlatform = arduino.hardware[platformId].platform;
+	var hwBoard = arduino.hardware[platformId].boards[boardId];
+
+	if (currentStage === 'upload') {
+		var toolName = hwBoard['upload.tool'];
+		var tool = hwPlatform.tools[toolName]; // arduino:avr platform.txt tools.<toolName>
+		// TODO: remove
+		pathToVar (conf, 'runtime.platform.path', arduino.hardware['folders.root']);
+		pathToVar (conf, 'runtime.hardware.path', path.dirname (arduino.hardware['folders.root']));
+		for (var toolK in tool) {
+			// TODO: better solution to get real keys
+			if (typeof tool[toolK] === 'string')
+				dict[platformK] = tool[toolK];
+		}
+	} else if (currentStage === 'build') {
+		for (var platformK in hwPlatform) {
+			// TODO: better solution to get real keys
+			if (typeof hwPlatform[platformK] === 'string')
+				dict[platformK] = hwPlatform[platformK];
+		}
+	}
+
+	for (var boardK in hwBoard) {
+		// TODO: better solution to get real keys
+		if (typeof hwBoard[boardK] === 'string')
+			dict[boardK] = hwBoard[boardK];
+	}
+
+	if (boardModel) {
+		for (var modelScope in boardModel) {
+			if (!hwBoard.models[modelScope]) {
+				// TODO: probably it is a program error, no need to say something to user
+				console.log ('brackets-arduino error:', boardId, 'doesn\'t have a', modelScope, 'models');
+				console.log ('ignored for now, can continue');
+				continue;
+			}
+			var fixup = hwBoard.models[modelScope][boardModel[modelScope]];
+			for (var modelKey in fixup) {
+				dict[modelKey] = fixup[modelKey];
+			}
+		}
+	}
+
+	// if we have runtimeFolder, it is accessible via arduino.acceptableRuntimes[0]
+	var runtimeFolder = arduino.acceptableRuntimes[0];
+
+	dict['runtime.ide.path'] = runtimeFolder;
+	// TODO: get version from mac os x bundle or from windows revisions.txt
+	dict['runtime.ide.version'] = arduino.acceptableVersions[0].replace (/\./g, "");
+	dict['software'] = "ARDUINO"; // found in RFduino
+
+	//	Preferences.set("runtime.platform.path", platformFolder.getAbsolutePath());
+	//	Preferences.set("runtime.hardware.path", platformFolder.getParentFile().getAbsolutePath());
+
+//	if (conf.compiler) {
+//		// TODO: move to if (currentStage === 'build')
+//		conf.compiler.path = replaceDict (conf.compiler.path, conf, null, "compiler.path");
+//	}
+
+	// TODO: expand cores and variants aliases here
+
+	// bad, ugly arduino config
+	// TODO: use join or path.join
+	dict['build.variant.path'] = "" + arduino.hardware['folders.root'] + '/variants/' + dict['build.variant'];
+
+	//	common.pathToVar (conf, 'build.arch', platformId.split (':')[1]);
+	dict['build.arch'] = platformId.split (':')[1].toUpperCase ();
+
+	return dict;
 }
 
 /*
