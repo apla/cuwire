@@ -26,6 +26,10 @@ int dummyIntForRfduino;
 
 // http://stackoverflow.com/questions/17723733/arduino-due-conditional-compilation-constant-for-custom-library
 
+// stellaris http://energia.nu/reference/analogreference/
+// http://forum.43oh.com/topic/2829-reference-voltage-for-analogread/
+// http://forum.stellarisiti.com/topic/684-stellaris-fast-analog-reads/
+
 void
 	setupVcc() {
 #ifdef __AVR__
