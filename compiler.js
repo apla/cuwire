@@ -422,8 +422,10 @@ ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile) {
 
 ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 	if (err) {
-		console.log (err);
-		this.error = 'core.files';
+//		console.log (err);
+//		this.error = 'core.files';
+		err.scope = 'core';
+		this.emit ('error', err);
 		return;
 	}
 
@@ -511,7 +513,9 @@ ArduinoCompiler.prototype.setSketchFile = function (srcFile, libNames) {
 ArduinoCompiler.prototype.setProjectFiles = function (err, files, dontCompile) {
 	if (err) {
 		// TODO: what errors we expects here, what's error recovery strategy?
-		console.log (err);
+//		console.log (err);
+		err.scope = 'project';
+		this.emit ('error', err);
 		return;
 	}
 
@@ -566,7 +570,8 @@ ArduinoCompiler.prototype.processIno = function (inoFile, fileMeta) {
 
 	fs.readFile (inoFile, (function (err, data) {
 		if (err) {
-			this.emit ('error', 'project', ['file read failed', inoFile, err.code].join (' '));
+			err.scope = 'project';
+			this.emit ('error', err);
 //			console.log ('read failed', err);
 			cb (err);
 			return;
@@ -666,7 +671,8 @@ ArduinoCompiler.prototype.processIno = function (inoFile, fileMeta) {
 			].join ("\n"),
 			(function (err, done) {
 				if (err) {
-					this.emit ('error', 'project', ['file write failed', projectFile, err.code].join (' '));
+					err.scope = 'project';
+					this.emit ('error', err);
 //					console.log ('cannot write to the ', inoFile);
 					return;
 				}
@@ -692,8 +698,9 @@ ArduinoCompiler.prototype.processCpp = function (cppFile, fileMeta) { // also fo
 
 	fs.readFile (cppFile, (function (err, data) {
 		if (err) {
+			err.scope = 'project';
 //			console.log ('read failed', err);
-			this.emit ('error', 'project', ['file read failed', cppFile, err.code].join (' '));
+			this.emit ('error', err);
 			cb (err);
 			return;
 		}
@@ -721,8 +728,9 @@ ArduinoCompiler.prototype.processCpp = function (cppFile, fileMeta) { // also fo
 		// TODO: something wrong: mkdirParent not working
 		mkdirParent (cppFolder, (function (err) {
 			if (err && err.code !== 'EEXIST') {
+				err.scope = 'mkdir';
 //				console.trace ('cannot create folder', cppFolder, err.code);
-				this.emit ('error', 'mkdir', ['cannot create folder', cppFolder, err.code].join (' '));
+				this.emit ('error', err);
 				return;
 			}
 			fs.writeFile (
@@ -730,7 +738,8 @@ ArduinoCompiler.prototype.processCpp = function (cppFile, fileMeta) { // also fo
 				cppContents,
 				(function (err, done) {
 					if (err) {
-						console.log ('cannot write to the ', sourceFile);
+						err.scope = 'project';
+						this.emit ('error', err);
 						return;
 					}
 					// this.setProjectFiles (null, [projectFile], true);
