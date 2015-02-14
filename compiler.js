@@ -34,8 +34,8 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardModel, options
 
 	// TODO: get from build.core.path and build.variant.path
 	this.coreIncludes = [
-		hwNode['folders.root'] + '/cores/' + dict['build.core'],
-		hwNode['folders.root'] + '/variants/' + dict['build.variant']
+		dict['build.core.path'],
+		dict['build.variant.path']
 	];
 
 	if (options.includes) {
@@ -81,11 +81,11 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardModel, options
 			nameMatch: /[^\/]+\.(c(?:pp)|h|ino|pde)?$/i
 		});
 
-		common.pathWalk (path.join (hwNode['folders.root'], 'cores', dict['build.core']), this.setCoreFiles.bind (this), {
+		common.pathWalk (dict['build.core.path'], this.setCoreFiles.bind (this), {
 			nameMatch: /[^\/]+\.c(pp)?$/i
 		});
 
-		common.pathWalk (path.join (hwNode['folders.root'], 'variants', dict['build.variant']), this.setCoreFiles.bind (this), {
+		common.pathWalk (dict['build.variant.path'], this.setCoreFiles.bind (this), {
 			nameMatch: /[^\/]+\.c(pp)?$/i
 		});
 

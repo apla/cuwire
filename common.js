@@ -292,26 +292,41 @@ function createDict (arduino, platformId, boardId, boardModel, options, currentS
 //		conf.compiler.path = replaceDict (conf.compiler.path, conf, null, "compiler.path");
 //	}
 
+
+	var arch = dict['build.arch'] = hwNode['folders.arch'];
+
 	// TODO: expand cores and variants aliases here
+	["variant", "core"].forEach (function (aliasK) {
 
-	// bad, ugly arduino config
-	// TODO: use join or path.join
-	dict['build.variant.path'] = "" + arduino.hardware['folders.root'] + '/variants/' + dict['build.variant'];
+		var folder;
+		if (aliasK === "variant") {
+			folder = "variants";
+			if (!dict['build.'+aliasK]) {
+				dict['build.'+aliasK+'.path'] = "";
+				return;
+			}
+		} else if (aliasK === "core") {
+			folder = "cores";
+		}
 
-	//	common.pathToVar (conf, 'build.arch', platformId.split (':')[1]);
-	dict['build.arch'] = hwNode['folders.root'];
+		var variantSplit = dict['build.'+aliasK].split (':');
+		if (variantSplit.length === 1) {
+			dict['build.'+aliasK+'.path'] = [hwNode['folders.root'], folder, dict['build.'+aliasK]].join ('/');
+		} else if (variantSplit.length === 2) {
+			// we have an alias
+			var aliasPlatformId = [variantSplit[0], arch].join (':');
+			var aliasHwNode = arduino.hardware[aliasPlatformId];
+			dict['build.'+aliasK+'.path'] = [aliasHwNode['folders.root'], folder, variantSplit[1]].join ('/');
+		} else {
+			// TODO: catch somewhere
+			throw "wrong configuration: 'build."+aliasK + "'="+dict['build.'+aliasK];
+		}
+
+	})
+
+	console.log (dict);
 
 	return dict;
-}
-
-
-
-
-
-
-
-
-
 }
 
 function buildFolder (sketchFolder, cb) {
