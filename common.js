@@ -281,9 +281,8 @@ function createDict (arduino, platformId, boardId, boardModel, options, currentS
 	var runtimeFolder = arduino.acceptableRuntimes[0];
 
 	dict['runtime.ide.path'] = runtimeFolder;
-	// TODO: get version from mac os x bundle or from windows revisions.txt
 	dict['runtime.ide.version'] = arduino.acceptableVersions[0].replace (/\./g, "");
-	dict['software'] = "ARDUINO"; // found in RFduino
+	dict['software'] = "ARDUINO"; // found this key in RFduino
 
 	//	Preferences.set("runtime.platform.path", platformFolder.getAbsolutePath());
 	//	Preferences.set("runtime.hardware.path", platformFolder.getParentFile().getAbsolutePath());
@@ -300,7 +299,7 @@ function createDict (arduino, platformId, boardId, boardModel, options, currentS
 	dict['build.variant.path'] = "" + arduino.hardware['folders.root'] + '/variants/' + dict['build.variant'];
 
 	//	common.pathToVar (conf, 'build.arch', platformId.split (':')[1]);
-	dict['build.arch'] = platformId.split (':')[1].toUpperCase ();
+	dict['build.arch'] = hwNode['folders.root'];
 
 	return dict;
 }

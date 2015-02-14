@@ -247,7 +247,6 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 		return;
 	}
 
-	var boards = {};
 	var keyValue = {};
 
 	data.toString ().split (/[\r\n]+/).forEach (function (line) {
@@ -261,21 +260,9 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 		var refs = ref.split('.');
 		keyValue[ref] = value;
 
-		if (refs[refs.length-1] === javaPlatformName) {
-			refs.pop ();
-			ref = refs.join ('.');
-		} else if (refs[refs.length-1] in javaToNodePlatform) {
-			return;
-		}
-
-		var root = boards;
-		if (refs.length === 4 && refs[1] === "menu") {
-			ref += "."+refs[2] + '_modification';
-		}
-		common.pathToVar (root, ref, value);
 	});
 //	console.log (Object.keys (boards));
-	cb (null, section, boards, keyValue);
+	cb (null, section, keyValue);
 }
 
 Arduino.prototype.enumerateLibraries = function (fullPath, done, libDataRef, err, data) {
@@ -457,7 +444,7 @@ Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
 				return;
 			}
 			var type = localFile.replace ('.txt', '');
-			var readCb = function (err, type, fileData, keyValue) {
+			var readCb = function (err, type, keyValue) {
 				remains --;
 				if (err) {
 					console.log ('read error for', fileName);
@@ -567,9 +554,6 @@ function createTempFile (cb) {
 
 }
 
-
-
-
 Arduino.prototype.findLib = function (platformId, libName) {
 //	console.log (this.libraryData, this.boardData[platformId].libraryData, platformId, libName);
 //	libName = libName.toLowerCase();
@@ -598,10 +582,6 @@ Arduino.prototype.parseLibNames = function (fileContents, platformId) {
 
 	}
 	return libNames;
-}
-
-Arduino.prototype.validateBoardVariant = function (platformId, boardId, variant) {
-
 }
 
 function BoardsConf (data) {
