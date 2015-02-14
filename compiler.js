@@ -305,7 +305,6 @@ function wrapInclude (includePath) {
 ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile) {
 	if (!this.libCompile)
 		this.libCompile = {};
-	// TODO: analyse source
 	var self = this;
 	if (libNames.constructor !== Array) {
 		libNames = Object.keys (libNames);
@@ -326,12 +325,15 @@ ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile) {
 	if (!libNames.length) {
 		return;
 	}
+
+	var dict = this.getDict ();
+
 //	console.log (libNames);
 	libNames.forEach ((function (libName) {
 		if (this.libCompile[libName])
 			return;
 
-		var libMeta = Arduino.findLib (this.platformId, libName);
+		var libMeta = Arduino.findLib (this.platformId, libName, dict['build.core']);
 		if (!libMeta || !libMeta.root) {
 			if (this.debug) console.log ('cannot find library', libName);
 			return;
@@ -341,7 +343,7 @@ ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile) {
 
 		// requirement by requirement not supported
 		for (var req in libMeta.requirements) {
-			var libMeta2 = Arduino.findLib (this.platformId, req);
+			var libMeta2 = Arduino.findLib (this.platformId, req, dict['build.core']);
 			if (!libMeta2 || !libMeta2.root) {
 				// console.log ('cannot find library', req);
 			} else if (!this.libCompile[req]) {
@@ -357,8 +359,6 @@ ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile) {
 	// we can compile libs, core and current sources at same time
 	// in a ideal case this is 3x speedup
 	// also, core do not need a rebuild
-
-	var dict = this.getDict ();
 
 	// console.log (Object.keys (this.libCompile));
 
@@ -557,6 +557,8 @@ ArduinoCompiler.prototype.processIno = function (inoFile, fileMeta) {
 
 	var sketchFileName = path.basename (inoFile, path.extname (inoFile));
 
+	var dict = this.getDict ();
+
 	if (fileMeta.stat.isSymbolicLink()) {
 		var ext = path.extname (inoFile).substring (1);
 		if (fileMeta.linkedTo === sketchFileName + '.cpp') {
@@ -579,7 +581,7 @@ ArduinoCompiler.prototype.processIno = function (inoFile, fileMeta) {
 		var inoContents = data.toString ();
 
 		// search for libraries
-		var libNames = Arduino.parseLibNames (inoContents, this.platformId);
+		var libNames = Arduino.parseLibNames (inoContents, this.platformId, dict['build.core']);
 		// search for a function declarations
 
 		if (libNames.length) {
@@ -695,6 +697,7 @@ ArduinoCompiler.prototype.processCpp = function (cppFile, fileMeta) { // also fo
 	var sourceFile = path.join (this.buildFolder, cppRelPath);
 	this.setSketchFile (sourceFile);
 
+	var dict = this.getDict ();
 
 	fs.readFile (cppFile, (function (err, data) {
 		if (err) {
@@ -708,7 +711,7 @@ ArduinoCompiler.prototype.processCpp = function (cppFile, fileMeta) { // also fo
 		var cppContents = data.toString ();
 
 		// search for libraries
-		var libNames = Arduino.parseLibNames (cppContents, this.platformId);
+		var libNames = Arduino.parseLibNames (cppContents, this.platformId, dict['build.core']);
 		// search for a function declarations
 
 //		if (libNames.length)

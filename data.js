@@ -240,6 +240,15 @@ function appendStandardLocations (type, locations) {
 	return locations;
 }
 
+Arduino.prototype.getAlias = function (alias, arch) {
+	if (!alias) return;
+	var aliasSplit = alias.split (':');
+	if (aliasSplit.length !== 2) {
+		return;
+	}
+	var aliasVendor = aliasSplit[0];
+	return {hw: this.hardware[[aliasVendor, arch].join (':')], key: aliasSplit[1]};
+}
 
 Arduino.prototype.parseConfig = function (cb, section, err, data) {
 	if (err) {
@@ -554,10 +563,19 @@ function createTempFile (cb) {
 
 }
 
-Arduino.prototype.findLib = function (platformId, libName) {
+Arduino.prototype.findLib = function (platformId, libName, core) {
 //	console.log (this.libraryData, this.boardData[platformId].libraryData, platformId, libName);
 //	libName = libName.toLowerCase();
-	var libMeta = this.libraryData[libName] || this.hardware[platformId].libraryData[libName];
+	var arch  = this.hardware[platformId]['folders.arch'];
+	var alias = this.getAlias (core, arch);
+	var aliasLibData = {};
+	if (alias && alias.hw && alias.hw.libraryData) {
+		aliasLibData = alias.hw.libraryData;
+	}
+	var libMeta =
+		this.libraryData[libName]
+		|| this.hardware[platformId].libraryData[libName]
+		|| aliasLibData[libName];
 //	if (!libMeta) {
 //		console.log ('can\'t find library', libName, 'in library folders (TODO: show library folder names)');
 //	}
@@ -566,7 +584,7 @@ Arduino.prototype.findLib = function (platformId, libName) {
 	return libMetaClone;
 }
 
-Arduino.prototype.parseLibNames = function (fileContents, platformId) {
+Arduino.prototype.parseLibNames = function (fileContents, platformId, core) {
 	// let's find all #includes
 	var includeRe = /^\s*#include\s+["<]([^>"]+)\.h[">]/gm;
 	var matchArray;
@@ -576,7 +594,7 @@ Arduino.prototype.parseLibNames = function (fileContents, platformId) {
 		var libName = matchArray[1];
 		if (platformId === undefined) {
 			libNames.push (libName);
-		} else if (this.findLib (platformId, libName)) {
+		} else if (this.findLib (platformId, libName, core)) {
 			libNames.push (libName);
 		}
 

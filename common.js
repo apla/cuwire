@@ -295,7 +295,6 @@ function createDict (arduino, platformId, boardId, boardModel, options, currentS
 
 	var arch = dict['build.arch'] = hwNode['folders.arch'];
 
-	// TODO: expand cores and variants aliases here
 	["variant", "core"].forEach (function (aliasK) {
 
 		var folder;
@@ -309,22 +308,14 @@ function createDict (arduino, platformId, boardId, boardModel, options, currentS
 			folder = "cores";
 		}
 
-		var variantSplit = dict['build.'+aliasK].split (':');
-		if (variantSplit.length === 1) {
+		var alias = arduino.getAlias (dict['build.'+aliasK], arch);
+
+		if (!alias) {
 			dict['build.'+aliasK+'.path'] = [hwNode['folders.root'], folder, dict['build.'+aliasK]].join ('/');
-		} else if (variantSplit.length === 2) {
-			// we have an alias
-			var aliasPlatformId = [variantSplit[0], arch].join (':');
-			var aliasHwNode = arduino.hardware[aliasPlatformId];
-			dict['build.'+aliasK+'.path'] = [aliasHwNode['folders.root'], folder, variantSplit[1]].join ('/');
 		} else {
-			// TODO: catch somewhere
-			throw "wrong configuration: 'build."+aliasK + "'="+dict['build.'+aliasK];
+			dict['build.'+aliasK+'.path'] = [alias.hw['folders.root'], folder, alias.key].join ('/');
 		}
-
-	})
-
-	console.log (dict);
+	});
 
 	return dict;
 }
