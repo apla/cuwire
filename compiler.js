@@ -24,6 +24,8 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 
 	var currentStage = 'build';
 
+	this.platformId = platformId;
+
 	var dict = common.createDict (Arduino, platformId, boardId, boardVariant, options, currentStage);
 
 	var hwNode = Arduino.hardware[platformId];
@@ -252,7 +254,7 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 					var stderrStrings = stderr.split(/\r\n|\r|\n/);
 					stderrStrings.forEach (function (stderrChunk) {
 
-						var err = stderrChunk.match (/^([^:]+)\:(\d+)\:(\d+)\:\s*error\:\s*(.*)/);
+						var err = stderrChunk.match (/^([^:]+)\:(\d+)\:(\d+)\:\s*(?:fatal\s*)?error\:\s*(.*)/);
 						if (err) {
 
 							err[1] = err[1].replace (new RegExp ('^' + error.buildFolder + '(\\' + path.sep+')?'), "");
@@ -331,7 +333,8 @@ ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile) {
 
 		var libMeta = Arduino.findLib (this.platformId, libName);
 		if (!libMeta || !libMeta.root) {
-			console.log ('cannot find library', libName);
+			if (this.debug) console.log ('cannot find library', libName);
+			return;
 		}
 
 //		console.log ('found lib', libName);
@@ -355,7 +358,7 @@ ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile) {
 	// in a ideal case this is 3x speedup
 	// also, core do not need a rebuild
 
-	var conf = this.getConfig ();
+	var dict = this.getDict ();
 
 	// console.log (Object.keys (this.libCompile));
 
@@ -392,20 +395,21 @@ ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile) {
 			var baseName  = path.basename (libSrcFile);
 			var ext       = path.extname (libSrcFile).substr (1);
 			var localName = path.basename (baseName, '.'+ext);
-			conf.source_file = path.join (libMeta.root, libSrcFile);
+			dict.source_file = path.join (libMeta.root, libSrcFile);
 			// TODO: build dir
 //			console.log (libSrcFile);
-			conf.object_file = path.join (this.buildFolder, libName, localName + '.o');
-			conf.includes    = libIncludes;
 
-			var compileCmd   = common.replaceDict (this.platform.recipe[ext].o.pattern, conf, null, "platform.recipe."+ext+".o.pattern");
+			dict.object_file = path.join (this.buildFolder, libName, localName + '.o');
+			dict.includes    = libIncludes;
+
+			var compileCmd   = common.replaceDict (this.platform.recipe[ext+'.o.pattern'], dict, null, "platform.recipe."+ext+".o.pattern");
 
 			this.enqueueCmd ('mkdir', this.ioMkdir (path.join (this.buildFolder, libName)));
 
 			var cmdDesc = ["compile", libName, libSrcFile].join (" ");
 			this.enqueueCmd ('libs', compileCmd, null, cmdDesc);
 
-			this.objectFiles.push (conf.object_file);
+			this.objectFiles.push (dict.object_file);
 
 			if (this.verbose)
 				console.log (compileCmd);
