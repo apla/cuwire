@@ -11,7 +11,7 @@ var ArduinoData = require ('./data');
 
 var Arduino;
 
-function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, options) {
+function ArduinoCompiler (sketchFolder, platformId, boardId, boardModel, options) {
 
 	// TODO: make use of instance property (instance populated on successful config read)
 	Arduino = new ArduinoData ();
@@ -26,7 +26,7 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardVariant, optio
 
 	this.platformId = platformId;
 
-	var dict = common.createDict (Arduino, platformId, boardId, boardVariant, options, currentStage);
+	var dict = common.createDict (Arduino, platformId, boardId, boardModel, options, currentStage);
 
 	var hwNode = Arduino.hardware[platformId];
 	var hwPlatform = hwNode.platform;
