@@ -153,6 +153,12 @@ Arduino.prototype.getRuntimeVersion = function (runtimeFolder, done, err, versio
 //	console.log (this.folders[runtimeFolder]);
 }
 
+var hwFileNames = "libraries|boards\\.txt|platform\\.txt|programmers\\.txt";
+var hwWalkRegexp = new RegExp ('.*\\'+path.sep+'('+hwFileNames+')$', 'i');
+
+var libFileNames = "examples|.+\\.cp{0,2}|.+\\.h";
+var libWalkRegexp = new RegExp ('.*\\'+path.sep+'('+libFileNames+')$', 'i');
+
 Arduino.prototype.processDirs = function (type, dirs) {
 
 	var self = this;
@@ -165,8 +171,19 @@ Arduino.prototype.processDirs = function (type, dirs) {
 			programmers: {}
 		};
 		fs.readFile (path.join (dir, 'lib', 'version.txt'), self.getRuntimeVersion.bind (self, path.join (dir), self.ioDone ('version', dir)));
-		fs.stat (path.join (dir, 'hardware'),  self.enumerateHardware.bind  (self, path.join (dir, 'hardware'), self.ioDone ('hardware', dir)));
-		fs.stat (path.join (dir, 'libraries'), self.enumerateLibraries.bind (self, path.join (dir, 'libraries'), self.ioDone ('libraries', dir), undefined));
+
+		var hwFolder = path.join (dir, 'hardware');
+
+		common.pathWalk (hwFolder, this.hardwareFound.bind (this, dir, this.ioDone ('hardware', dir)), {
+			nameMatch: hwWalkRegexp
+		});
+
+		var libFolder = path.join (dir, 'libraries');
+
+		common.pathWalk (libFolder, this.librariesFound.bind (this, dir, this.ioDone ('libraries', dir), undefined), {
+			nameMatch: libWalkRegexp
+		});
+
 //		if (os.platform () === 'darwin') {
 //			var runtimeDir = path.resolve (dirStr.replace (/(Resources\/)?Java/, 'Info.plist'));
 //			fs.stat (runtimeDir, self.parseMacOSXVersion.bind (self, runtimeDir, self.ioDone ('runtime', dir)));
@@ -178,7 +195,7 @@ Arduino.prototype.processDirs = function (type, dirs) {
 
 		// TODO: enumerateExamples
 		//		fs.stat (path.join (dir, 'examples'),  self.enumerateExamples.bind  (self, path.join (dir, 'examples'), self.ioDone ()));
-	});
+	}.bind (this));
 }
 
 
@@ -251,8 +268,13 @@ Arduino.prototype.getAlias = function (alias, arch) {
 }
 
 Arduino.prototype.parseConfig = function (cb, section, err, data) {
+	if (arguments.length === 1 && cb && typeof cb !== "function") {
+		data = cb;
+		cb   = undefined;
+	}
+
 	if (err) {
-		cb (err);
+		cb && cb (err);
 		return;
 	}
 
@@ -271,14 +293,78 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 
 	});
 //	console.log (Object.keys (boards));
-	cb (null, section, keyValue);
+	cb && cb (null, section, keyValue);
+
+	return keyValue;
 }
 
-Arduino.prototype.enumerateLibraries = function (fullPath, done, libDataRef, err, data) {
+Arduino.prototype.librariesFound = function (instanceFolder, done, libDataRef, err, files) {
+	if (err && !files) {
+		done ('libraries');
+		return;
+	}
 
 	if (libDataRef === undefined) {
 		libDataRef = this;
 	}
+
+	var fullPath = path.join (instanceFolder, 'libraries');
+
+	var remains = Object.keys (files).length;
+
+	Object.keys (files).forEach (function (fileName) {
+		if (fileName.match (/examples$/)) {
+			remains --;
+			// TODO: enumerateExamples
+			//fs.stat (fileName,  self.enumerateExamples.bind  (self, fileName, self.ioDone ()));
+			return;
+		}
+		var relativePath = fileName.substr (fullPath.length + 1);
+		//			console.log (relativePath.match (/[^\/]+/));
+		var libName = relativePath.match (/[^\/\\]+/)[0];
+		//			console.log ('found lib', libName);
+		var libData = libDataRef.libraryData[libName];
+
+		// TODO: user and runtime can have libraries with same name. prefer user ones
+		if (!libData) {
+			var libData = libDataRef.libraryData[libName] = {
+				files: {},
+				requirements: {}
+				// root: path.join (fullPath, libName)
+			};
+		}
+		if (relativePath.toLowerCase() === path.join (libName.toLowerCase(), libName.toLowerCase()+'.h')) {
+			// Arduino 1.0 styled lib
+			libData.root = path.join (fullPath, libName);
+			libData.include = path.join (fullPath, libName);
+		} else if (relativePath.toLowerCase() === path.join (libName.toLowerCase(), 'src', libName.toLowerCase()+'.h')) {
+			// TODO: add all arch dependent folders
+			libData.root = path.join (fullPath, libName);
+			libData.include = path.join (fullPath, libName, 'src');
+			libData.version = '1.5';
+		}
+		//			console.log ('library: relpath', relativePath, 'libname', libName, 'root', self.libraryData[libName].root);
+		var relativeSrcPath = relativePath.substr (libName.length+1);
+		libData.files[relativeSrcPath] = true;
+		var sourceContents = files[fileName].contents;
+		// TODO: hackish solution by using prototype
+		var libNames = Arduino.prototype.parseLibNames (sourceContents);
+
+		libNames.forEach (function (req) {
+			libData.requirements[req] = true;
+		});
+
+	}.bind (this));
+
+	if (this.debug) console.log ("debug libs at", fullPath, Object.keys (libDataRef.libraryData).join (', '));
+
+	done ('libraries');
+}
+
+
+Arduino.prototype.enumerateLibraries = function (fullPath, done, libDataRef, err, data) {
+
+
 
 	// stinks
 	var instanceFolder = fullPath.replace (new RegExp ('\\'+path.sep+'libraries'+'.*'), "");
@@ -302,68 +388,102 @@ Arduino.prototype.enumerateLibraries = function (fullPath, done, libDataRef, err
 	var data = {};
 
 
-	function foundMeta (err, files) {
-		if (err && !files) {
-			done ('libraries');
+}
+
+Arduino.prototype.hardwareFound = function (instanceFolder, done, err, files) {
+	if (err && !files) {
+		done ('hardware');
+		return;
+	}
+
+	var fullPath = path.join (instanceFolder, 'hardware');
+
+	// boards.txt and platform.txt is required
+	var filesToProcess = [];
+
+	Object.keys (files).some (function (fileName) {
+		var relativePath = fileName.substr (fullPath.length + 1);
+		var pathChunks = relativePath.split (path.sep);
+		var vendor     = pathChunks[0];
+		var arch       = pathChunks[1];
+		var localFile  = pathChunks[2];
+		if (pathChunks.length === 3) {
+			filesToProcess.push ({
+				vendor:    vendor,
+				arch:      arch,
+				localFile: localFile,
+				fileName:  fileName,
+				contents:  files[fileName].contents
+			});
 			return;
 		}
 
-		var remains = Object.keys (files).length;
-
-		Object.keys (files).forEach (function (fileName) {
-			if (fileName.match (/examples$/)) {
-				remains --;
-				// TODO: enumerateExamples
-				//fs.stat (fileName,  self.enumerateExamples.bind  (self, fileName, self.ioDone ()));
-				return;
-			}
-			var relativePath = fileName.substr (fullPath.length + 1);
-//			console.log (relativePath.match (/[^\/]+/));
-			var libName = relativePath.match (/[^\/\\]+/)[0];
-//			console.log ('found lib', libName);
-			var libData = libDataRef.libraryData[libName];
-
-			// TODO: user and runtime can have libraries with same name. prefer user ones
-			if (!libData) {
-				var libData = libDataRef.libraryData[libName] = {
-					files: {},
-					requirements: {}
-					// root: path.join (fullPath, libName)
-				};
-			}
-			if (relativePath.toLowerCase() === path.join (libName.toLowerCase(), libName.toLowerCase()+'.h')) {
-				// Arduino 1.0 styled lib
-				libData.root = path.join (fullPath, libName);
-				libData.include = path.join (fullPath, libName);
-			} else if (relativePath.toLowerCase() === path.join (libName.toLowerCase(), 'src', libName.toLowerCase()+'.h')) {
-				// TODO: add all arch dependent folders
-				libData.root = path.join (fullPath, libName);
-				libData.include = path.join (fullPath, libName, 'src');
-				libData.version = '1.5';
-			}
-//			console.log ('library: relpath', relativePath, 'libname', libName, 'root', self.libraryData[libName].root);
-			var relativeSrcPath = relativePath.substr (libName.length+1);
-			libData.files[relativeSrcPath] = true;
-			fs.readFile (fileName, function (err, data) {
-				remains --;
-
-				// TODO: hackish solution by using prototype
-				var libNames = Arduino.prototype.parseLibNames (data);
-
-				libNames.forEach (function (req) {
-					libData.requirements[req] = true;
-				});
-
-				if (remains === 0) {
-					if (self.debug) console.log ("debug libs at", fullPath, Object.keys (libDataRef.libraryData).join (', '));
-					done ('libraries');
-				}
-			});
-		});
-		if (remains === 0) {
-			done ('libraries');
+		// Arduino 1.0.x have no arch directory
+		// so every file is located under arduino subfolder
+		if (vendor === 'arduino' && pathChunks.length === 2) {
+			console.log ('found Arduino 1.0.x file:', fullPath, relativePath);
+			filesToProcess = [];
+			done ('hardware');
+			return true;
 		}
-	}
+	});
+
+	//		console.log (Object.keys (files).join ("\n"));
+	filesToProcess.forEach (function (fileMeta) {
+		var localFile = fileMeta.localFile;
+		var vendor    = fileMeta.vendor;
+		var arch      = fileMeta.arch;
+		var fileName  = fileMeta.fileName;
+
+		var platformId = [vendor, arch].join (':');
+		if (!this.hardware[platformId])
+			this.hardware[platformId] = new KeyValue ({
+				"folders.root": path.join (fullPath, vendor, arch),
+				"folders.arch": arch,
+				"folders.vendor": vendor,
+				libraryData: {}
+			});
+
+		if (localFile === 'libraries') {
+			var parentDir = path.dirname (fileName);
+
+			common.pathWalk (fileName, this.librariesFound.bind (this, parentDir, this.ioDone ('libraries', parentDir), this.hardware[platformId]), {
+				nameMatch: libWalkRegexp
+			});
+
+			return;
+		}
+		var type = localFile.replace ('.txt', '');
+
+		var keyValue = this.parseConfig (fileMeta.contents);
+
+		var data;
+		if (type === "boards") {
+			data = new BoardsConf (keyValue);
+		} else if (type === "platform") {
+			data = new PlatformConf (keyValue);
+		} else {
+			// TODO: no special processing for programmers.txt at this time
+			data = new KeyValue (keyValue);
+		}
+		this.hardware[platformId][type]  = data;
+
+		this.folders[instanceFolder][type][vendor+":"+arch] = true;
+
+		var currentHw = this.hardware[platformId][type];
+
+		if (type === 'platform') {
+			currentHw["build.system.path"] =
+				path.join (fullPath, vendor, arch, 'system');
+			currentHw["runtime.platform.path"] =
+				path.join (fullPath, vendor, arch);
+			currentHw["runtime.hardware.path"] =
+				path.join (fullPath, vendor);
+		}
+
+	}.bind (this));
+
+	done ('hardware');
 }
 
 Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
@@ -390,115 +510,7 @@ Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
 
 	var remains = 0;
 
-	function foundMeta (err, files) {
-		if (err && !files) {
-			done ('hardware');
-			return;
-		}
 
-		// boards.txt and platform.txt is required
-		var filesToProcess = [];
-
-		Object.keys (files).some (function (fileName) {
-			var relativePath = fileName.substr (fullPath.length + 1);
-			var pathChunks = relativePath.split (path.sep);
-			var vendor     = pathChunks[0];
-			var arch       = pathChunks[1];
-			var localFile  = pathChunks[2];
-			if (pathChunks.length === 3) {
-				filesToProcess.push ({
-					vendor:    vendor,
-					arch:      arch,
-					localFile: localFile,
-					fileName:  fileName
-				});
-				return;
-			}
-
-			// Arduino 1.0.x have no arch directory
-			// so every file is located under arduino subfolder
-			if (vendor === 'arduino' && pathChunks.length === 2) {
-				console.log ('found Arduino 1.0.x file:', fullPath, relativePath);
-				filesToProcess = [];
-				done ('hardware');
-				return true;
-			}
-		});
-
-//		console.log (Object.keys (files).join ("\n"));
-		filesToProcess.forEach (function (fileMeta) {
-			var localFile = fileMeta.localFile;
-			var vendor    = fileMeta.vendor;
-			var arch      = fileMeta.arch;
-			var fileName  = fileMeta.fileName;
-
-			var platformId = [vendor, arch].join (':');
-			if (!self.hardware[platformId])
-				self.hardware[platformId] = new KeyValue ({
-					"folders.root": path.join (fullPath, vendor, arch),
-					"folders.arch": arch,
-					"folders.vendor": vendor,
-					libraryData: {}
-				});
-
-			if (localFile === 'libraries') {
-				// TODO: little hackish
-				// TODO: self.hardware...libraryData not populated
-				fs.stat (fileName,  self.enumerateLibraries.bind  (
-					self,
-					fileName,
-					self.ioDone ('libraries', fileName),
-					self.hardware[platformId]
-				));
-				return;
-			}
-			var type = localFile.replace ('.txt', '');
-			var readCb = function (err, type, keyValue) {
-				remains --;
-				if (err) {
-					console.log ('read error for', fileName);
-					return;
-				}
-
-				var data;
-				if (type === "boards") {
-					data = new BoardsConf (keyValue);
-				} else if (type === "platform") {
-					data = new PlatformConf (keyValue);
-				} else {
-					// TODO: no special processing for programmers.txt at this time
-					data = new KeyValue (keyValue);
-				}
-				self.hardware[platformId][type]  = data;
-
-				self.folders[instanceFolder][type][vendor+":"+arch] = true;
-
-				var currentHw = self.hardware[platformId][type];
-
-				if (type === 'platform') {
-					currentHw["build.system.path"] =
-						path.join (fullPath, vendor, arch, 'system');
-					currentHw["build.core.path"] =
-						path.join (fullPath, vendor, arch, 'cores');
-					currentHw["build.variant.path"] =
-						path.join (fullPath, vendor, arch, 'variants');
-					currentHw["runtime.platform.path"] =
-						path.join (fullPath, vendor, arch);
-					currentHw["runtime.hardware.path"] =
-						path.join (fullPath, vendor);
-				}
-
-				if (remains)
-					return;
-				// self.boardData = data;
-				done ('hardware');
-				//					arduinoBoardsDone (cb, data);
-			};
-			fs.readFile (fileName, self.parseConfig.bind (self, readCb, type));
-			remains ++;
-
-		});
-	}
 }
 
 

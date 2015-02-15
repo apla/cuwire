@@ -140,6 +140,12 @@ function pathWalk (dir, done, options) {
 							if (!--pending) done(null, results);
 						});
 						return;
+					} else if (stat.isFile()) {
+						fs.readFile (file, function (err, contents) {
+							if (!err) results[file].contents = contents;
+							if (!--pending) done(null, results);
+						});
+						return;
 					}
 				}
 				if (!--pending) done(null, results);
