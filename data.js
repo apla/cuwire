@@ -714,7 +714,13 @@ Arduino.prototype.createAccessors = function () {
 			var usbIdIdx = 0;
 			while (boardConfig["vid."+usbIdIdx]) {
 				var usbPair = [boardConfig["vid."+usbIdIdx], boardConfig["pid."+usbIdIdx]].join (':');
-				boardUSBMatch[usbPair] = boardDesc;
+				if (boardUSBMatch[usbPair]) {
+					boardUSBMatch[usbPair].alt[boardId] = boardDesc;
+				} else {
+					boardUSBMatch[usbPair] = boardDesc;
+					boardUSBMatch[usbPair].alt = {};
+				}
+
 				usbIdIdx ++;
 			}
 		}

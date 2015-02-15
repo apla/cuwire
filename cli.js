@@ -266,7 +266,7 @@ ArduinoCli.prototype.showPorts = function (options, cb) {
 				port.serialNumber ? '#' + port.serialNumber : '',
 				paint.yellow (port.manufacturer)
 			];
-			if (matchBoard && deviceId === options.board.board) {
+			if (matchBoard && (options.board.board === deviceId || (usbMatch[usbPair] && usbMatch[usbPair].alt[options.board.board]))) {
 				if (options.port) {
 					console.error (paint.cuwire (), paint.error ('you must provide serial port name'));
 					process.exit(2);
@@ -443,6 +443,22 @@ ArduinoCli.prototype.upload = function (options, cb) {
 			verbose: options.verbose
 		}
 	);
+
+	uploader.on ('log', function (scope, message) {
+		console.log (paint.yellow (scope) + "\t", message.match (/^done/) ? paint.green (message) : message);
+	});
+
+	uploader.on ('error', function (error, message) {
+		if (error.files && error.files.length) {
+			console.log (paint.cuwire(), 'compilation failed:')
+			error.files.forEach (function (fileDesc) {
+				console.log ('error in', paint.path (fileDesc[1])+(['',fileDesc[2], fileDesc[3]].join(':')), paint.error (fileDesc[4]));
+			});
+			console.log (paint.yellow ('command'), error.cmd)
+			return;
+		}
+		console.log (paint.error (error) + "\t", message);
+	});
 
 	uploader.on ('done', console.log.bind (console, paint.yellow ('upload'), paint.green ('done')));
 }
