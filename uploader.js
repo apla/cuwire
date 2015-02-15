@@ -9,6 +9,8 @@ var EventEmitter = require ('events').EventEmitter;
 var common  = require ('./common');
 var ArduinoData = require ('./data');
 
+var serial = require ('./serial');
+
 var sp;
 
 var Arduino;
@@ -91,40 +93,18 @@ ArduinoUploader.prototype.prepareCmd = function (tool) {
 }
 
 ArduinoUploader.prototype.danceSerial1200 = function (tool, cb) {
-	var timeout = 400;
-	// taken from electon ide
-	sp.list (function (err, list1) {
-		console.log("list 1 is ",list1);
-		//open port at 1200 baud
-		var port = new sp.SerialPort (tool.serial.port, { baudrate: 1200 });
-		port.on ('open', function() {
-			console.log ("opened at 1200bd");
-			//close port
-			port.flush (function () {
-				port.close (function () {
-					console.log ("did a successful close");
-					console.log ("closed at 1200bd");
-					//wait 300ms
-					if (tool['upload.wait_for_upload_port']) {
-						setTimeout (function() {
-							console.log ("doing a second list");
-							//scan for ports again
-							scanForPortReturn (list1, function(ppath) {
-								console.log("got new path",ppath);
+	var port = new serial ({port: tool["serial.port"]});
 
-								cb();
-							})
-						}, timeout);
-					} else {
-						cb ();
-					}
-				})
-			});
+	var waitForPort = tool['upload.wait_for_upload_port'] ? true : false;
 
-		});
-
-	});
-
+	port.danceSerial1200 (waitForPort, function (err) {
+		if (err) {
+			this.emit ('error', 'upload', err);
+			return;
+		}
+		this.emit ('log', 'upload', "dance done");
+		cb ();
+	}.bind (this));
 }
 
 ArduinoUploader.prototype.runCmd = function (cmd, tool) {

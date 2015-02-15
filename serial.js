@@ -11,7 +11,7 @@ function CuwireSerial (options) {
 
 	options = options || {};
 
-	this.port     = options.port;
+	this.portName = options.port;
 	this.baudrate = options.baudrate;
 
 }
@@ -83,16 +83,22 @@ CuwireSerial.prototype.send = function (message) {
 
 CuwireSerial.prototype.onOpen = function (sp, cb) {
 	this.port = sp;
-	cb && cb ();
+	cb && cb (null, sp);
 }
 
 // I don't want to rely on message passing via events for high volume of data
 CuwireSerial.prototype.open = function (port, baudrate, cb) {
 
 	if (arguments.length === 1 && typeof port === "function") {
-		receiver = port;
-		port     = this.port;
+		cb       = port;
+		port     = this.portName;
 		baudrate = this.baudrate;
+
+	} else if (arguments.length === 2 && typeof baudrate === "function") {
+		cb       = baudrate;
+		baudrate = port;
+		port     = this.portName;
+
 	}
 
 	var sp = new SerialPort (port, {
@@ -101,22 +107,67 @@ CuwireSerial.prototype.open = function (port, baudrate, cb) {
 
 	sp.on ("open", this.onOpen.bind (this, sp, cb));
 
-	sp.on ('error', (function(err){
+	sp.on ('error', (function (err) {
 		this.emit ('error', scope, err);
-		this.onError
-			? this.onError (sp, cb, err)
-			: cb && cb (err);
+		this.onError && this.onError (sp, cb, err);
 		// process.exit(2);
 	}).bind (this));
 
-	sp.on ('close', (function(err){
+	sp.on ('close', (function (err) {
 		this.emit ('close', scope, err);
-		this.onClose
-			? this.onClose (sp, cb, err)
-			: cb && cb (err);
+		this.onClose && this.onClose (sp, cb, err);
 		// process.exit(2);
 	}).bind (this));
 
+}
+
+CuwireSerial.waitForPortReturn = function (portName, cb, depth) {
+	var timeout = 500;
+	// pro micro will wait for a 8 seconds
+	// if we can't get port within approximately 15 retries (reboot + 6sec)
+	// probably something wrong
+
+	if (depth > 15) {
+		cb (new Error ("port not found"));
+	}
+
+	setTimeout (function() {
+		function portFound (port) {
+			if (port.comName === portName)
+				return true;
+		}
+		CuwireSerial.list (function (err, ports) {
+			if (ports.some (portFound)) {
+				cb && cb (null);
+			} else {
+				CuwireSerial.waitForPortReturn (portName, cb, depth ? depth : 1);
+			}
+		});
+	}, timeout);
+}
+
+CuwireSerial.prototype.danceSerial1200 = function (waitForPortReturn, cb) {
+
+	var portName = this.portName;
+
+	this.open (1200, function (err, port) {
+		if (err) {
+			cb && cb (new Error ("cannot open port"));
+			return;
+		}
+		port.flush (function () {
+			port.close (function (err) {
+				if (err) {
+					console.log ("port close error:", err);
+				}
+				if (waitForPortReturn) {
+					CuwireSerial.waitForPortReturn (portName, cb);
+				} else {
+					cb && cb (null);
+				}
+			});
+		});
+	});
 }
 
 CuwireSerial.prototype.close = function (cb) {
