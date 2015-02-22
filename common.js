@@ -108,6 +108,8 @@ function FileWithStat (path, stat) {
 }
 
 function pathWalk (dir, done, options) {
+	options = options || {};
+
 	var results = {};
 	fs.readdir(dir, function(err, list) {
 		if (err) return done(err);
@@ -140,9 +142,15 @@ function pathWalk (dir, done, options) {
 							if (!--pending) done(null, results);
 						});
 						return;
-					} else if (stat.isFile()) {
+					} else if (stat.isFile() && (options.readFiles || options.dataFilter)) {
 						fs.readFile (file, function (err, contents) {
-							if (!err) results[file].contents = contents;
+							if (!err) {
+								if (options.dataFilter) {
+									results[file].filteredData = options.dataFilter (contents);
+								} else {
+									results[file].contents = contents;
+								}
+							}
 							if (!--pending) done(null, results);
 						});
 						return;

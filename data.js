@@ -175,13 +175,15 @@ Arduino.prototype.processDirs = function (type, dirs) {
 		var hwFolder = path.join (dir, 'hardware');
 
 		common.pathWalk (hwFolder, this.hardwareFound.bind (this, dir, this.ioDone ('hardware', dir)), {
-			nameMatch: hwWalkRegexp
+			nameMatch: hwWalkRegexp,
+			readFiles: true
 		});
 
 		var libFolder = path.join (dir, 'libraries');
 
 		common.pathWalk (libFolder, this.librariesFound.bind (this, dir, this.ioDone ('libraries', dir), undefined), {
-			nameMatch: libWalkRegexp
+			nameMatch:  libWalkRegexp,
+			dataFilter: this.parseLibNames.bind (this)
 		});
 
 //		if (os.platform () === 'darwin') {
@@ -298,14 +300,14 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 	return keyValue;
 }
 
-Arduino.prototype.librariesFound = function (instanceFolder, done, libDataRef, err, files) {
+Arduino.prototype.librariesFound = function (instanceFolder, done, hwRef, err, files) {
 	if (err && !files) {
 		done ('libraries');
 		return;
 	}
 
-	if (libDataRef === undefined) {
-		libDataRef = this;
+	if (hwRef === undefined) {
+		hwRef = this;
 	}
 
 	var fullPath = path.join (instanceFolder, 'libraries');
@@ -323,11 +325,11 @@ Arduino.prototype.librariesFound = function (instanceFolder, done, libDataRef, e
 		//			console.log (relativePath.match (/[^\/]+/));
 		var libName = relativePath.match (/[^\/\\]+/)[0];
 		//			console.log ('found lib', libName);
-		var libData = libDataRef.libraryData[libName];
+		var libData = hwRef.libraryData[libName];
 
 		// TODO: user and runtime can have libraries with same name. prefer user ones
 		if (!libData) {
-			var libData = libDataRef.libraryData[libName] = {
+			var libData = hwRef.libraryData[libName] = {
 				files: {},
 				requirements: {}
 				// root: path.join (fullPath, libName)
@@ -346,9 +348,7 @@ Arduino.prototype.librariesFound = function (instanceFolder, done, libDataRef, e
 		//			console.log ('library: relpath', relativePath, 'libname', libName, 'root', self.libraryData[libName].root);
 		var relativeSrcPath = relativePath.substr (libName.length+1);
 		libData.files[relativeSrcPath] = true;
-		var sourceContents = files[fileName].contents;
-		// TODO: hackish solution by using prototype
-		var libNames = Arduino.prototype.parseLibNames (sourceContents);
+		var libNames = files[fileName].filteredData || [];
 
 		libNames.forEach (function (req) {
 			libData.requirements[req] = true;
@@ -356,7 +356,7 @@ Arduino.prototype.librariesFound = function (instanceFolder, done, libDataRef, e
 
 	}.bind (this));
 
-	if (this.debug) console.log ("debug libs at", fullPath, Object.keys (libDataRef.libraryData).join (', '));
+	if (this.debug) console.log ("debug libs at", fullPath, Object.keys (hwRef.libraryData).join (', '));
 
 	done ('libraries');
 }
@@ -448,11 +448,13 @@ Arduino.prototype.hardwareFound = function (instanceFolder, done, err, files) {
 			var parentDir = path.dirname (fileName);
 
 			common.pathWalk (fileName, this.librariesFound.bind (this, parentDir, this.ioDone ('libraries', parentDir), this.hardware[platformId]), {
-				nameMatch: libWalkRegexp
+				nameMatch: libWalkRegexp,
+				dataFilter: this.parseLibNames.bind (this)
 			});
 
 			return;
 		}
+
 		var type = localFile.replace ('.txt', '');
 
 		var keyValue = this.parseConfig (fileMeta.contents);
@@ -553,7 +555,7 @@ Arduino.prototype.loadLibraryData = function () {
 			return;
 		}
 		try {
-			this.boardData = JSON.parse (data.toString());
+			this.libraryData = JSON.parse (data.toString());
 		} catch (e) {
 			this.emit ('error', e);
 		}
