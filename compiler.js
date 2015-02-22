@@ -246,18 +246,25 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 				// console.log('stdout: ' + stdout);
 				// console.log('stderr: ' + stderr);
 				if (error !== null) {
-//					ArduinoVoltage.ino:134:2: error: 'XXX' was not declared in this scope
-//					ArduinoVoltage.ino:135:1: error: expected ';' before '}' token
+// compiler error
+//ArduinoVoltage.ino:134:2: error: 'XXX' was not declared in this scope
+//ArduinoVoltage.ino:135:1: error: expected ';' before '}' token
+// linker error
+//Error: Command failed: /var/folders/r4/d4l8c_ts4rsdc670pdkbtr0m0000gp/T/PlatformInfo-cuwire-5f1e22f1/PlatformInfo.o: In function `setup':
+///Users/apla/tmp/PlatformInfo.ino:29: undefined reference to `setupVcc()'
+///var/folders/r4/d4l8c_ts4rsdc670pdkbtr0m0000gp/T/PlatformInfo-cuwire-5f1e22f1/PlatformInfo.o: In function `loop':
+///Users/apla/tmp/PlatformInfo.ino:56: undefined reference to `readVcc()'
 					error.files = [];
 					error.sketchFolder = this.sketchFolder;
 					error.buildFolder  = this.buildFolder;
 					var stderrStrings = stderr.split(/\r\n|\r|\n/);
 					stderrStrings.forEach (function (stderrChunk) {
 
-						var err = stderrChunk.match (/^([^:]+)\:(\d+)\:(\d+)\:\s*(?:fatal\s*)?error\:\s*(.*)/);
+						var err = stderrChunk.match (/^([^:]+)\:(\d+)\:(?:(\d+)\:)?\s*(.*)/);
 						if (err) {
 
 							err[1] = err[1].replace (new RegExp ('^' + error.buildFolder + '(\\' + path.sep+')?'), "");
+							err[1] = err[1].replace (/^\/+/, "");
 							error.files.push (err);
 //							console.log ('found error:', err[4], 'at', err[1], err[2], err[3]);
 						}
