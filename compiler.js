@@ -78,15 +78,15 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardModel, options
 		}
 
 		common.pathWalk (sketchFolder, this.setProjectFiles.bind (this), {
-			nameMatch: /[^\/]+\.(c(?:pp)|h|ino|pde)?$/i
+			nameMatch: /[^\/]+\.(c|cpp|h|hpp|ino|pde)?$/i
 		});
 
 		common.pathWalk (dict['build.core.path'], this.setCoreFiles.bind (this), {
-			nameMatch: /[^\/]+\.c(pp)?$/i
+			nameMatch: /[^\/]+\.(c|cpp)$/i
 		});
 
 		common.pathWalk (dict['build.variant.path'], this.setCoreFiles.bind (this), {
-			nameMatch: /[^\/]+\.c(pp)?$/i
+			nameMatch: /[^\/]+\.(c|cpp)$/i
 		});
 
 	}).bind (this));
@@ -528,7 +528,7 @@ ArduinoCompiler.prototype.setProjectFiles = function (err, files, dontCompile) {
 	Object.keys (files).forEach ((function (fileName) {
 		var fileObject = files[fileName];
 		var extname = path.extname (fileName).substring (1);
-		if (extname.match (/^(c|cpp|h|ino|pde)$/)) {
+		if (extname.match (/^(c|cpp|h|hpp|ino|pde)$/)) {
 			this.filePreProcessor (fileName, files[fileName]);
 		}
 
@@ -547,7 +547,7 @@ ArduinoCompiler.prototype.filePreProcessor = function (fileName, fileMeta) {
 
 	if (extname === 'ino' || extname === 'pde') {
 		this.processIno (fileName, fileMeta);
-	} else if (extname.match (/c(?:pp)?|h/)) {
+	} else if (extname.match (/c(?:pp)?|h(?:pp)/)) {
 		this.processCpp (fileName, fileMeta);
 	}
 }
