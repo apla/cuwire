@@ -565,7 +565,7 @@ Arduino.prototype.loadLibraryData = function () {
 function createTempFile (cb) {
 
 	var crypto = require('crypto');
-	var fileName = path.join (os.tmpdir (), 'me.apla.arduino.'+crypto.randomBytes(4).readUInt32LE(0));
+	var fileName = path.join (os.tmpdir (), 'me.apla.cuwire.'+crypto.randomBytes(4).readUInt32LE(0));
 
 	fs.mkdir (fileName, function (err) {
 		// TODO: make something on error
