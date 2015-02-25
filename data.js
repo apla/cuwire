@@ -253,7 +253,11 @@ function appendStandardLocations (type, locations) {
 
 	// TODO: read preference file ~/Library/Arduino15/preferences.txt
 	// TODO: read preference file ~/.arduino/preferences.txt
-	locations.push (path.join (getUserHome(), "Documents", "Arduino"));
+	var userSketchDir = path.join (getUserHome(), "Documents", "Arduino");
+	if (os.platform() === 'linux') {
+		userSketchDir = path.join (getUserHome(), "Arduino");
+	}
+	locations.push (userSketchDir);
 
 //	console.log ('search for sketches within:', locations.join (", "));
 	return locations;
