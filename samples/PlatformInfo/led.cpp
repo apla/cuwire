@@ -71,12 +71,8 @@ void setupLed () {
 	#endif
 }
 
-byte brightness = 0;    // how bright the LED is
-byte fadeAmount = 5;    // how many points to fade the LED by
-
-uint8_t COLOR_VAL[3] = {50, 0, 0};
+uint8_t COLOR_VAL[3] = {100, 0, 0};
 uint8_t amount = 1;
-uint32_t colorDelay = 30;
 
 void changeColor() {
 
@@ -116,13 +112,21 @@ void changeColor() {
 			COLOR_VAL[1] -= amount;
 		}
 
+		#if defined(__MSP430_CPU__)
+		// msp430 launchpad have only digitalWrite on RED_LED
+		analogWrite(LED_1, COLOR_VAL[0]+120);
+		#else
 		analogWrite(LED_1, COLOR_VAL[0]);
+		#endif
 		analogWrite(LED_2, COLOR_VAL[1]);
 
 	#endif
 
 }
 
+byte brightness = 0;    // how bright the LED is
+byte fadeAmount = 5;    // how many points to fade the LED by
+uint32_t colorDelay = 15;
 
 
 void startLed () {
@@ -144,7 +148,7 @@ void startLed () {
 	// ti stellaris launchpad
 	// look into qs_rgb example in stellarisware
 
-	FlexiTimer2::set(1, 1000.0/colorDelay, changeColor);
+	FlexiTimer2::set(1, 0.001*colorDelay, changeColor);
 	FlexiTimer2::start();
 
 	#endif

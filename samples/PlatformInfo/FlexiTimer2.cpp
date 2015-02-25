@@ -170,7 +170,7 @@ void FlexiTimer2::set(unsigned long units, double resolution, void (*f)()) {
 	// http://homepages.ius.edu/RWISMAN/C335/HTML/msp430Timer.HTM
 	// we using 12kHz clock
 	// check 16bit overflow
-	TA1CCR0 = resolution*12000;     // Count limit (16 bit)
+	tcnt2 = resolution*12000;     // Count limit (16 bit)
 	return;
 	#elif defined(__TIVA__)
 	ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
@@ -251,6 +251,7 @@ void FlexiTimer2::start() {
 	TA1CTL = TASSEL_1 + MC_1;        // Timer A1 with ACLK, count UP
 
 	TA1CCTL0 = 0x10;                 // Enable Timer A1 interrupts, bit 4=1
+	TA1CCR0 = tcnt2;
 
 	_BIS_SR(LPM0_bits + GIE);        // LPM0 (low power mode) interrupts enabled
 	#elif defined(__TIVA__)
