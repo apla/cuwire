@@ -291,10 +291,7 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 		if (line.length === 0) return;
 		// console.log (line);
 		var ref = line.substring (0, line.indexOf ('='));
-		// TODO: menu handling
-		if (ref.match (/^menu/)) return;
 		var value = line.substring (line.indexOf ('=')+1);
-		var refs = ref.split('.');
 		keyValue[ref] = value;
 
 	});
