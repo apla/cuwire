@@ -462,9 +462,9 @@ Arduino.prototype.hardwareFound = function (instanceFolder, done, err, files) {
 
 		var data;
 		if (type === "boards") {
-			data = new BoardsConf (keyValue);
+			data = new BoardsConf (keyValue, vendor, arch);
 		} else if (type === "platform") {
-			data = new PlatformConf (keyValue);
+			data = new PlatformConf (keyValue, vendor, arch);
 		} else {
 			// TODO: no special processing for programmers.txt at this time
 			data = new KeyValue (keyValue);
@@ -617,7 +617,7 @@ Arduino.prototype.parseLibNames = function (fileContents, platformId, core) {
 	return libNames;
 }
 
-function BoardsConf (data) {
+function BoardsConf (data, vendor, arch) {
 	var dataKV = new KeyValue (data);
 	var modelMenus = dataKV.sliceAndRemove ('menu') || {};
 	var grouped = dataKV.sliceByFirstChunk ();
@@ -636,6 +636,15 @@ function BoardsConf (data) {
 			this[boardId].models = model;
 			this[boardId].menuNames = modelMenus;
 		}
+
+		if (!this[boardId]["build.board"]) {
+			this[boardId]["build.board"] = [arch, boardId].join ('_').toUpperCase();
+			console.log (
+				"board %s:%s:%s doesn't define a 'build.board' preference. auto-set to %s",
+				vendor, arch, boardId, this[boardId]["build.board"]
+			);
+		}
+
 		if (boardId !== boardId.toLowerCase())
 			Object.defineProperty(this, boardId.toLowerCase(), {
 				value: this[boardId]
