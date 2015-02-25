@@ -617,7 +617,9 @@ Arduino.prototype.parseLibNames = function (fileContents, platformId, core) {
 }
 
 function BoardsConf (data) {
-	var grouped = new KeyValue (data).sliceByFirstChunk ();
+	var dataKV = new KeyValue (data);
+	var modelMenus = dataKV.sliceAndRemove ('menu') || {};
+	var grouped = dataKV.sliceByFirstChunk ();
 
 	for (var boardId in grouped) {
 		if (!grouped.hasOwnProperty(boardId)) {
@@ -629,8 +631,10 @@ function BoardsConf (data) {
 		for (var menuSection in menus) {
 			model[menuSection] = menus[menuSection].sliceByFirstChunk();
 		}
-		if (Object.keys (model).length)
+		if (Object.keys (model).length) {
 			this[boardId].models = model;
+			this[boardId].menuNames = modelMenus;
+		}
 		if (boardId !== boardId.toLowerCase())
 			Object.defineProperty(this, boardId.toLowerCase(), {
 				value: this[boardId]
