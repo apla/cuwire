@@ -1,0 +1,2 @@
+void setupLed ();
+void startLed ();
