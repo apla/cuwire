@@ -565,7 +565,7 @@ ArduinoCompiler.prototype.filePreProcessor = function (fileName, fileMeta) {
 
 	if (extname === 'ino' || extname === 'pde') {
 		this.processIno (fileName, fileMeta);
-	} else if (extname.match (/c(?:pp)?|h(?:pp)/)) {
+	} else if (extname.match (/c|cpp|h|hpp/)) {
 		this.processCpp (fileName, fileMeta);
 	}
 }
