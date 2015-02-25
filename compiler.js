@@ -72,10 +72,21 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardModel, options
 	this.platform = hwPlatform;
 
 	fs.mkdir (this.buildFolder, (function (err) {
-		if (err && err.code !== "EEXIST") {
-			this.emit ('error', 'cannot create build folder '+this.buildFolder+': '+err.code+', '+err);
-			return;
+		if (err) {
+			if (err.code !== "EEXIST") {
+				this.emit ('error', 'cannot create build folder '+this.buildFolder+': '+err.code+', '+err);
+				return;
+			}
+			// TODO: fix that weird way to resolve linker issue after board arch is changed
+			fs.unlink (path.join (this.buildFolder, 'core.a'), function (err) {
+				// I don't care
+			});
 		}
+
+		// now we store buildprefs.txt
+		fs.writeFile (path.join (this.buildFolder, 'buildprefs.txt'), Object.keys (dict).map (function (dictK) {
+			return dictK + ' = ' + dict[dictK];
+		}).join ("\n"));
 
 		common.pathWalk (sketchFolder, this.setProjectFiles.bind (this), {
 			nameMatch: /[^\/]+\.(c|cpp|h|hpp|ino|pde)?$/i
