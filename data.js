@@ -656,10 +656,11 @@ function BoardsConf (data, vendor, arch) {
 
 		if (!this[boardId]["build.board"]) {
 			this[boardId]["build.board"] = [arch, boardId].join ('_').toUpperCase();
-			console.log (
-				"board %s:%s:%s doesn't define a 'build.board' preference. auto-set to %s",
-				vendor, arch, boardId, this[boardId]["build.board"]
-			);
+			if (this.verbose)
+				console.log (
+					"board %s:%s:%s doesn't define a 'build.board' preference. auto-set to %s",
+					vendor, arch, boardId, this[boardId]["build.board"]
+				);
 		}
 
 		if (boardId !== boardId.toLowerCase())
