@@ -89,15 +89,15 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardModel, options
 		}).join ("\n"));
 
 		common.pathWalk (sketchFolder, this.setProjectFiles.bind (this), {
-			nameMatch: /[^\/]+\.(c|cpp|h|hpp|ino|pde)?$/i
+			nameMatch: /[^\/]+\.(c|cpp|h|hpp|S|ino|pde)?$/i
 		});
 
 		common.pathWalk (dict['build.core.path'], this.setCoreFiles.bind (this), {
-			nameMatch: /[^\/]+\.(c|cpp)$/i
+			nameMatch: /[^\/]+\.(c|cpp|S)$/i
 		});
 
 		common.pathWalk (dict['build.variant.path'], this.setCoreFiles.bind (this), {
-			nameMatch: /[^\/]+\.(c|cpp)$/i
+			nameMatch: /[^\/]+\.(c|cpp|S)$/i
 		});
 
 	}).bind (this));
@@ -408,7 +408,7 @@ ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile) {
 //		console.log (libIncludes);
 
 		for (var libSrcFile in libMeta.files) {
-			if (!libSrcFile.match (/\.c(pp)?$/))
+			if (!libSrcFile.match (/\.(c|cpp|S)?$/))
 				continue;
 			var baseName  = path.basename (libSrcFile);
 			var ext       = path.extname (libSrcFile).substr (1);
@@ -546,7 +546,7 @@ ArduinoCompiler.prototype.setProjectFiles = function (err, files, dontCompile) {
 	Object.keys (files).forEach ((function (fileName) {
 		var fileObject = files[fileName];
 		var extname = path.extname (fileName).substring (1);
-		if (extname.match (/^(c|cpp|h|hpp|ino|pde)$/)) {
+		if (extname.match (/^(c|cpp|h|hpp|S|ino|pde)$/)) {
 			this.filePreProcessor (fileName, files[fileName]);
 		}
 
@@ -567,6 +567,8 @@ ArduinoCompiler.prototype.filePreProcessor = function (fileName, fileMeta) {
 		this.processIno (fileName, fileMeta);
 	} else if (extname.match (/c|cpp|h|hpp/)) {
 		this.processCpp (fileName, fileMeta);
+	} else if (extname.match (/S/)) {
+		this.processAsm (fileName, fileMeta);
 	}
 }
 
@@ -775,9 +777,54 @@ ArduinoCompiler.prototype.processCpp = function (cppFile, fileMeta) { // also fo
 
 		}).bind (this));
 	}).bind (this));
+}
 
-	// search for libraries
-	// write file to the build directory
+ArduinoCompiler.prototype.processAsm = function (asmFile, fileMeta) { // also for a c, h files
+	// read file
+
+	// TODO: Arduino don't process subdirs. inverstigate need to create subdirs if any
+	var asmRelPath = path.relative (this.sketchFolder, asmFile);
+	var asmFolder = path.join (this.buildFolder, path.dirname (asmRelPath));
+	var sourceFile = path.join (this.buildFolder, asmRelPath);
+	this.setSketchFile (sourceFile);
+
+	var dict = this.getDict ();
+
+	fs.readFile (asmFile, (function (err, data) {
+		if (err) {
+			err.scope = 'project';
+			//			console.log ('read failed', err);
+			this.emit ('error', err);
+			cb (err);
+			return;
+		}
+
+		var asmContents = data.toString ();
+
+
+		// TODO: something wrong: mkdirParent not working
+		mkdirParent (asmFolder, (function (err) {
+			if (err && err.code !== 'EEXIST') {
+				err.scope = 'mkdir';
+				//				console.trace ('cannot create folder', asmFolder, err.code);
+				this.emit ('error', err);
+				return;
+			}
+			fs.writeFile (
+				sourceFile,
+				asmContents,
+				(function (err, done) {
+					if (err) {
+						err.scope = 'project';
+						this.emit ('error', err);
+						return;
+					}
+					// this.setProjectFiles (null, [projectFile], true);
+					this.setLibNames ([], sourceFile);
+
+				}).bind (this));
+		}).bind (this));
+	}).bind (this));
 }
 
 
