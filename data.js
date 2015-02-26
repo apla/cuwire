@@ -37,6 +37,7 @@ var Arduino = function (customRuntimeFolders, customSketchesFolder, fromScratch,
 	this.libraryData = {};
 
 	this.folders = {};
+	this.examples = {};
 
 	options = options || {};
 
@@ -159,6 +160,9 @@ var hwWalkRegexp = new RegExp ('.*\\'+path.sep+'('+hwFileNames+')$', 'i');
 var libFileNames = "examples|.+\\.cp{0,2}|.+\\.h";
 var libWalkRegexp = new RegExp ('.*\\'+path.sep+'('+libFileNames+')$', 'i');
 
+var exampleFileNames = ".+\\.ino|.+\\.pde";
+var exampleWalkRegexp = new RegExp ('.*\\'+path.sep+'('+exampleFileNames+')$', 'i');
+
 Arduino.prototype.processDirs = function (type, dirs) {
 
 	var self = this;
@@ -186,6 +190,13 @@ Arduino.prototype.processDirs = function (type, dirs) {
 			dataFilter: this.parseLibNames.bind (this)
 		});
 
+		var examplesFolder = path.join (dir, 'examples');
+
+		common.pathWalk (examplesFolder, this.examplesFound.bind (this, dir, this.ioDone ('examples', dir), {}), {
+			nameMatch:  exampleWalkRegexp,
+		});
+
+
 //		if (os.platform () === 'darwin') {
 //			var runtimeDir = path.resolve (dirStr.replace (/(Resources\/)?Java/, 'Info.plist'));
 //			fs.stat (runtimeDir, self.parseMacOSXVersion.bind (self, runtimeDir, self.ioDone ('runtime', dir)));
@@ -195,8 +206,6 @@ Arduino.prototype.processDirs = function (type, dirs) {
 			// within Arduino.app/Contents/Info.plist
 //		} else if (os.platform () === 'win32') {
 
-		// TODO: enumerateExamples
-		//		fs.stat (path.join (dir, 'examples'),  self.enumerateExamples.bind  (self, path.join (dir, 'examples'), self.ioDone ()));
 	}.bind (this));
 }
 
@@ -318,6 +327,18 @@ Arduino.prototype.librariesFound = function (instanceFolder, done, hwRef, err, f
 	Object.keys (files).forEach (function (fileName) {
 		if (fileName.match (/examples$/)) {
 			remains --;
+
+			var examplesFolder = fileName;
+
+			var examplesParent = path.dirname (fileName);
+			common.pathWalk (examplesFolder, this.examplesFound.bind (this, examplesParent, this.ioDone ('examples', examplesParent), {
+				arch:   hwRef["folders.arch"],
+				vendor: hwRef["folders.vendor"]
+			}), {
+				nameMatch:  exampleWalkRegexp,
+			});
+
+//			this.folders[instanceFolder].examples = true;
 			// TODO: enumerateExamples
 			//fs.stat (fileName,  self.enumerateExamples.bind  (self, fileName, self.ioDone ()));
 			return;
@@ -346,7 +367,7 @@ Arduino.prototype.librariesFound = function (instanceFolder, done, hwRef, err, f
 			libData.include = path.join (fullPath, libName, 'src');
 			libData.version = '1.5';
 		}
-		//			console.log ('library: relpath', relativePath, 'libname', libName, 'root', self.libraryData[libName].root);
+		// console.log ('library: relpath', relativePath, 'libname', libName, 'root', self.libraryData[libName].root);
 		var relativeSrcPath = relativePath.substr (libName.length+1);
 		libData.files[relativeSrcPath] = true;
 		var libNames = files[fileName].filteredData || [];
@@ -362,37 +383,62 @@ Arduino.prototype.librariesFound = function (instanceFolder, done, hwRef, err, f
 	done ('libraries');
 }
 
-
-Arduino.prototype.enumerateLibraries = function (fullPath, done, libDataRef, err, data) {
-
-
-
-	// stinks
-	var instanceFolder = fullPath.replace (new RegExp ('\\'+path.sep+'libraries'+'.*'), "");
-
-	if (err) {
-		this.folders[instanceFolder].libraries = {
+Arduino.prototype.examplesFound = function (instanceFolder, done, options, err, files) {
+	if (err && !files) {
+		this.folders[instanceFolder].examples = {
 			error: err.code
 		};
-		done ('libraries');
+		done ('examples');
 		return;
 	}
 
-	var walkRegexp = new RegExp ('.*\\'+path.sep+'(examples|.+\\.cp{0,2}|.+\\.h)$', 'i');
+	options = options || {};
 
-	common.pathWalk (fullPath, foundMeta, {
-		nameMatch: walkRegexp
-	});
+	var platformId = [options.vendor || '', options.arch || ''].join (':');
 
-	var self = this;
+	if (!this.examples[platformId]) {
+		this.examples[platformId] = {};
+	}
 
-	var data = {};
+	var platformFolder = this.hardware[platformId] ? this.hardware[platformId]["folders.root"] : undefined;
 
+//	console.log ('PLTFRM ROOT', platformFolder);
 
+	var withLibraryRegexp = new RegExp ('libraries\\'+path.sep+'([^\\'+path.sep+']+)\\'+path.sep+'examples\\'+path.sep+'(.*)');
+	Object.keys (files).forEach (function (fileName) {
+		var fileExt = path.extname (fileName).substr(1);
+		var dirName = path.basename (path.dirname (fileName));
+		if (fileExt !== 'ino' && fileExt !== 'pde') {
+			return;
+		}
+
+		if (path.basename (fileName) === (dirName + '.' + fileExt)) {
+			// removed ino/pde
+			fileName = path.dirname (fileName);
+		}
+//			console.log ('ino file is', instanceFolder, fileName);
+		var relFileName = fileName;
+		var withLibrary;
+
+		if (relFileName.indexOf (platformFolder) === 0) {
+			relFileName = path.relative (platformFolder, fileName);
+			withLibrary = relFileName.match(withLibraryRegexp);
+			if (withLibrary) {
+				relFileName = withLibrary[2];
+				withLibrary = withLibrary[1];
+			}
+		}
+		this.examples[platformId][relFileName] = {lib: withLibrary};
+	}.bind (this));
+
+	done ('examples');
 }
 
 Arduino.prototype.hardwareFound = function (instanceFolder, done, err, files) {
 	if (err && !files) {
+		this.folders[instanceFolder].hardware = {
+			error: err.code
+		};
 		done ('hardware');
 		return;
 	}
@@ -488,35 +534,6 @@ Arduino.prototype.hardwareFound = function (instanceFolder, done, err, files) {
 
 	done ('hardware');
 }
-
-Arduino.prototype.enumerateHardware = function (fullPath, done, err, data) {
-	// stinks
-	var instanceFolder = fullPath.replace (new RegExp ('\\'+path.sep+'hardware'+'.*'), "");
-
-	if (err) {
-		this.folders[instanceFolder].hardware = {
-			error: err.code
-		};
-
-		done ('hardware');
-		return;
-	}
-
-	var fileNames = "libraries|boards\\.txt|platform\\.txt|programmers\\.txt";
-	var walkRegexp = new RegExp ('.*\\'+path.sep+'('+fileNames+')$', 'i');
-
-	common.pathWalk (fullPath, foundMeta, {
-		nameMatch: walkRegexp
-	});
-
-	var self = this;
-
-	var remains = 0;
-
-
-}
-
-
 
 Arduino.prototype.storeBoardsData = function (evt) {
 	fs.writeFile (
