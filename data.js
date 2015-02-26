@@ -418,17 +418,21 @@ Arduino.prototype.examplesFound = function (instanceFolder, done, options, err, 
 		}
 //			console.log ('ino file is', instanceFolder, fileName);
 		var relFileName = fileName;
+		var relFile;
 		var withLibrary;
 
 		if (relFileName.indexOf (platformFolder) === 0) {
 			relFileName = path.relative (platformFolder, fileName);
+			relFile = true;
 			withLibrary = relFileName.match(withLibraryRegexp);
 			if (withLibrary) {
 				relFileName = withLibrary[2];
 				withLibrary = withLibrary[1];
 			}
 		}
-		this.examples[platformId][relFileName] = {lib: withLibrary};
+		var exampleDesc = this.examples[platformId][relFileName] = {};
+		if (withLibrary) exampleDesc.lib = withLibrary;
+		if (relFile) exampleDesc.rel = relFile;
 	}.bind (this));
 
 	done ('examples');
