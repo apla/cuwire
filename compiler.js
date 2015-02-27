@@ -109,7 +109,7 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardModel, options
 				}
 			}.bind (this)); // clear all files but core.a
 		} else {
-			this.clear (false, buildCore);
+			this.clear (buildCore);
 		}
 
 	}).bind (this));
@@ -336,6 +336,11 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 
 ArduinoCompiler.prototype.clear = function (leaveCoreAlone, cb) {
 
+	if (typeof leaveCoreAlone === 'function') {
+		cb = leaveCoreAlone;
+		leaveCoreAlone = undefined;
+	}
+
 	// TODO: check for build preferences and
 	// clear core.a only if new core need to be built
 	// and leaveCoreAlone === undefined
@@ -349,12 +354,15 @@ ArduinoCompiler.prototype.clear = function (leaveCoreAlone, cb) {
 		var coreStat;
 		for (var fileName in files) {
 
-			if (path.basename (fileName) === 'core.a' && path.dirname (fileName) === buildFolder && leaveCoreAlone) {
+			if (path.join (this.buildFolder, 'core.a') === fileName && leaveCoreAlone) {
 				// skip
 				coreStat = files[fileName];
 			} else {
 				count ++;
-				fs.unlink (path.join (path.dirname(this.buildFolder), fileName), function (err) {
+				fs.unlink (fileName, function (err) {
+					if (err) {
+						console.log (err);
+					}
 					count --;
 					if (!count) {
 						cb (null, coreStat);
