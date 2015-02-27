@@ -11,7 +11,7 @@ paint.error   = paint.bind (paint, "red+white_bg");
 paint.path    = paint.cyan.bind (paint);
 paint.cuwire  = paint.green.bind (paint, "cuwire");
 
-var queueLimit = 5;
+var queueLimit = 0;
 
 var arduino = new ArduinoData ("/Applications/devel/Arduino.app");
 
@@ -36,7 +36,19 @@ arduino.on ('done', (function () {
 			console.log ('getting rfduino as reference board');
 			board = arduino.lookupBoard ('rfduino');
 
-//			iterateExamples (platformId, board, false);
+			iterateExamples (platformId, board, false);
+//			iterateExamples (platformId, board); // does not work
+		} else if (platformId === 'Arduino_STM32:STM32F1') {
+			console.log ('getting maple mini as reference board');
+			board = arduino.lookupBoard ('maple_mini');
+
+			iterateExamples (platformId, board);
+
+		} else if (platformId === "energia:lm4f") {
+			console.log ('getting stellaris launchpad as reference board');
+			board = arduino.lookupBoard ("lplm4f120h5qr");
+
+//			iterateExamples (platformId, board);
 		} else {
 			continue;
 		}
@@ -59,7 +71,6 @@ function iterateExamples (platformId, board, cache) {
 		});
 
 		coreAlreadyBuilt = true;
-
 	}
 }
 
@@ -80,30 +91,35 @@ function getPathForExample (platformId, exampleName, exampleDesc) {
 var queue = [];
 var compileRunning = false;
 
-var errorCount = 0;
+var errors = [];
 
 function enqueueCompileTask (path, options) {
 	if (!compileRunning) {
 		compileSample (path, options, compileTaskDone);
 		compileRunning = true;
 	} else if (queueLimit && queue.length === queueLimit - 1) {
+		console.log (path, 'skipped');
 		return;
 	} else {
+		console.log (path, 'added');
 		queue.push ([path, options]);
 	}
 }
 
-function compileTaskDone (err) {
-	if (err) errorCount++;
+function compileTaskDone (err, sketch) {
+	if (err) errors.push (sketch);
 
 	if (queue.length) {
 		var po = queue.shift();
 		compileSample (po[0], po[1], compileTaskDone);
 	} else {
-		if (errorCount) console.error (paint.error ('failed', errorCount, 'sketches'));
+		if (errors.length)
+			console.error (paint.error ('failed sketches:', errors.join ("\n")));
 		console.log (paint.cuwire(), 'test complete');
 	}
 }
+
+var afterError = false;
 
 function compileSample (path, options, cb) {
 
@@ -125,14 +141,16 @@ function compileSample (path, options, cb) {
 	compiler.verbose = options.verbose;
 
 	console.log ('sketch folder:', paint.path (path));
-	console.log ('build folder:', paint.path (compiler.buildFolder));
+//	console.log ('build folder:', paint.path (compiler.buildFolder));
+
 
 	compiler.on ('log', function (scope, message) {
-//		console.log (paint.yellow (scope) + "\t", message.match (/^done/) ? paint.green (message) : message);
+		// console.log (paint.yellow (scope) + "\t", message.match (/^done/) ? paint.green (message) : message);
 	});
 
 	compiler.on ('error', function (error, message) {
-		cb (error);
+		// process.nextTick (cb.bind (this, error, path));
+		// afterError = true;
 		if (error.files && error.files.length) {
 			console.log (paint.cuwire(), 'compilation failed:')
 			error.files.forEach (function (fileDesc) {
@@ -142,10 +160,20 @@ function compileSample (path, options, cb) {
 			return;
 		}
 		console.log (paint.error (error) + "\t", message);
+
 	});
 
 	compiler.on ('done', function () {
+
+		console.log (paint.cuwire (), "finished:", paint.path (path));
+
 		cb (null);
-		console.log (paint.cuwire ("done"));
+	});
+
+	compiler.on ('failed', function () {
+
+		console.log (paint.cuwire (), paint.error ("failed:", path));
+
+		cb (path);
 	});
 }
