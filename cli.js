@@ -389,13 +389,13 @@ ArduinoCli.prototype.compile = function (options, cb) {
 
 	var compiler = this.compiler = new ArduinoCompiler (
 		buildMeta.folder,
-		options.board.platform || buildMeta.platform,
-		options.board.board    || buildMeta.board,
-		options.board.model    || buildMeta.model,
+		(options.board && options.board.platform) || buildMeta.platform,
+		(options.board && options.board.board)    || buildMeta.board,
+		(options.board && options.board.model)    || buildMeta.model,
 		{
 			// build folder
 //			buildFolder: "/Users/apla/work/mcu/brackets-arduino/build",
-			includes: buildMeta.includes
+			includes: options.inc || buildMeta.includes
 		}
 	);
 

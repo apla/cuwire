@@ -23,6 +23,10 @@
 		"description": "board model",
 		"alias": "m"
 	},
+	"inc": {
+		"description": "include library dir",
+		"alias": "i"
+	},
 	"arduino": {
 		"description": "arduino app location",
 		"env": "ARDUINO_APP",
