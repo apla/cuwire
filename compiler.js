@@ -700,7 +700,7 @@ ArduinoCompiler.prototype.processIno = function (inoFile, fileMeta) {
 		var ifInstructionOffset   = 0;
 
 		while ((matchArray = commentOrInstruction.exec (inoContents)) !== null) {
-			//		console.log (matchArray.index, lastMatchOffset, matchArray[1]);
+//			console.log (matchArray.index, lastMatchOffset, matchArray[1]);
 			if (
 				lastMatchOffset !== undefined &&
 				lastMatchOffset !== matchArray.index &&
@@ -746,6 +746,10 @@ ArduinoCompiler.prototype.processIno = function (inoFile, fileMeta) {
 			}
 			if (skip) {
 				continue;
+			}
+			// setup and loop is required
+			if (!firstStatementOffset) {
+				firstStatementOffset = matchArray.index;
 			}
 			// matchArray.index
 			funcs.push ([matchArray[1] || "", matchArray[3], matchArray[4], '('+matchArray[5]+')'].join (" "));
