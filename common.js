@@ -120,7 +120,9 @@ function pathWalk (dir, done, options) {
 			fs.lstat(file, function(err, stat) {
 
 				var ok = false;
-				if ("nameMatch" in options && file.match (options.nameMatch)) {
+				if (err) {
+
+				} else if ("nameMatch" in options && file.match (options.nameMatch)) {
 					ok = true;
 				} else if (stat && !stat.isSymbolicLink() && stat.isDirectory()) {
 					pathWalk (file, function(err, res) {

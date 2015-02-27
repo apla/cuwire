@@ -516,6 +516,10 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 
 	var dict = this.getDict ();
 
+	if (!dict['build.extra_flags']) {
+		dict['build.extra_flags'] = '';
+	}
+
 	Object.keys (coreFileList).forEach ((function (srcFile) {
 		var baseName  = path.basename (srcFile);
 		var ext       = path.extname (srcFile).substr (1);
