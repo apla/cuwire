@@ -609,9 +609,9 @@ Arduino.prototype.findLib = function (platformId, libName, core) {
 		aliasLibData = alias.hw.libraryData;
 	}
 	var libMeta =
-		this.libraryData[libName]
-		|| this.hardware[platformId].libraryData[libName]
-		|| aliasLibData[libName];
+		this.hardware[platformId].libraryData[libName]
+		|| aliasLibData[libName]
+		|| this.libraryData[libName];
 //	if (!libMeta) {
 //		console.log ('can\'t find library', libName, 'in library folders (TODO: show library folder names)');
 //	}
