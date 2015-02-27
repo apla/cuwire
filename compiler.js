@@ -57,6 +57,7 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardModel, options
 	this.on ('queue-progress', function (scope, pos, length) {
 //		console.log (scope, pos + '/' + length);
 	});
+	this.on ('queue-failed', this.cmdFailHandler.bind (this));
 	this.on ('queue-failed', function (scope, err) {
 //		console.log (scope, 'failed:', err);
 	});
@@ -221,6 +222,20 @@ ArduinoCompiler.prototype.enqueueCmd = function (scope, cmdLine, cb, description
 //	console.log (cmdLine);
 }
 
+ArduinoCompiler.prototype.cmdFailHandler = function () {
+	var pendingTasks = 0;
+	for (var scope in this._queue) {
+		var currentQueue = this._queue[scope];
+		if (currentQueue.running) {
+			pendingTasks ++;
+			currentQueue.emergencyStop = true;
+		}
+	}
+	if (!pendingTasks) {
+		this.emit ('failed');
+	}
+}
+
 ArduinoCompiler.prototype.runCmd = function (scope) {
 	var thisQueue = this._queue[scope];
 	if (thisQueue.pos + 1 === thisQueue.length) {
@@ -231,12 +246,12 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 	if (!thisQueue.running && thisQueue.pos + 1 < thisQueue.length) {
 		thisQueue.running = true;
 		var cb = (function (err, done) {
-			if (err) {
+			thisQueue.running = false;
+			if (err || thisQueue.emergencyStop) {
 				this.emit ('queue-failed', scope, err);
 				return;
 			}
 			thisQueue.pos ++;
-			thisQueue.running = false;
 			this.emit ('queue-progress', scope, thisQueue.pos, thisQueue.length);
 			this.runCmd (scope);
 		}).bind (this);
