@@ -502,7 +502,11 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 		// TODO: build dir
 		dict.object_file = path.join (this.buildFolder, localName + '.' + ext + '.o');
 		dict.includes = [].concat (this.coreIncludes).map (wrapInclude).join (" ");
-		var compileCmd = common.replaceDict (this.platform.recipe[ext+'.o.pattern'], dict, null, "platform.recipe."+ext+".o.pattern");
+		if (!this.platform.recipe[ext.toLowerCase()+'.o.pattern']) {
+			console.log ('config does not contain info how to process "'+ext+'" extension, config key: recipe.'+ext+'.o.pattern');
+			return;
+		}
+		var compileCmd = common.replaceDict (this.platform.recipe[ext.toLowerCase()+'.o.pattern'], dict, null, "platform.recipe."+ext+".o.pattern");
 
 		this.enqueueCmd ('mkdir', this.ioMkdir (this.buildFolder));
 
@@ -543,10 +547,12 @@ ArduinoCompiler.prototype.processSketch = function () {
 		var includes = [].concat (this.coreIncludes, allIncludes).map (wrapInclude).join (" ");
 		dict.includes = includes;
 
-		if (!this.platform.recipe[ext+'.o.pattern'])
+		if (!this.platform.recipe[ext.toLowerCase()+'.o.pattern']) {
+			console.log ('config does not contain info how to process "'+ext+'" extension, config key: recipe.'+ext+'.o.pattern');
 			return;
+		}
 
-		var compileCmd = common.replaceDict (this.platform.recipe[ext+'.o.pattern'], dict, null, "platform.recipe."+ext+".o.pattern");
+		var compileCmd = common.replaceDict (this.platform.recipe[ext.toLowerCase()+'.o.pattern'], dict, null, "platform.recipe."+ext+".o.pattern");
 
 		// this.enqueueCmd ('mkdir', this.ioMkdir (this.buildFolder));
 
