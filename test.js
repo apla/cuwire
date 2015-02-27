@@ -11,6 +11,8 @@ paint.error   = paint.bind (paint, "red+white_bg");
 paint.path    = paint.cyan.bind (paint);
 paint.cuwire  = paint.green.bind (paint, "cuwire");
 
+var queueLimit = 5;
+
 var arduino = new ArduinoData ("/Applications/devel/Arduino.app");
 
 arduino.on ('done', (function () {
@@ -28,11 +30,13 @@ arduino.on ('done', (function () {
 			board = arduino.lookupBoard ('uno');
 
 			iterateExamples (platformId, board);
+
+
 		} else if (platformId === 'RFDuino:arm') {
 			console.log ('getting rfduino as reference board');
 			board = arduino.lookupBoard ('rfduino');
 
-			iterateExamples (platformId, board);
+//			iterateExamples (platformId, board, false);
 		} else {
 			continue;
 		}
@@ -41,16 +45,21 @@ arduino.on ('done', (function () {
 
 }).bind (this));
 
-function iterateExamples (platformId, board) {
+function iterateExamples (platformId, board, cache) {
 	var platformExamples = arduino.examples[platformId];
+	var coreAlreadyBuilt = false;
 	for (var exampleName in platformExamples) {
 
 		var sketchFolder = getPathForExample (platformId, exampleName, platformExamples[exampleName]);
 //		console.log ('example at:', sketchFolder);
 
 		enqueueCompileTask (sketchFolder, {
-			board: board
+			board: board,
+			cacheCore: cache === undefined ? coreAlreadyBuilt : cache
 		});
+
+		coreAlreadyBuilt = true;
+
 	}
 }
 
@@ -77,6 +86,8 @@ function enqueueCompileTask (path, options) {
 	if (!compileRunning) {
 		compileSample (path, options, compileTaskDone);
 		compileRunning = true;
+	} else if (queueLimit && queue.length === queueLimit - 1) {
+		return;
 	} else {
 		queue.push ([path, options]);
 	}
@@ -85,21 +96,13 @@ function enqueueCompileTask (path, options) {
 function compileTaskDone (err) {
 	if (err) errorCount++;
 
-	var child = exec('rm -rf ./build/*', function (error, stdout, stderr) {
-//		console.log('stdout: ' + stdout);
-//		console.log('stderr: ' + stderr);
-		if (error !== null) {
-			console.log('exec error: ' + error);
-			return;
-		}
-		if (queue.length) {
-			var po = queue.shift();
-			compileSample (po[0], po[1], compileTaskDone);
-		} else {
-			if (errorCount) console.error (paint.error ('failed', errorCount, 'sketches'));
-			console.log (paint.cuwire(), 'test complete');
-		}
-	});
+	if (queue.length) {
+		var po = queue.shift();
+		compileSample (po[0], po[1], compileTaskDone);
+	} else {
+		if (errorCount) console.error (paint.error ('failed', errorCount, 'sketches'));
+		console.log (paint.cuwire(), 'test complete');
+	}
 }
 
 function compileSample (path, options, cb) {
@@ -114,7 +117,8 @@ function compileSample (path, options, cb) {
 		{
 			// build folder
 			buildFolder: "./build",
-			includes: options.includes
+			includes: options.includes,
+			cacheCore: options.cacheCore === undefined ? true : options.cacheCore
 		}
 	);
 

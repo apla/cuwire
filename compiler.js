@@ -77,10 +77,6 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardModel, options
 				this.emit ('error', 'cannot create build folder '+this.buildFolder+': '+err.code+', '+err);
 				return;
 			}
-			// TODO: fix that weird way to resolve linker issue after board arch is changed
-			fs.unlink (path.join (this.buildFolder, 'core.a'), function (err) {
-				// I don't care
-			});
 		}
 
 		// now we store buildprefs.txt
@@ -92,13 +88,28 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardModel, options
 			nameMatch: /[^\/]+\.(c|cpp|h|hpp|S|ino|pde)?$/i
 		});
 
-		common.pathWalk (dict['build.core.path'], this.setCoreFiles.bind (this), {
-			nameMatch: /[^\/]+\.(c|cpp|S)$/i
-		});
+		var buildCore = function () {
+			common.pathWalk (dict['build.core.path'], this.setCoreFiles.bind (this), {
+				nameMatch: /[^\/]+\.(c|cpp|S)$/i
+			});
 
-		common.pathWalk (dict['build.variant.path'], this.setCoreFiles.bind (this), {
-			nameMatch: /[^\/]+\.(c|cpp|S)$/i
-		});
+			common.pathWalk (dict['build.variant.path'], this.setCoreFiles.bind (this), {
+				nameMatch: /[^\/]+\.(c|cpp|S)$/i
+			});
+		}.bind (this);
+
+		if (options.cacheCore) {
+			// clear all but core.a, callback receive fs.stat on core.a file
+			this.clear (true, function (err, stat) {
+				if (!err && stat) {
+					this.enqueueCmd ('core', {dummy: true}, null, "using cached core.a");
+				} else {
+					buildCore ();
+				}
+			}.bind (this)); // clear all files but core.a
+		} else {
+			this.clear (false, buildCore);
+		}
 
 	}).bind (this));
 
@@ -301,9 +312,42 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 				}
 				cb (err);
 			});
+		} else if (cmd.dummy) {
+			cb (null);
 		}
 	}
 
+}
+
+ArduinoCompiler.prototype.clear = function (leaveCoreAlone, cb) {
+
+	// TODO: check for build preferences and
+	// clear core.a only if new core need to be built
+	// and leaveCoreAlone === undefined
+
+	common.pathWalk (this.buildFolder, function (err, files) {
+//		console.log (Object.keys (files));
+
+		var buildFolder = path.basename (this.buildFolder);
+
+		var count = 0;
+		var coreStat;
+		for (var fileName in files) {
+
+			if (path.basename (fileName) === 'core.a' && path.dirname (fileName) === buildFolder && leaveCoreAlone) {
+				// skip
+				coreStat = files[fileName];
+			} else {
+				count ++;
+				fs.unlink (path.join (path.dirname(this.buildFolder), fileName), function (err) {
+					count --;
+					if (!count) {
+						cb (null, coreStat);
+					}
+				});
+			}
+		}
+	}.bind (this));
 }
 
 ArduinoCompiler.prototype.getDict = function () {
