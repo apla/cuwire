@@ -13,7 +13,9 @@ paint.cuwire  = paint.green.bind (paint, "cuwire");
 
 var queueLimit = 0;
 
-var arduino = new ArduinoData ("/Applications/devel/Arduino.app");
+var arduinoApp = "/Applications/devel/Arduino.app";
+
+var arduino = new ArduinoData (arduinoApp);
 
 arduino.on ('done', (function () {
 
@@ -31,7 +33,12 @@ arduino.on ('done', (function () {
 
 			iterateExamples (platformId, board);
 
+		} else if (platformId === ':') {
+			console.log ('getting uno as reference board');
+			board = arduino.lookupBoard ('uno');
 
+//			iterateExamples (platformId, board, undefined, arduinoApp);
+			//			iterateExamples (platformId, board); // does not work
 		} else if (platformId === 'RFDuino:arm') {
 			console.log ('getting rfduino as reference board');
 			board = arduino.lookupBoard ('rfduino');
@@ -57,13 +64,17 @@ arduino.on ('done', (function () {
 
 }).bind (this));
 
-function iterateExamples (platformId, board, cache) {
+function iterateExamples (platformId, board, cache, filter) {
 	var platformExamples = arduino.examples[platformId];
 	var coreAlreadyBuilt = false;
 	for (var exampleName in platformExamples) {
 
 		var sketchFolder = getPathForExample (platformId, exampleName, platformExamples[exampleName]);
 //		console.log ('example at:', sketchFolder);
+
+		if (filter && sketchFolder.indexOf (filter) !== 0) {
+			return;
+		}
 
 		enqueueCompileTask (sketchFolder, {
 			board: board,
@@ -111,10 +122,10 @@ function compileTaskDone (err, sketch) {
 
 	if (queue.length) {
 		var po = queue.shift();
-		compileSample (po[0], po[1], compileTaskDone);
+		setTimeout (compileSample.bind (this, po[0], po[1], compileTaskDone), 500);
 	} else {
 		if (errors.length)
-			console.error (paint.error ('failed sketches:', errors.join ("\n")));
+			console.error (paint.error ("failed sketches:", [''].concat (errors).join ("\n")));
 		console.log (paint.cuwire(), 'test complete');
 	}
 }
@@ -145,7 +156,7 @@ function compileSample (path, options, cb) {
 
 
 	compiler.on ('log', function (scope, message) {
-		// console.log (paint.yellow (scope) + "\t", message.match (/^done/) ? paint.green (message) : message);
+		console.log (paint.yellow (scope) + "\t", message.match (/^done/) ? paint.green (message) : message);
 	});
 
 	compiler.on ('error', function (error, message) {
@@ -174,6 +185,6 @@ function compileSample (path, options, cb) {
 
 		console.log (paint.cuwire (), paint.error ("failed:", path));
 
-		cb (path);
+		cb (true, path);
 	});
 }
