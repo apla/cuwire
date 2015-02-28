@@ -744,7 +744,7 @@ ArduinoCompiler.prototype.processIno = function (inoFile, fileMeta) {
 
 		// we found comments and instructions
 
-		var functionRe = /^[\s\n\r]*((\w+)[\s\n\r]+)?(\w+)[\s\n\r]+(\w+)[\s\n\r]*\(([^\)]*)\)[\s\n\r]*\{/gm;
+		var functionRe = /^[\s\n\r]*((\w+)[\s\n\r]+)?(\w+(?:\:\:\w+)?(?:\<\w+(?:\:\:\w+)?\>)?[&*]?)[\s\n\r]+(\w+)[\s\n\r]*\(([^\)]*)\)[\s\n\r]*\{/gm;
 		while ((matchArray = functionRe.exec (inoContents)) !== null) {
 			var skip = false;
 
