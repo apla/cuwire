@@ -732,6 +732,16 @@ ArduinoCompiler.prototype.processIno = function (inoFile, fileMeta) {
 			}
 		}
 
+		if (firstStatementOffset === undefined) {
+			var lastComment = 0, lastInstruction = 0;
+			if (comments.length) {
+				lastComment = comments[comments.length-1][1];
+			} else if (instructions.length) {
+				lastInstruction = instructions[instructions.length-1][1];
+			}
+			firstStatementOffset = Math.max (lastComment, lastInstruction);
+		}
+
 		// we found comments and instructions
 
 		var functionRe = /^[\s\n\r]*((unsigned|signed|static)[\s\n\r]+)?(void|int|char|short|long|float|double|word|bool)[\s\n\r]+(\w+)[\s\n\r]*\(([^\)]*)\)[\s\n\r]*\{/gm;
@@ -747,10 +757,7 @@ ArduinoCompiler.prototype.processIno = function (inoFile, fileMeta) {
 			if (skip) {
 				continue;
 			}
-			// setup and loop is required
-			if (!firstStatementOffset) {
-				firstStatementOffset = matchArray.index;
-			}
+
 			// http://stackoverflow.com/questions/2545720/error-default-argument-given-for-parameter-1
 			var fnParams = matchArray[5].split (/\s*,\s*/).map (function (fnParam) {
 				var defVal = fnParam.split (/\s*=\s*/);
