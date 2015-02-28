@@ -751,8 +751,18 @@ ArduinoCompiler.prototype.processIno = function (inoFile, fileMeta) {
 			if (!firstStatementOffset) {
 				firstStatementOffset = matchArray.index;
 			}
+			// http://stackoverflow.com/questions/2545720/error-default-argument-given-for-parameter-1
+			var fnParams = matchArray[5].split (/\s*,\s*/).map (function (fnParam) {
+				var defVal = fnParam.split (/\s*=\s*/);
+				if (defVal[1]) {
+					return defVal[0] + ' /* ='+defVal[1]+'*/';
+				} else {
+					return defVal[0];
+				}
+			}).join (", ");
+
 			// matchArray.index
-			funcs.push ([matchArray[1] || "", matchArray[3], matchArray[4], '('+matchArray[5]+')'].join (" "));
+			funcs.push ([matchArray[1] || "", matchArray[3], matchArray[4], '('+fnParams+')'].join (" "));
 			//console.log (matchArray[1] || "", matchArray[3], matchArray[4], '(', matchArray[5], ');');
 		}
 
