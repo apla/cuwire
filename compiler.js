@@ -701,6 +701,9 @@ ArduinoCompiler.prototype.processIno = function (inoFile, fileMeta) {
 
 		while ((matchArray = commentOrInstruction.exec (inoContents)) !== null) {
 //			console.log (matchArray.index, lastMatchOffset, matchArray[1]);
+			if (lastMatchOffset === undefined && matchArray.index > 0) {
+				firstStatementOffset = 0;
+			}
 			if (
 				lastMatchOffset !== undefined &&
 				lastMatchOffset !== matchArray.index &&

@@ -1,12 +1,12 @@
+#include <vector>
+#include <string>
+
 int high = HIGH;
 
 int* junk_int_data (void) {
 	int result[10] = {1,2,3,4,5,6,7,8,9,0};
 	return result;
 }
-
-#include <vector>
-#include <string>
 
 template<typename T, size_t N>
 	T * end(T (&ra)[N]) {
