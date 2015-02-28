@@ -309,7 +309,8 @@ function createDict (arduino, platformId, boardId, boardModel, options, currentS
 //	}
 
 
-	var arch = dict['build.arch'] = hwNode['folders.arch'];
+	var arch = hwNode['folders.arch'];
+	dict['build.arch'] = arch.toUpperCase();
 
 	["variant", "core"].forEach (function (aliasK) {
 
