@@ -42,6 +42,8 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardModel, options
 		this.coreIncludes = this.coreIncludes.concat (options.includes);
 	}
 
+	this.cacheCore = options.cacheCore;
+
 	dict['build.path'] = this.buildFolder;
 
 	//	The uno.build.board property is used to set a compile-time variable ARDUINO_{build.board}
@@ -71,6 +73,22 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardModel, options
 	this.sketchFolder = sketchFolder;
 
 	this.platform = hwPlatform;
+}
+
+util.inherits (ArduinoCompiler, EventEmitter);
+
+ArduinoCompiler.prototype.start = function () {
+
+	var clearBeforeBuild = function () {
+		if (this.cacheCore) {
+			// clear all but core.a, callback receive fs.stat on core.a file
+			this.clear (true, function (err, stat) {
+				this.buildAll (stat);
+			}.bind (this)); // clear all files but core.a
+		} else {
+			this.clear (this.buildAll.bind (this));
+		}
+	}.bind (this);
 
 	fs.mkdir (this.buildFolder, (function (err) {
 		if (err) {
@@ -80,55 +98,37 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardModel, options
 			}
 		}
 
-		// now we store buildprefs.txt
-		fs.writeFile (path.join (this.buildFolder, 'buildprefs.txt'), Object.keys (dict).map (function (dictK) {
-			return dictK + ' = ' + dict[dictK];
-		}).join ("\n"));
-
-		common.pathWalk (sketchFolder, this.setProjectFiles.bind (this), {
-			nameMatch: /[^\/]+\.(c|cpp|h|hpp|S|ino|pde)?$/i
-		});
-
-		var buildCore = function () {
-			common.pathWalk (dict['build.core.path'], this.setCoreFiles.bind (this), {
-				nameMatch: /[^\/]+\.(c|cpp|S)$/i
-			});
-
-			common.pathWalk (dict['build.variant.path'], this.setCoreFiles.bind (this), {
-				nameMatch: /[^\/]+\.(c|cpp|S)$/i
-			});
-		}.bind (this);
-
-		if (options.cacheCore) {
-			// clear all but core.a, callback receive fs.stat on core.a file
-			this.clear (true, function (err, stat) {
-				if (!err && stat) {
-					this.enqueueCmd ('core', {dummy: true}, null, "using cached core.a");
-				} else {
-					buildCore ();
-				}
-			}.bind (this)); // clear all files but core.a
-		} else {
-			this.clear (buildCore);
-		}
+		clearBeforeBuild();
 
 	}).bind (this));
-
-	// for each library add [lib folder]/utility
-
-	//	var cppCompile = platform.recipe.cpp.o.pattern.replaceDict (conf);
-
-	// original arduino compile routine
-	// https://github.com/arduino/Arduino/blob/3a8ad75bcef5932cfc81c4746a87ddbdbd7e6402/app/src/processing/app/debug/Compiler.java
-
-	// docs
-	// https://github.com/arduino/Arduino/wiki/Arduino-IDE-1.5---3rd-party-Hardware-specification
-
-	//	console.log (cppCompile);
-
 }
 
-util.inherits (ArduinoCompiler, EventEmitter);
+ArduinoCompiler.prototype.buildAll = function (coreMeta) {
+
+	var dict = this.getDict();
+	var sketchFolder = this.sketchFolder;
+
+	// TODO: add this file to main async asset pipeline
+	fs.writeFile (path.join (this.buildFolder, 'buildprefs.txt'), Object.keys (dict).map (function (dictK) {
+		return dictK + ' = ' + dict[dictK];
+	}).join ("\n"));
+
+	common.pathWalk (sketchFolder, this.setProjectFiles.bind (this), {
+		nameMatch: /[^\/]+\.(c|cpp|h|hpp|S|ino|pde)?$/i
+	});
+
+	if (this.cacheCore && coreMeta && coreMeta.stat && coreMeta.stat.isFile()) {
+		this.enqueueCmd ('core', {dummy: true}, null, "using cached core.a");
+	} else {
+		common.pathWalk (dict['build.core.path'], this.setCoreFiles.bind (this), {
+			nameMatch: /[^\/]+\.(c|cpp|S)$/i
+		});
+
+		common.pathWalk (dict['build.variant.path'], this.setCoreFiles.bind (this), {
+			nameMatch: /[^\/]+\.(c|cpp|S)$/i
+		});
+	}
+}
 
 ArduinoCompiler.prototype.setProjectName = function (name) {
 	this.dict['build.project_name'] = name;
@@ -322,7 +322,7 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 
 		} else if (cmd.io) {
 			cmd.done (function (err) {
-				if (err !== null) {
+				if (err) {
 					console.log('!!!!!!!!!!!!!!!!!!!!!!!!!', 'exec error: ', err);
 				}
 				cb (err);
@@ -352,6 +352,12 @@ ArduinoCompiler.prototype.clear = function (leaveCoreAlone, cb) {
 
 		var count = 0;
 		var coreStat;
+
+		if (!Object.keys (files).length) {
+			cb (null, coreStat);
+			return;
+		}
+
 		for (var fileName in files) {
 
 			if (path.join (this.buildFolder, 'core.a') === fileName && leaveCoreAlone) {
@@ -387,7 +393,7 @@ function wrapInclude (includePath) {
 	return '"-I'+includePath+'"';
 }
 
-ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile) {
+ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile, cb) {
 	if (!this.libCompile)
 		this.libCompile = {};
 	var self = this;
@@ -408,6 +414,8 @@ ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile) {
 	}).bind (this));
 
 	if (!libNames.length) {
+		cb();
+		// this.enqueueCmd ('source', {dummy: true}, null, "processed source for: "+sourceFile);
 		return;
 	}
 
@@ -502,7 +510,11 @@ ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile) {
 		}
 	}
 
-	this.emit ('includes-set');
+	cb();
+
+	// this.enqueueCmd ('source', {dummy: true}, null, "processed source for: "+sourceFile);
+
+//	this.emit ('includes-set');
 }
 
 ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
@@ -667,6 +679,9 @@ ArduinoCompiler.prototype.processIno = function (inoFile, fileMeta) {
 	var projectFile = path.join (this.buildFolder, this.projectName + '.cpp');
 	this.setSketchFile (projectFile);
 
+	var action = this.ioAction ();
+	this.enqueueCmd ('copy', action, null, inoFile);
+
 	fs.readFile (inoFile, (function (err, data) {
 		if (err) {
 			err.scope = 'project';
@@ -808,7 +823,7 @@ ArduinoCompiler.prototype.processIno = function (inoFile, fileMeta) {
 					return;
 				}
 				// this.setProjectFiles (null, [projectFile], true);
-				this.setLibNames (libNames, projectFile);
+				this.setLibNames (libNames, projectFile, action.callback);
 		}).bind (this));
 
 		// function declarations
@@ -827,6 +842,9 @@ ArduinoCompiler.prototype.processCpp = function (cppFile, fileMeta) { // also fo
 	this.setSketchFile (sourceFile);
 
 	var dict = this.getDict ();
+
+	var action = this.ioAction ();
+	this.enqueueCmd ('copy', action, null, cppFile);
 
 	fs.readFile (cppFile, (function (err, data) {
 		if (err) {
@@ -875,7 +893,7 @@ ArduinoCompiler.prototype.processCpp = function (cppFile, fileMeta) { // also fo
 						return;
 					}
 					// this.setProjectFiles (null, [projectFile], true);
-					this.setLibNames (libNames, sourceFile);
+					this.setLibNames (libNames, sourceFile, action.callback);
 
 				}).bind (this));
 
@@ -898,6 +916,9 @@ ArduinoCompiler.prototype.processAsm = function (asmFile, fileMeta) { // also fo
 	this.setSketchFile (sourceFile);
 
 	var dict = this.getDict ();
+
+	var action = this.ioAction ();
+	this.enqueueCmd ('copy', action, null, asmFile);
 
 	fs.readFile (asmFile, (function (err, data) {
 		if (err) {
@@ -929,7 +950,7 @@ ArduinoCompiler.prototype.processAsm = function (asmFile, fileMeta) { // also fo
 						return;
 					}
 					// this.setProjectFiles (null, [projectFile], true);
-					this.setLibNames ([], sourceFile);
+					this.setLibNames ([], sourceFile, action.callback);
 
 				}).bind (this));
 		}).bind (this));
