@@ -354,7 +354,7 @@ ArduinoCompiler.prototype.clear = function (leaveCoreAlone, cb) {
 		var coreStat;
 
 		if (!Object.keys (files).length) {
-			cb (null, coreStat);
+			if (cb) cb (null, coreStat);
 			return;
 		}
 
@@ -371,7 +371,7 @@ ArduinoCompiler.prototype.clear = function (leaveCoreAlone, cb) {
 					}
 					count --;
 					if (!count) {
-						cb (null, coreStat);
+						if (cb) cb (null, coreStat);
 					}
 				});
 			}
