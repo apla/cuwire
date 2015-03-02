@@ -39,7 +39,10 @@ function ArduinoUploader (compiler, platformId, boardId, boardVariant, options) 
 		tool['upload.verbose'] = "";
 	}
 
-	tool['serial.port'] = options.serial.port;
+	var serialPort = tool['serial.port'] = tool['serial.port.file'] = options.serial.port;
+	if (serialPort.indexOf ('/dev/') === 0) {
+		tool['serial.port.file'] = serialPort.substr (5);
+	}
 
 	this.initSerial ();
 
@@ -95,7 +98,7 @@ ArduinoUploader.prototype.prepareCmd = function (tool) {
 ArduinoUploader.prototype.danceSerial1200 = function (tool, cb) {
 	var port = new serial ({port: tool["serial.port"]});
 
-	var waitForPort = tool['upload.wait_for_upload_port'] ? true : false;
+	var waitForPort = tool['upload.wait_for_upload_port'];
 
 	port.danceSerial1200 (waitForPort, function (err) {
 		if (err) {
