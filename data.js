@@ -11,21 +11,6 @@ var common = require ('./common');
 
 var KeyValue = require ('./classes/key-value');
 
-var nodeToJavaPlatform = {
-	darwin: 'macos',
-	win32: 'windows',
-	linux: 'linux'
-};
-
-var javaToNodePlatform = {};
-for (var platformName in nodeToJavaPlatform) {
-	javaToNodePlatform[nodeToJavaPlatform[platformName]] = platformName;
-}
-
-var os = require ('os');
-
-var javaPlatformName = nodeToJavaPlatform [os.platform()];
-
 var Arduino = function (customRuntimeFolders, customSketchesFolder, fromScratch, options) {
 
 	// TODO: additional user dirs

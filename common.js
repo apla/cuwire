@@ -6,6 +6,19 @@ var path   = require ('path');
 var util   = require ('util');
 var crypto = require('crypto');
 
+var nodeToJavaPlatform = {
+	darwin: 'macosx',
+	win32: 'windows',
+	linux: 'linux'
+};
+
+var javaToNodePlatform = {};
+for (var platformName in nodeToJavaPlatform) {
+	javaToNodePlatform[nodeToJavaPlatform[platformName]] = platformName;
+}
+
+var javaPlatformName = nodeToJavaPlatform [os.platform()];
+
 function prepareEnv () {
 	var env = {};
 	Object.keys (process.env).forEach (function (envName) {
@@ -333,6 +346,18 @@ function createDict (arduino, platformId, boardId, boardModel, options, currentS
 			dict['build.'+aliasK+'.path'] = [alias.hw['folders.root'], folder, alias.key].join ('/');
 		}
 	});
+
+	for (var dictK in dict) {
+		if (dict[dictK] === 'false') dict[dictK] = false;
+		if (dict[dictK] === 'true')  dict[dictK] = true;
+		var lastDotIdx = dictK.lastIndexOf(".");
+		var lastChunk = dictK.substr (lastDotIdx + 1);
+		var platform = javaToNodePlatform[lastChunk];
+
+		if (platform && platform === os.platform()) {
+			dict[dictK.substr (0, lastDotIdx)] = dict[dictK];
+		}
+	}
 
 	return dict;
 }
