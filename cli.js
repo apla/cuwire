@@ -382,57 +382,6 @@ function guessSketch (arduino, options) {
 	return result;
 }
 
-ArduinoCli.prototype.compile = function (options, cb) {
-
-	var buildMeta = guessSketch (this.arduino, options);
-
-	console.log (paint.cuwire(), 'compilation of', paint.path (buildMeta.folder));
-
-	var compiler = this.compiler = new ArduinoCompiler (
-		buildMeta.folder,
-		(options.board && options.board.platform) || buildMeta.platform,
-		(options.board && options.board.board)    || buildMeta.board,
-		(options.board && options.board.model)    || buildMeta.model,
-		{
-			// build folder
-//			buildFolder: "/Users/apla/work/mcu/brackets-arduino/build",
-			includes: options.inc || buildMeta.includes,
-			cacheCore: options.cacheCore
-		}
-	);
-
-	compiler.verbose = options.verbose;
-
-	console.log ('build folder:', paint.path (compiler.buildFolder));
-
-	compiler.on ('log', function (scope, message) {
-		console.log (paint.yellow (scope) + "\t", message.match (/^done/) ? paint.green (message) : message);
-	});
-
-	compiler.on ('error', function (error, message) {
-		if (error.files && error.files.length) {
-			console.log (paint.cuwire(), 'compilation failed:')
-			error.files.forEach (function (fileDesc) {
-				console.log ('error in', paint.path (fileDesc[1])+(['',fileDesc[2], fileDesc[3]].join(':')), paint.error (fileDesc[4]));
-			});
-			console.log (paint.yellow ('command'), error.cmd)
-			return;
-		}
-		console.log (paint.error (error) + "\t", message);
-	});
-
-	compiler.on ('done', cb.bind (this, undefined, buildMeta.folder, compiler));
-
-	compiler.on ('failed', function () {
-
-		console.log (paint.cuwire (), paint.error ("failed:", buildMeta.folder));
-
-		cb (true, buildMeta.folder, compiler);
-	});
-
-	compiler.start ();
-}
-
 ArduinoCli.prototype.upload = function (options, cb) {
 	var buildMeta = guessSketch (this.arduino, options);
 
@@ -474,21 +423,75 @@ ArduinoCli.prototype.upload = function (options, cb) {
 	uploader.on ('done', console.log.bind (console, paint.yellow ('upload'), paint.green ('done')));
 }
 
+
+ArduinoCli.prototype.compile = function (options, cb) {
+
+	var buildMeta = guessSketch (this.arduino, options);
+
+	console.log (paint.cuwire(), 'compilation of', paint.path (buildMeta.folder), "cache core:", paint.yellow (options.cacheCore));
+
+	var compiler = this.compiler = new ArduinoCompiler (
+		buildMeta.folder,
+		(options.board && options.board.platform) || buildMeta.platform,
+		(options.board && options.board.board)    || buildMeta.board,
+		(options.board && options.board.model)    || buildMeta.model,
+		{
+			// build folder
+//			buildFolder: "/Users/apla/work/mcu/brackets-arduino/build",
+			buildFolder: options.buildFolder,
+			includes:    options.inc || buildMeta.includes,
+			cacheCore:   options.cacheCore
+		}
+	);
+
+	compiler.verbose = options.verbose;
+
+	console.log ('build folder:', paint.path (compiler.buildFolder));
+
+	compiler.on ('log', function (scope, message) {
+		console.log (paint.yellow (scope) + "\t", message.match (/^done/) ? paint.green (message) : message);
+	});
+
+	compiler.on ('error', function (error, message) {
+		if (error.files && error.files.length) {
+			console.log (paint.cuwire(), 'compilation failed:')
+			error.files.forEach (function (fileDesc) {
+				console.log ('error in', paint.path (fileDesc[1])+(['',fileDesc[2], fileDesc[3]].join(':')), paint.error (fileDesc[4]));
+			});
+			console.log (paint.yellow ('command'), error.cmd)
+			return;
+		}
+		console.log (paint.error (error) + "\t", message);
+	});
+
+	compiler.on ('done', cb.bind (this, undefined, buildMeta.folder, compiler));
+
+	compiler.on ('failed', function () {
+
+		console.log (paint.cuwire (), paint.error ("failed:", buildMeta.folder));
+
+		cb (true, buildMeta.folder, compiler);
+	});
+
+	compiler.start ();
+}
+
 ArduinoCli.prototype.iterateExamples = function (platformId, board, cache, filter) {
 	var platformExamples = this.arduino.examples[platformId];
 	var coreAlreadyBuilt = false;
 	for (var exampleName in platformExamples) {
 
 		var sketchFolder = this.getPathForExample (platformId, exampleName, platformExamples[exampleName]);
-		//		console.log ('example at:', sketchFolder);
 
 		if (filter && sketchFolder.indexOf (filter) !== 0) {
 			return;
 		}
 
-		this.enqueueSketchTest (sketchFolder, {
+		this.enqueueSketchTest ({
+			sketch: sketchFolder,
 			board: board,
-			cacheCore: cache === undefined ? coreAlreadyBuilt : cache
+			cacheCore: cache === undefined ? coreAlreadyBuilt : cache,
+			buildFolder: "./build"
 		});
 
 		coreAlreadyBuilt = true;
@@ -511,14 +514,10 @@ ArduinoCli.prototype.getPathForExample = function (platformId, exampleName, exam
 
 var queueLimit = 0;
 
-ArduinoCli.prototype.enqueueSketchTest = function (path, options) {
+ArduinoCli.prototype.enqueueSketchTest = function (options) {
 	if (!this.testRunning) {
 
-		this.compile ({
-			sketch: path,
-			board: options.board,
-			cacheCore: options.cacheCore
-		}, this.sketchTestDone.bind (this));
+		this.compile (options, this.sketchTestDone.bind (this));
 
 		this.testRunning = true;
 
@@ -527,42 +526,36 @@ ArduinoCli.prototype.enqueueSketchTest = function (path, options) {
 		return;
 	} else {
 		if (this.verbose) console.log (path, 'added');
-		this.testQueue.push ([path, options]);
+		this.testQueue.push (options);
 	}
 }
 
 ArduinoCli.prototype.sketchTestDone = function (err, sketch, compiler) {
 	if (err) {
 		this.testErrors.push (["sketch:", sketch, "build:", compiler.buildFolder].join (" "));
-	} else {
-		compiler.clear ();
 	}
 
 	if (this.testQueue.length) {
-		var po = this.testQueue.shift();
-		console.log ();
-		this.compile ({
-			sketch:    po[0],
-			board:     po[1].board,
-			cacheCore: po[1].cacheCore
-		}, this.sketchTestDone.bind (this));
+		var options = this.testQueue.shift();
+		this.compile (options, this.sketchTestDone.bind (this));
 	} else {
-		if (errors.length)
+		if (this.testErrors.length)
 			console.error (paint.error ("failed sketches:", [''].concat (this.testErrors).join ("\n")));
 		console.log (paint.cuwire(), 'test complete');
 	}
 }
 
 
-ArduinoCli.prototype.runTestOnFileset = function (files, onlyPlatform, board) {
+ArduinoCli.prototype.runTestOnFileset = function (files, onlyPlatform, forceBoard) {
 
 	this.testQueue    = [];
 	this.testRunning = false;
 
 	this.testErrors  = [];
 
+	var board = forceBoard;
+
 	for (var platformId in files) {
-		var board;
 
 		if (onlyPlatform && onlyPlatform !== platformId) {
 			continue;
@@ -582,7 +575,7 @@ ArduinoCli.prototype.runTestOnFileset = function (files, onlyPlatform, board) {
 			// this.iterateExamples (platformId, board, undefined, arduinoApp);
 			// this.iterateExamples (platformId, board, undefined);
 
-		} else if (platformId.match(/RFDuino/i)) {
+		} else if (platformId.match(/rfduino/i)) {
 			console.log ('getting rfduino as reference board');
 			board = board || this.arduino.lookupBoard ('rfduino');
 
@@ -612,17 +605,19 @@ ArduinoCli.prototype.test = function (options, cb) {
 
 	var onlyPlatform;
 
+	console.log ("testParam", testParam);
+
 	if (testParam === 'all') {
 		// test every example we've found
 
 		this.runTestOnFileset (this.arduino.examples);
 
-	} else if (testParam && testParam.match (/\w+:\w+/) && this.arduino.hardware[testParam]) {
+	} else if ((!testParam || testParam === true) && options.board) {
 
-		// run only tests for that platform
-		onlyPlatform = testParam;
+		// run only tests for that platform/board
+		onlyPlatform = options.board.platform;
 
-		this.runTestOnFileset (this.arduino.examples, onlyPlatform);
+		this.runTestOnFileset (this.arduino.examples, onlyPlatform, options.board);
 
 	} else if (testParam && testParam !== true && options.board) {
 
