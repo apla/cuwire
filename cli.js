@@ -553,42 +553,41 @@ ArduinoCli.prototype.runTestOnFileset = function (files, onlyPlatform, forceBoar
 
 	this.testErrors  = [];
 
-	var board = forceBoard;
-
 	for (var platformId in files) {
+		var board = forceBoard;
 
 		if (onlyPlatform && onlyPlatform !== platformId) {
 			continue;
 		}
 
-		console.log ('platform:', platformId);
+//		console.log ('platform:', platformId);
 		if (platformId === 'arduino:avr') {
-			console.log ('getting uno as reference board');
+			if (this.verbose) console.log ('getting uno as reference board for', platformId);
 			board = board || this.arduino.lookupBoard ('uno');
 
 			this.iterateExamples (platformId, board);
 
 		} else if (platformId === ':') {
-			console.log ('getting uno as reference board');
+			if (this.verbose) console.log ('getting uno as reference board for', platformId);
 			board = board || this.arduino.lookupBoard ('uno');
 
 			// this.iterateExamples (platformId, board, undefined, arduinoApp);
 			// this.iterateExamples (platformId, board, undefined);
 
 		} else if (platformId.match(/rfduino/i)) {
-			console.log ('getting rfduino as reference board');
+			if (this.verbose) console.log ('getting rfduino as reference board for', platformId);
 			board = board || this.arduino.lookupBoard ('rfduino');
 
 			this.iterateExamples (platformId, board, false);
 			// this.iterateExamples (platformId, board); // does not work
 		} else if (platformId === 'Arduino_STM32:STM32F1') {
-			console.log ('getting maple mini as reference board');
+			if (this.verbose) console.log ('getting maple mini as reference board for', platformId);
 			board = board || this.arduino.lookupBoard ('maple_mini');
 
 			this.iterateExamples (platformId, board);
 
 		} else if (platformId === "energia:lm4f") {
-			console.log ('getting stellaris launchpad as reference board');
+			if (this.verbose) console.log ('getting stellaris launchpad as reference board for', platformId);
 			board = board || this.arduino.lookupBoard ("lplm4f120h5qr");
 
 			// this.iterateExamples (platformId, board);
