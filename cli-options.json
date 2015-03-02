@@ -67,13 +67,19 @@
 		"arduino": true,
 		"runtimeRequired": true
 	},
+	"test": {
+		"description": "run test",
+		"run": "test",
+		"arduino": true,
+		"runtimeRequired": true
+	},
 	"build": {
 		"run": "compile",
 		"arduino": true,
 		"runtimeRequired": true
 	},
 	"clean": {
-		"description": "[WIP] clean compiled files",
+		"description": "clean compiled files",
 		"run": "clean",
 		"arduino": true
 	},
