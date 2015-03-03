@@ -315,10 +315,8 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 					this.emit ('error', error);
 //					console.log ('******************', scope.toUpperCase(), cmd);
 //					console.log ('******************', scope.toUpperCase(), 'exec error: ', error, 'stderr', stderr);
-				}
-
-				if (stderr) {
-					console.error (stderr);
+				} else if (stderr) {
+					this.emit ('warning', stderr);
 				}
 
 				if (cmdCb) {

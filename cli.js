@@ -464,6 +464,10 @@ ArduinoCli.prototype.compile = function (options, cb) {
 		console.log (paint.error (error) + "\t", message);
 	});
 
+	compiler.on ('warning', function (warning) {
+		console.log (paint.error (warning));
+	});
+
 	compiler.on ('done', cb.bind (this, undefined, buildMeta.folder, compiler));
 
 	compiler.on ('failed', function () {
@@ -515,11 +519,11 @@ ArduinoCli.prototype.getPathForExample = function (platformId, exampleName, exam
 var queueLimit = 0;
 
 ArduinoCli.prototype.enqueueSketchTest = function (options) {
-	if (!this.testRunning) {
+	if (this.testIndex === 0) {
 
 		this.compile (options, this.sketchTestDone.bind (this));
 
-		this.testRunning = true;
+		this.testIndex++;
 
 	} else if (queueLimit && this.testQueue.length === queueLimit - 1) {
 		if (this.verbose) console.log (path, 'skipped');
@@ -538,18 +542,23 @@ ArduinoCli.prototype.sketchTestDone = function (err, sketch, compiler) {
 	if (this.testQueue.length) {
 		var options = this.testQueue.shift();
 		this.compile (options, this.sketchTestDone.bind (this));
+		this.testIndex++;
 	} else {
-		if (this.testErrors.length)
+		if (this.testErrors.length) {
 			console.error (paint.error ("failed sketches:", [''].concat (this.testErrors).join ("\n")));
-		console.log (paint.cuwire(), 'test complete');
+			console.log (paint.cuwire(), 'test complete, failed:', this.testErrors.length, 'of', this.testIndex);
+		} else {
+			console.log (paint.cuwire(), 'test complete, all ok');
+		}
+
 	}
 }
 
 
 ArduinoCli.prototype.runTestOnFileset = function (files, onlyPlatform, forceBoard) {
 
-	this.testQueue    = [];
-	this.testRunning = false;
+	this.testQueue   = [];
+	this.testIndex   = 0;
 
 	this.testErrors  = [];
 
@@ -604,7 +613,7 @@ ArduinoCli.prototype.test = function (options, cb) {
 
 	var onlyPlatform;
 
-	console.log ("testParam", testParam);
+	console.log ("testParam", testParam, "board", options.board);
 
 	if (testParam === 'all') {
 		// test every example we've found
