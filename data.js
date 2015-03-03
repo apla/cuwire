@@ -328,9 +328,10 @@ Arduino.prototype.librariesFound = function (instanceFolder, done, hwRef, err, f
 			//fs.stat (fileName,  self.enumerateExamples.bind  (self, fileName, self.ioDone ()));
 			return;
 		}
+
 		var relativePath = fileName.substr (fullPath.length + 1);
 		//			console.log (relativePath.match (/[^\/]+/));
-		var libName = path.dirname (relativePath);
+		var libName = relativePath.substr (0, relativePath.indexOf (path.sep));
 		//			console.log ('found lib', libName);
 		var libData = hwRef.libraryData[libName];
 		var headers = hwRef.headers = hwRef.headers || {};
@@ -368,7 +369,7 @@ Arduino.prototype.librariesFound = function (instanceFolder, done, hwRef, err, f
 		}
 		}
 
-		// console.log ('library: relpath', relativePath, 'libname', libName, 'root', self.libraryData[libName].root);
+		// console.log ('library: relpath', relativePath, 'libname', libName, 'root', libData.root);
 		var relativeSrcPath = relativePath.substr (libName.length+1);
 		libData.files[relativeSrcPath] = true;
 		var libNames = files[fileName].filteredData || [];
