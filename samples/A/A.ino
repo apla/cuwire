@@ -4,6 +4,7 @@
 int high = HIGH;
 
 int* junk_int_data (void) {
+//	http://www.codeguru.com/cpp/cpp/cpp_mfc/arrays/article.php/c4071/Standard-Template-Libraries-Using-stdvector-Arrays.htm
 	int result[10] = {1,2,3,4,5,6,7,8,9,0};
 	return result;
 }

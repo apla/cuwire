@@ -589,6 +589,12 @@ ArduinoCli.prototype.runTestOnFileset = function (files, onlyPlatform, forceBoar
 
 			this.iterateExamples (platformId, board, false);
 			// this.iterateExamples (platformId, board); // does not work
+		} else if (platformId === 'arduino:sam') {
+			if (this.verbose) console.log ('getting due as reference board for', platformId);
+			board = board || this.arduino.lookupBoard ('arduino_due_x');
+
+			this.iterateExamples (platformId, board, false);
+			// this.iterateExamples (platformId, board); // does not work
 		} else if (platformId === 'Arduino_STM32:STM32F1') {
 			if (this.verbose) console.log ('getting maple mini as reference board for', platformId);
 			board = board || this.arduino.lookupBoard ('maple_mini');
@@ -599,9 +605,9 @@ ArduinoCli.prototype.runTestOnFileset = function (files, onlyPlatform, forceBoar
 			if (this.verbose) console.log ('getting stellaris launchpad as reference board for', platformId);
 			board = board || this.arduino.lookupBoard ("lplm4f120h5qr");
 
-			// this.iterateExamples (platformId, board);
-		} else {
-			continue;
+			this.iterateExamples (platformId, board);
+		} else if (board) {
+			this.iterateExamples (platformId, board);
 		}
 	}
 }
