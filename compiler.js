@@ -121,11 +121,11 @@ ArduinoCompiler.prototype.buildAll = function (coreMeta) {
 		this.enqueueCmd ('core', {dummy: true}, null, "using cached core.a");
 	} else {
 		common.pathWalk (dict['build.core.path'], this.setCoreFiles.bind (this), {
-			nameMatch: /[^\/]+\.(c|cpp|S)$/i
+			nameMatch: /[^\/]+\.(c|cpp|S)$/
 		});
 
 		common.pathWalk (dict['build.variant.path'], this.setCoreFiles.bind (this), {
-			nameMatch: /[^\/]+\.(c|cpp|S)$/i
+			nameMatch: /[^\/]+\.(c|cpp|S)$/
 		});
 	}
 }
@@ -554,11 +554,11 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 		// TODO: build dir
 		dict.object_file = path.join (this.buildFolder, localName + '.' + ext + '.o');
 		dict.includes = [].concat (this.coreIncludes).map (wrapInclude).join (" ");
-		if (!this.platform.recipe[ext.toLowerCase()+'.o.pattern']) {
+		if (!this.platform.recipe[ext+'.o.pattern']) {
 			console.log ('config does not contain info how to process "'+ext+'" extension, config key: recipe.'+ext+'.o.pattern');
 			return;
 		}
-		var compileCmd = common.replaceDict (this.platform.recipe[ext.toLowerCase()+'.o.pattern'], dict, null, "platform.recipe."+ext+".o.pattern");
+		var compileCmd = common.replaceDict (this.platform.recipe[ext+'.o.pattern'], dict, null, "platform.recipe."+ext+".o.pattern");
 
 		this.enqueueCmd ('mkdir', this.ioMkdir (this.buildFolder));
 
@@ -599,12 +599,12 @@ ArduinoCompiler.prototype.processSketch = function () {
 		var includes = [].concat (this.coreIncludes, allIncludes).map (wrapInclude).join (" ");
 		dict.includes = includes;
 
-		if (!this.platform.recipe[ext.toLowerCase()+'.o.pattern']) {
+		if (!this.platform.recipe[ext+'.o.pattern']) {
 			console.log ('config does not contain info how to process "'+ext+'" extension, config key: recipe.'+ext+'.o.pattern');
 			return;
 		}
 
-		var compileCmd = common.replaceDict (this.platform.recipe[ext.toLowerCase()+'.o.pattern'], dict, null, "platform.recipe."+ext+".o.pattern");
+		var compileCmd = common.replaceDict (this.platform.recipe[ext+'.o.pattern'], dict, null, "platform.recipe."+ext+".o.pattern");
 
 		// this.enqueueCmd ('mkdir', this.ioMkdir (this.buildFolder));
 

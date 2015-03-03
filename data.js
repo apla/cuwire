@@ -738,12 +738,6 @@ function PlatformConf (data) {
 	this.tools = this.sliceAndRemove ('tools', undefined, KeyValue).sliceByFirstChunk();
 
 	this.recipe = this.sliceAndRemove ('recipe', undefined, KeyValue);
-	for (var recipeName in this.recipe) {
-		if (recipeName !== recipeName.toLowerCase()) {
-			this.recipe[recipeName.toLowerCase()] = this.recipe[recipeName];
-			delete this.recipe[recipeName];
-		}
-	}
 }
 
 util.inherits (PlatformConf, KeyValue);
