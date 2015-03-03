@@ -297,6 +297,9 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 
 Arduino.prototype.librariesFound = function (instanceFolder, done, hwRef, err, files) {
 	if (err && !files) {
+		this.folders[instanceFolder].libraries = {
+			error: err.code
+		};
 		done ('libraries');
 		return;
 	}
@@ -355,8 +358,6 @@ Arduino.prototype.librariesFound = function (instanceFolder, done, hwRef, err, f
 			libData.include = path.join (fullPath, libName, 'src');
 			libData.version = '1.5';
 		}
-
-
 
 		var headerName = path.basename (relativePath);
 		if (path.extname (relativePath) === '.h') {
