@@ -25,6 +25,15 @@ void setupLed () {
 	AnyPWM::init();       // initialize the PWM timer
 	pinMode (LED_1, OUTPUT); // declare LED pin to be an output
 
+	#elif defined(STM32_MCU_SERIES)
+
+	#define LED_COUNT 1
+	#define LED_1 13
+	#define LED_2 13
+	#define LED_3 13
+
+	pinMode (LED_1, OUTPUT); // declare LED pin to be an output
+
 	#elif defined(__RFduino__)
 
 	// pin 2 on the RGB shield is the red led
@@ -119,6 +128,22 @@ void changeColor() {
 		analogWrite(LED_1, COLOR_VAL[0]);
 		#endif
 		analogWrite(LED_2, COLOR_VAL[1]);
+
+	#elif LED_COUNT == 1
+
+	if (COLOR_VAL[0] == 0) {
+		COLOR_VAL[2] = 0; // rise
+	} else if (COLOR_VAL[1] == 0) {
+		COLOR_VAL[2] = 1; // fall
+	}
+
+	if (COLOR_VAL[2] == 1) {
+		COLOR_VAL[0] -= amount;
+	} else {
+		COLOR_VAL[0] += amount;
+	}
+
+	analogWrite(LED_1, COLOR_VAL[0]);
 
 	#endif
 

@@ -179,6 +179,8 @@ void FlexiTimer2::set(unsigned long units, double resolution, void (*f)()) {
 	tcnt2 = (SysCtlClockGet() / Hz)/ 2;
 	tcnt2 = (SysCtlClockGet() / 1)/ 2;
 	return;
+	#elif defined(STM32_MCU_SERIES)
+	tcnt2 = resolution*1000000; // 1MHz clock
 	#else
 	#error Unsupported CPU type
 	#endif
@@ -187,6 +189,12 @@ void FlexiTimer2::set(unsigned long units, double resolution, void (*f)()) {
 }
 
 void TIMER2_Interrupt(void);
+
+#if defined(STM32_MCU_SERIES)
+void timer_handler(void) {
+	FlexiTimer2::_overflow();
+}
+#endif
 
 #if defined(__TIVA__)
 void Timer0Isr(void) {
@@ -272,6 +280,12 @@ void FlexiTimer2::start() {
 //	ROM_IntEnable(INT_TIMER0A);
 //	ROM_TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
 //	ROM_TimerLoadSet(TIMER0_BASE, TIMER_A, tcnt2);
+	#elif defined(STM32_MCU_SERIES)
+	// Setup LED Timer
+	Timer2.setChannel1Mode(TIMER_OUTPUTCOMPARE);
+	Timer2.setPeriod(tcnt2); // in microseconds
+	Timer2.setCompare1(1);      // overflow might be small
+	Timer2.attachCompare1Interrupt(timer_handler);
 	#endif
 }
 

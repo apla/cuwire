@@ -5,7 +5,9 @@
 
 #include <Arduino.h>
 
-//#include stm32l1xx_adc.h
+//STM32F1/cores/maple/libmaple/adc.c
+
+//#include "stm32l1xx_adc.h"
 //#include stm32l1xx_exti.h
 //#include stm32l1xx_flash.h
 //#include stm32l1xx_gpio.h
@@ -39,7 +41,7 @@ void
 		#elif INTERNAL
 			analogReference(INTERNAL);
 		#endif
-	#elif defined(STM32_MCU_SERIES)
+	#elif defined(X_STM32_MCU_SERIES)
 //	http://www.micromouseonline.com/2009/05/26/simple-adc-use-on-the-stm32/
 	ADC_InitTypeDef  ADC_InitStructure;
 	/* PCLK2 is the APB2 clock */
@@ -176,7 +178,7 @@ Inserts a delay before beginning conversion if REFON
 	return ADC12MEM0;    // Read out 1st ADC value
 
 	#endif
-	#elif defined(STM32_MCU_SERIES)
+	#elif defined(X_STM32_MCU_SERIES)
 	// even better:
 //	http://techoverflow.net/blog/2015/01/13/reading-stm32f0-internal-temperature-and-voltage-using-chibios/
 

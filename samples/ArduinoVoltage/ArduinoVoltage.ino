@@ -93,13 +93,23 @@ long readVcc() {
 //	RFduinoBLE.end();
 
 #endif
+	return 0;
 }
+
+#if defined(__AVR__)
+#define LED_X LED_BUILTIN
+#elif defined(__RFduino__)
+#define LED_X 2
+#elif defined(__MSP430_CPU__)
+#define LED_X RED_LED
+#endif
+
 
 // the setup routine runs once when you press reset:
 void setup() {
 	// initialize serial communication at 9600 bits per second:
 	Serial.begin(9600);
-	pinMode(13, OUTPUT);
+	pinMode(LED_X, OUTPUT);
 
 	setupVcc();
 }
@@ -122,9 +132,9 @@ void loop() {
 		}
 	}
 
-	digitalWrite(13, HIGH);   // turn the LED on (HIGH is the voltage level)
+	digitalWrite(LED_X, HIGH);   // turn the LED on (HIGH is the voltage level)
 	delay(100);              // wait for a second
-	digitalWrite(13, LOW);    // turn the LED off by making the voltage LOW
+	digitalWrite(LED_X, LOW);    // turn the LED off by making the voltage LOW
 	// read the input on analog pin 0:
 	//	int sensorValue = analogRead(A0);
 	// Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):

@@ -34,6 +34,8 @@ int cyclesPassed = delaySeconds * 10;
 // the loop function runs over and over again forever
 void loop() {
 
+	// poor man timer ;-)
+	// TODO: move that when timer is made for all platforms
 	cyclesPassed -= 1;
 	if (!cyclesPassed) {
 		cyclesPassed = delaySeconds * 10;

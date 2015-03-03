@@ -14,6 +14,7 @@
 #include "driverlib/interrupt.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/timer.h"
+#elif defined(STM32_MCU_SERIES)
 #else
 #error FlexiTimer2 library only works on AVR, Teensy, RFduino, msp430, TivaC
 #endif
