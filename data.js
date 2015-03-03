@@ -330,37 +330,53 @@ Arduino.prototype.librariesFound = function (instanceFolder, done, hwRef, err, f
 		}
 		var relativePath = fileName.substr (fullPath.length + 1);
 		//			console.log (relativePath.match (/[^\/]+/));
-		var libName = relativePath.match (/[^\/\\]+/)[0];
+		var libName = path.dirname (relativePath);
 		//			console.log ('found lib', libName);
 		var libData = hwRef.libraryData[libName];
+		var headers = hwRef.headers = hwRef.headers || {};
 
 		// TODO: user and runtime can have libraries with same name. prefer user ones
 		if (!libData) {
-			var libData = hwRef.libraryData[libName] = {
+			libData = hwRef.libraryData[libName] = {
 				files: {},
-				requirements: {}
-				// root: path.join (fullPath, libName)
+				requirements: {},
+				root: path.join (fullPath, libName),
+				name: libName
 			};
 		}
+
 		if (relativePath.toLowerCase() === path.join (libName.toLowerCase(), libName.toLowerCase()+'.h')) {
 			// Arduino 1.0 styled lib
-			libData.root = path.join (fullPath, libName);
+
 			libData.include = path.join (fullPath, libName);
 		} else if (relativePath.toLowerCase() === path.join (libName.toLowerCase(), 'src', libName.toLowerCase()+'.h')) {
 			// TODO: add all arch dependent folders
-			libData.root = path.join (fullPath, libName);
 			libData.include = path.join (fullPath, libName, 'src');
 			libData.version = '1.5';
 		}
+
+
+
+		var headerName = path.basename (relativePath);
+		if (path.extname (relativePath) === '.h') {
+		if (
+			(path.dirname (relativePath) === path.join (libName, 'src') && libData.version === '1.5') ||
+			path.dirname (relativePath) === libName
+		) {
+			var headerNameData = headers[headerName] = headers[headerName] || [];
+			headerNameData.push (libData);
+		}
+		}
+
 		// console.log ('library: relpath', relativePath, 'libname', libName, 'root', self.libraryData[libName].root);
 		var relativeSrcPath = relativePath.substr (libName.length+1);
 		libData.files[relativeSrcPath] = true;
 		var libNames = files[fileName].filteredData || [];
 
+		// TODO: remove obvious requirements from same directory
 		libNames.forEach (function (req) {
 			libData.requirements[req] = true;
 		});
-
 	}.bind (this));
 
 	if (this.debug) console.log ("debug libs at", fullPath, Object.keys (hwRef.libraryData).join (', '));
@@ -584,22 +600,41 @@ function createTempFile (cb) {
 
 }
 
-Arduino.prototype.findLib = function (platformId, libName, core) {
+Arduino.prototype.findLib = function (platformId, headerName, core) {
 //	console.log (this.libraryData, this.boardData[platformId].libraryData, platformId, libName);
-//	libName = libName.toLowerCase();
+	var libName = path.basename (headerName, path.extname (headerName));
 	var arch  = this.hardware[platformId]['folders.arch'];
 	var alias = this.getAlias (core, arch);
 	var aliasLibData = {};
-	if (alias && alias.hw && alias.hw.libraryData) {
-		aliasLibData = alias.hw.libraryData;
+	var aliasHeaders = [];
+	if (alias && alias.hw) {
+		aliasLibData = alias.hw.libraryData || {};
+		aliasHeaders = alias.hw.headers || {};
 	}
 	var libMeta =
 		this.hardware[platformId].libraryData[libName]
 		|| aliasLibData[libName]
 		|| this.libraryData[libName];
-//	if (!libMeta) {
-//		console.log ('can\'t find library', libName, 'in library folders (TODO: show library folder names)');
-//	}
+	if (!libMeta) {
+		var libMetaFromHeaders = this.hardware[platformId].headers[headerName]
+		|| aliasHeaders[headerName]
+		|| this.headers[headerName];
+		if (libMetaFromHeaders) {
+			if (libMetaFromHeaders.length > 1) {
+				console.log ('We found multiple libraries to match header', headerName);
+			}
+//			console.log ('found header', headerName);
+			libMeta = libMetaFromHeaders[0];
+		}
+	}
+	if (!libMeta) {
+//		console.log ('can\'t find library', libName, 'in library folders');
+//		console.log (platformId, libName, core, arch);
+//		console.log (
+//			this.hardware[platformId].headers,
+//			this.headers
+//		);
+	}
 	if (!libMeta) return libMeta;
 	var libMetaClone = JSON.parse (JSON.stringify (libMeta));
 	return libMetaClone;
@@ -607,7 +642,7 @@ Arduino.prototype.findLib = function (platformId, libName, core) {
 
 Arduino.prototype.parseLibNames = function (fileContents, platformId, core) {
 	// let's find all #includes
-	var includeRe = /^\s*#include\s+["<]([^>"]+)\.h[">]/gm;
+	var includeRe = /^\s*#include\s+["<]([^\.]+\.h)[">]/gm;
 	var matchArray;
 	var libNames = [];
 

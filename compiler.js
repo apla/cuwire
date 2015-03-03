@@ -275,6 +275,9 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 				path.resolve (this.dict['runtime.platform.path'])
 			);
 
+			if (this.verbose)
+				console.log (cmd);
+
 			var child = exec (cmd, {env: env}, (function (error, stdout, stderr) {
 				// The callback gets the arguments (error, stdout, stderr).
 				// On success, error will be null. On error, error will be an instance
@@ -313,6 +316,11 @@ ArduinoCompiler.prototype.runCmd = function (scope) {
 //					console.log ('******************', scope.toUpperCase(), cmd);
 //					console.log ('******************', scope.toUpperCase(), 'exec error: ', error, 'stderr', stderr);
 				}
+
+				if (stderr) {
+					console.error (stderr);
+				}
+
 				if (cmdCb) {
 					cmdCb (error, stdout, stderr);
 				}
@@ -421,26 +429,29 @@ ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile, cb) {
 
 	var dict = this.getDict ();
 
-//	console.log (libNames);
-	libNames.forEach ((function (libName) {
-		if (this.libCompile[libName])
-			return;
+	// console.log (libNames);
+	libNames.forEach ((function (headerFile) {
 
-		var libMeta = Arduino.findLib (this.platformId, libName, dict['build.core']);
+		var libMeta = Arduino.findLib (this.platformId, headerFile, dict['build.core']);
 		if (!libMeta || !libMeta.root) {
-			if (this.debug) console.log ('cannot find library', libName);
+			if (this.debug) console.log ('cannot find library', headerFile);
 			return;
 		}
+
+		var libName = libMeta.name;
+
+		if (this.libCompile[libName])
+			return;
 
 //		console.log ('found lib', libName);
 
 		// requirement by requirement not supported
-		for (var req in libMeta.requirements) {
-			var libMeta2 = Arduino.findLib (this.platformId, req, dict['build.core']);
+		for (var reqHeader in libMeta.requirements) {
+			var libMeta2 = Arduino.findLib (this.platformId, reqHeader, dict['build.core']);
 			if (!libMeta2 || !libMeta2.root) {
 				// console.log ('cannot find library', req);
-			} else if (!this.libCompile[req]) {
-				this.libCompile[req] = libMeta2;
+			} else if (!this.libCompile[libMeta2.name]) {
+				this.libCompile[libMeta2.name] = libMeta2;
 			}
 
 		}
@@ -453,15 +464,15 @@ ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile, cb) {
 	// in a ideal case this is 3x speedup
 	// also, core do not need a rebuild
 
+	// console.log (this.libCompile);
 	// console.log (Object.keys (this.libCompile));
 
 	var allIncludes = [];
 
 	// TODO: add any library found in included source files
 	for (var libName in this.libCompile) {
-		allIncludes.push (this.libCompile[libName].include);
+		allIncludes.push (this.libCompile[libName].include || this.libCompile[libName].root);
 	}
-
 //	console.log (this.coreIncludes);
 //	console.log (allIncludes);
 
@@ -474,9 +485,11 @@ ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile, cb) {
 
 		this.libCompile[libName].processed = true;
 
-		var libIncludes = [].concat (this.coreIncludes, allIncludes, libMeta.include);
+//		console.log (libName, libMeta.include, libMeta.root);
+
+		var libIncludes = [].concat (this.coreIncludes, allIncludes, libMeta.include || libMeta.root);
 		if (libMeta.version !== '1.5') {
-			libIncludes = libIncludes.concat (path.join (libMeta.include, 'utility'));
+			libIncludes = libIncludes.concat (path.join (libMeta.include || libMeta.root, 'utility'));
 		}
 		libIncludes = libIncludes.map (wrapInclude).join (" ");
 
@@ -504,8 +517,8 @@ ArduinoCompiler.prototype.setLibNames = function (libNames, sourceFile, cb) {
 
 			this.objectFiles.push (dict.object_file);
 
-			if (this.verbose)
-				console.log (compileCmd);
+//			if (this.verbose)
+//				console.log (compileCmd);
 
 		}
 	}
@@ -558,8 +571,8 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 		cmdDesc = ['archive', this.platformId, localName + '.' + ext].join (" ");
 		this.enqueueCmd ('core', archiveCmd, null, cmdDesc);
 
-		if (this.verbose)
-			console.log (compileCmd);
+//		if (this.verbose)
+//			console.log (compileCmd);
 	}).bind (this));
 
 	// after all, we need to make core.a file
@@ -580,7 +593,7 @@ ArduinoCompiler.prototype.processSketch = function () {
 
 		// TODO: add any library found in included source files
 		for (var libName in this.libCompile) {
-			allIncludes.push (this.libCompile[libName].include);
+			allIncludes.push (this.libCompile[libName].include || this.libCompile[libName].root);
 		}
 
 		var includes = [].concat (this.coreIncludes, allIncludes).map (wrapInclude).join (" ");
@@ -600,8 +613,8 @@ ArduinoCompiler.prototype.processSketch = function () {
 
 		this.objectFiles.push (dict.object_file);
 
-		if (this.verbose)
-			console.log (compileCmd);
+//		if (this.verbose)
+//			console.log (compileCmd);
 
 	}).bind (this));
 
@@ -988,8 +1001,8 @@ ArduinoCompiler.prototype.linkAll = function () {
 	var linkCmd = common.replaceDict (this.platform.recipe['c.combine.pattern'], dict, null, "platform.recipe.c.combine.pattern");
 	this.enqueueCmd ('link', linkCmd, null, 'all together');
 
-	if (this.verbose)
-		console.log (linkCmd);
+//	if (this.verbose)
+//		console.log (linkCmd);
 
 }
 
