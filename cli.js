@@ -361,9 +361,9 @@ function guessSketch (arduino, options) {
 	var result = {};
 
 	if (options.sketch) {
-		if (userConfig.sketch[options.sketch]) {
-		// sketch template
-		result = userConfig.sketch[options.sketch];
+		if (userConfig.sketch && userConfig.sketch[options.sketch]) {
+			// sketch template
+			result = userConfig.sketch[options.sketch];
 		} else {
 			result.folder = options.sketch.replace (/[^.\/]+?\.(pde|ino)/, '');
 		}
