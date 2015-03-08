@@ -408,16 +408,10 @@ ArduinoCli.prototype.upload = function (options, cb) {
 		console.log (paint.yellow (scope) + "\t", message.match (/^done/) ? paint.green (message) : message);
 	});
 
-	uploader.on ('error', function (error, message) {
-		if (error.files && error.files.length) {
-			console.log (paint.cuwire(), 'compilation failed:')
-			error.files.forEach (function (fileDesc) {
-				console.log ('error in', paint.path (fileDesc[1])+(['',fileDesc[2], fileDesc[3]].join(':')), paint.error (fileDesc[4]));
-			});
-			console.log (paint.yellow ('command'), error.cmd)
-			return;
-		}
-		console.log (paint.error (error) + "\t", message);
+	compiler.on ('error', this.errorHandler.bind (this, 'compilation'));
+
+	compiler.on ('warning', function (warning) {
+		console.log (paint.error (warning));
 	});
 
 	uploader.on ('done', console.log.bind (console, paint.yellow ('upload'), paint.green ('done')));
@@ -452,17 +446,7 @@ ArduinoCli.prototype.compile = function (options, cb) {
 		console.log (paint.yellow (scope) + "\t", message.match (/^done/) ? paint.green (message) : message);
 	});
 
-	compiler.on ('error', function (error, message) {
-		if (error.files && error.files.length) {
-			console.log (paint.cuwire(), 'compilation failed:')
-			error.files.forEach (function (fileDesc) {
-				console.log ('error in', paint.path (fileDesc[1])+(['',fileDesc[2], fileDesc[3]].join(':')), paint.error (fileDesc[4]));
-			});
-			console.log (paint.yellow ('command'), error.cmd)
-			return;
-		}
-		console.log (paint.error (error) + "\t", message);
-	});
+	compiler.on ('error', this.errorHandler.bind (this, 'compilation'));
 
 	compiler.on ('warning', function (warning) {
 		console.log (paint.error (warning));
@@ -478,6 +462,26 @@ ArduinoCli.prototype.compile = function (options, cb) {
 	});
 
 	compiler.start ();
+}
+
+ArduinoCli.prototype.errorHandler = function (stage, error, message) {
+
+	console.log (paint.cuwire(), stage, 'failed:')
+
+	if (error && error.files && error.files.length) {
+		error.files.forEach (function (fileDesc) {
+			console.log ('error in', paint.path (fileDesc[1])+(['',fileDesc[2], fileDesc[3]].join(':')), paint.error (fileDesc[4]));
+		});
+		console.log (paint.yellow ('command'), error.cmd)
+	} else if (error && ("stderr" in error)) {
+		console.log (paint.error (error.stderr || error.cmd));
+	} else if (error && error.code) {
+		if (error.code === "ENOENT") {
+			console.log (paint.error ("File not found:"),  paint.path (error.path));
+		}
+	} else {
+		console.log (paint.error (error) + "\t", message)
+	}
 }
 
 ArduinoCli.prototype.iterateExamples = function (platformId, board, cache, filter) {
