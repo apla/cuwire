@@ -95,7 +95,7 @@ function replaceDict (str, conf, count, meta) {
 	if (count !== undefined && count > 2) {
 		throw "command still needs interpolation after 3 replacements:" + str;
 	}
-	var replacementRe = /{(\w+\.)*\w+}/g;
+	var replacementRe = /{[^}]+}/g;
 	var replacement = str.replace (replacementRe, function (match) {
 		var varPath = match.substring (1, match.length - 1);
 		var result = conf[varPath];
