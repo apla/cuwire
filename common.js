@@ -6,6 +6,16 @@ var path   = require ('path');
 var util   = require ('util');
 var crypto = require('crypto');
 
+Date.prototype.stdTimezoneOffset = function() {
+	var jan = new Date(this.getFullYear(), 0, 1);
+	var jul = new Date(this.getFullYear(), 6, 1);
+	return Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
+}
+
+Date.prototype.dst = function() {
+	return this.getTimezoneOffset() - this.stdTimezoneOffset();
+}
+
 var nodeToJavaPlatform = {
 	darwin: 'macosx',
 	win32: 'windows',
@@ -358,6 +368,13 @@ function createDict (arduino, platformId, boardId, boardModel, options, currentS
 			dict[dictK.substr (0, lastDotIdx)] = dict[dictK];
 		}
 	}
+
+	var date = new Date();
+
+	dict["extra.time.utc"]   = parseInt(date/1000);
+	dict["extra.time.local"] = parseInt(date/1000) - (date.getTimezoneOffset () * 60);
+	dict["extra.time.zone"]  = -1 * (date.getTimezoneOffset () * 60);
+	dict["extra.time.dst"]   = date.dst () * 60;
 
 	return dict;
 }

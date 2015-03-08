@@ -34,9 +34,12 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardModel, options
 
 	// TODO: get from build.core.path and build.variant.path
 	this.coreIncludes = [
-		dict['build.core.path'],
-		dict['build.variant.path']
+		dict['build.core.path']
 	];
+
+	if (dict['build.variant.path']) {
+		this.coreIncludes.push (dict['build.variant.path']);
+	}
 
 	if (options.includes) {
 		this.coreIncludes = this.coreIncludes.concat (options.includes);
