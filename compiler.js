@@ -127,9 +127,12 @@ ArduinoCompiler.prototype.buildAll = function (coreMeta) {
 			nameMatch: /[^\/]+\.(c|cpp|S)$/
 		});
 
-		common.pathWalk (dict['build.variant.path'], this.setCoreFiles.bind (this), {
-			nameMatch: /[^\/]+\.(c|cpp|S)$/
-		});
+		if (dict['build.variant.path'] && dict['build.variant.path'] !== '') {
+			this.emit ('warning', 'build.variant unknown');
+			common.pathWalk (dict['build.variant.path'], this.setCoreFiles.bind (this), {
+				nameMatch: /[^\/]+\.(c|cpp|S)$/
+			});
+		}
 	}
 }
 
