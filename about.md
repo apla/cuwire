@@ -36,3 +36,18 @@ Brackets is a modern IDE, has many good features, like QuickEdit. Adding Arduino
 I've tried [embedXcode](http://embedxcode.weebly.com/), [Stino for Sublime Text](https://github.com/Robot-Will/Stino), [Eclipse Arduino plugin](http://www.baeyens.it/eclipse/),
 but wasn’t satisfied. In most cases Arduino sketch compilation is supported, but
 if you have multiple projects/architectures, changing boards is painful.
+
+## cuwire
+
+So, I decided to start my own project. **cuwire** is an opensource attempt to build better microconroller IDE.
+On the current milestone, only Arduino sketches are supported. When project matures other build systems will be added.
+As for now, many hardware platforms are added and tested, test suite has proved reliability by example sketch
+compilation.
+
+What's next:
+
+ * IDE code completion;
+ * Board images with pin functions;
+ * Library management;
+ * Platform management;
+ * Debugger support.
