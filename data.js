@@ -194,7 +194,23 @@ Arduino.prototype.processDirs = function (type, dirs) {
 	}.bind (this));
 }
 
+function getUserSketchDir () {
+	// default user folders:
+	function getUserHome() {
+		return process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
+	}
 
+	// TODO: read preference file ~/Library/Arduino15/preferences.txt
+	// TODO: read preference file ~/.arduino/preferences.txt
+	var userSketchDir = path.join (getUserHome(), "Documents", "Arduino");
+	if (os.platform() === 'linux') {
+		userSketchDir = path.join (getUserHome(), "Arduino");
+	}
+
+	return userSketchDir;
+}
+
+Arduino.prototype.getUserSketchDir = getUserSketchDir;
 
 function appendStandardLocations (type, locations) {
 
@@ -240,17 +256,8 @@ function appendStandardLocations (type, locations) {
 		return;
 	}
 
-	// default user folders:
-	function getUserHome() {
-		return process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
-	}
+	var userSketchDir = getUserSketchDir ();
 
-	// TODO: read preference file ~/Library/Arduino15/preferences.txt
-	// TODO: read preference file ~/.arduino/preferences.txt
-	var userSketchDir = path.join (getUserHome(), "Documents", "Arduino");
-	if (os.platform() === 'linux') {
-		userSketchDir = path.join (getUserHome(), "Arduino");
-	}
 	locations.push (userSketchDir);
 
 //	console.log ('search for sketches within:', locations.join (", "));

@@ -1,0 +1,102 @@
+# from: https://groups.google.com/a/arduino.cc/forum/#!topic/developers/ZwxNPJHccQI
+ 
+# LM4F test.
+# ------------------------------
+ 
+# For more info:
+# https://github.com/arduino/Arduino/wiki/Arduino-IDE-1.5---3rd-party-Hardware-specification
+ 
+name=CC3200
+version=1.6.0
+ 
+# NRG compile variables
+# --------------------- 
+ 
+# Default "compiler.path" is correct, change only if you want to override the initial value
+compiler.path={runtime.hardware.path}/tools/lm4f/bin/
+compiler.c.cmd=arm-none-eabi-gcc
+compiler.c.flags=-c -Os -w -ffunction-sections -fdata-sections -mthumb -MMD
+compiler.c.elf.flags=-Os -nostartfiles -nostdlib -Wl,--gc-sections -T {runtime.hardware.path}/cc3200/cores/{build.core}/{ldscript} -Wl,--entry=ResetISR -mthumb
+compiler.c.elf.cmd=arm-none-eabi-g++
+compiler.S.flags=-c -g -assembler-with-cpp
+compiler.cpp.cmd=arm-none-eabi-g++
+#compiler.cpp.flags=-c -g -Os -Wall -ffunction-sections -fdata-sections -MMD -std=gnu++98 -fwrapv -fomit-frame-pointer -ggdb3 -fno-rtti
+compiler.cpp.flags=-c -Os -w -fno-rtti -fno-exceptions -ffunction-sections -fdata-sections -mthumb -MMD
+compiler.ar.cmd=arm-none-eabi-ar
+compiler.ar.flags=rcs
+compiler.objcopy.cmd=arm-none-eabi-objcopy
+compiler.objcopy.eep.flags=-O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0
+compiler.elf2hex.flags=-O binary
+compiler.elf2hex.cmd=arm-none-eabi-objcopy
+compiler.ldflags=
+compiler.size.cmd=arm-none-eabi-size
+# this can be overriden in boards.txt
+build.extra_flags=
+build.energia=-DENERGIA=14
+ 
+# cc3200 compile patterns
+# --------------------
+ 
+## Compile c files
+recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.c.flags} -mcpu={build.mcu} -mfloat-abi=hard -mfpu=fpv4-sp-d16 -fsingle-precision-constant -DF_CPU={build.f_cpu} -DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags} {build.energia} {includes} "{source_file}" -o "{object_file}"
+ 
+## Compile c++ files
+recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpp.flags} -mcpu={build.mcu} -mfloat-abi=hard -mfpu=fpv4-sp-d16 -fsingle-precision-constant -DF_CPU={build.f_cpu} -DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags} {build.energia} {includes} "{source_file}" -o "{object_file}"
+ 
+## Compile S files
+recipe.S.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.S.flags} -mcpu={build.mcu} -mfloat-abi=hard -mfpu=fpv4-sp-d16 -fsingle-precision-constant -DF_CPU={build.f_cpu} -DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags} {build.energia} {includes} "{source_file}" -o "{object_file}"
+ 
+## Create archives
+recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} "{build.path}/{archive_file}" "{object_file}"
+ 
+## Combine gc-sections, archives, and objects
+recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" {compiler.c.elf.flags} -mcpu={build.mcu} -mfloat-abi=hard -mfpu=fpv4-sp-d16 -fsingle-precision-constant -o "{build.path}/{build.project_name}.elf" {object_files} "{build.path}/{archive_file}" {runtime.hardware.path}/{build.core}/cores/{build.core}/driverlib/libdriverlib.a -lm -lc -lgcc "-L{build.path}" -lm
+ 
+## Create eeprom
+recipe.objcopy.eep.pattern=
+#"{compiler.path}{compiler.objcopy.cmd}" {compiler.objcopy.eep.flags} "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.eep"
+ 
+## Create hex
+recipe.objcopy.hex.pattern="{compiler.path}{compiler.elf2hex.cmd}" {compiler.elf2hex.flags} "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.bin"
+ 
+## Compute size
+recipe.size.pattern="{compiler.path}{compiler.size.cmd}" -A "{build.path}/{build.project_name}.elf"
+recipe.size.regex=^(?:\.text|\.data|\.bootloader)\s+([0-9]+).*
+recipe.size.regex.data=^(?:\.data|\.bss|\.noinit)\s+([0-9]+).*
+recipe.size.regex.eeprom=^(?:\.eeprom)\s+([0-9]+).*
+ 
+# msp430 Uploader/Programmers tools      
+# ------------------------------
+ 
+tools.cc3200prog.cmd.path={runtime.hardware.path}/tools/lm4f/bin/cc3200prog
+ 
+#Upload
+tools.cc3200prog.upload.params.verbose=
+tools.cc3200prog.upload.params.quiet=
+tools.cc3200prog.upload.pattern={cmd.path} {upload.verbose} {serial.port} "{build.path}/{build.project_name}.bin"
+ 
+#Program
+tools.tilib_wizzi.program.params.verbose=
+tools.tilib_wizzi.program.params.quiet=-q
+#tools.tilib_wizzi.program.pattern={cmd.path} "-C{config.path}" {program.verbose} tilib --force-reset "prog {build.path}/{build.project_name}.elf" "exit"
+#tools.tilib_wizzi.program.pattern={cmd.path} {program.verbose} tilib --force-reset "prog {build.path}/{build.project_name}.elf" "exit"
+tools.tilib_wizzi.program.pattern={cmd.path} {program.verbose} tilib --force-reset "prog {build.path}/{build.project_name}.hex"
+ 
+#Erase
+tools.tilib_wizzi.erase.params.verbose=
+tools.tilib_wizzi.erase.params.quiet=-q
+tools.tilib_wizzi.erase.pattern={cmd.path} {erase.verbose} tilib "erase all" "exit"
+ 
+#Bootloader
+#tools.tilib_wizzi.bootloader.params.verbose=
+#tools.tilib_wizzi.bootloader.params.quiet=
+#tools.tilib_wizzi.bootloader.pattern=
+ 
+# USB Default Flags
+# Default blank usb manufacturer will be filled it at compile time
+# - from numeric vendor ID, set to Unknown otherwise
+build.usb_manufacturer=
+build.usb_product=
+build.vid=0x1cbe
+build.pid=0x00fd
+build.usb_flags=-DUSB_VID={build.vid} -DUSB_PID={build.pid} '-DUSB_MANUFACTURER={build.usb_manufacturer}' '-DUSB_PRODUCT={build.usb_product}'

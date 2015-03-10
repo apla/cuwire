@@ -102,8 +102,8 @@ function pathToVar (root, varPath, value) {
 }
 
 function replaceDict (str, conf, count, meta) {
-	if (count !== undefined && count > 2) {
-		throw "command still needs interpolation after 3 replacements:" + str;
+	if (count !== undefined && count > 4) {
+		throw "command still needs interpolation after 5 replacements:" + str;
 	}
 	var replacementRe = /{[^}]+}/g;
 	var replacement = str.replace (replacementRe, function (match) {

@@ -1,0 +1,97 @@
+# X86 compile variables
+# ---------------------
+
+name=Arduino X86 Boards
+compiler.toolchain.path={runtime.hardware.path}/tools/edison
+compiler.prefix=i586-poky-linux
+compiler.install.cmd=tools/edison/install_script.sh
+compiler.path.linux64={compiler.toolchain.path}/sysroots/x86_64-pokysdk-linux/usr/bin/i586-poky-linux/
+compiler.path.macosx={compiler.toolchain.path}/sysroots/i386-pokysdk-darwin/usr/bin/i586-poky-linux/
+compiler.path.windows={compiler.toolchain.path}/sysroots/i686-pokysdk-mingw32/usr/bin/i586-poky-linux/
+compiler.path.linux={compiler.toolchain.path}/sysroots/i686-pokysdk-linux/usr/bin/i586-poky-linux/
+compiler.sysroot={compiler.toolchain.path}/sysroots/core2-32-poky-linux
+compiler.c.cmd={compiler.prefix}-gcc
+compiler.c.flags= -m32 -march=i586 "--sysroot={compiler.sysroot}" -c -g -Os -w -ffunction-sections -fdata-sections -MMD -D__ARDUINO_X86__
+compiler.c.elf.flags=-m32 -march=i586 "--sysroot={compiler.sysroot}" -Os -Wl,--gc-sections
+compiler.c.elf.cmd={compiler.prefix}-g++
+compiler.S.flags=-c -g -assembler-with-cpp
+compiler.cpp.cmd={compiler.prefix}-g++
+compiler.cpp.flags= -m32 -march=i586 "--sysroot={compiler.sysroot}" -c -g -Os -w -fno-exceptions -ffunction-sections -fdata-sections -MMD -D__ARDUINO_X86__
+compiler.ar.cmd={compiler.prefix}-ar
+compiler.ar.flags=rcs
+compiler.objcopy.cmd={compiler.prefix}-objcopy
+compiler.objcopy.eep.flags=-O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0
+compiler.elf2hex.flags=-O ihex -R .eeprom
+compiler.elf2hex.cmd={compiler.prefix}-objcopy
+compiler.ldflags=
+compiler.size.cmd={compiler.prefix}-size
+compiler.strip.cmd={compiler.prefix}-strip
+# this can be overriden in boards.txt
+build.extra_flags=
+
+# X86 compile patterns
+# --------------------
+
+## Compile c files
+recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.c.flags} -march={build.mcu} {build.f_cpu} -D{software}={runtime.ide.version} {build.extra_flags} {includes} "{source_file}" -o "{object_file}"
+
+## Compile c++ files
+recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpp.flags} -march={build.mcu} {build.f_cpu} -D{software}={runtime.ide.version} {build.extra_flags} {includes} "{source_file}" -o "{object_file}"
+
+## Create archives
+recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} "{build.path}/{archive_file}" "{object_file}"
+
+## Combine gc-sections, archives, and objects
+recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" {compiler.c.elf.flags} -march={build.mcu} -o "{build.path}/{build.project_name}.elf" {object_files} "{build.path}/{archive_file}" "-L{build.path}" -lm -lpthread
+
+## Create eeprom
+recipe.objcopy.eep.pattern="{compiler.path}{compiler.strip.cmd}" "{build.path}/{build.project_name}.elf"
+
+## Create hex
+recipe.objcopy.hex.pattern=
+
+## Compute size
+recipe.size.pattern="{compiler.path}{compiler.size.cmd}" -A "{build.path}/{build.project_name}.elf"
+recipe.size.regex=Total\s+([0-9]+).*
+
+
+# X86 Uploader/Programmers tools
+# -------------------
+tools.izmirdl.cmd.path.macosx={runtime.hardware.path}/tools/izmir/clupload_osx.sh
+tools.izmirdl.cmd.path.linux={runtime.hardware.path}/tools/izmir/clupload_linux.sh
+tools.izmirdl.cmd.path.windows={runtime.hardware.path}/tools/izmir/clupload_win.sh
+#tools.izmirdl.cmd.path={runtime.ide.path}/hardware/tools/x86/bin/lsz
+#tools.izmirdl.cmd.dir={runtime.ide.path}/hardware/tools/x86/bin/
+
+
+#tools.izmirdl.config.path={runtime.ide.path}/hardware/tools/x86/etc/izmirdl.conf
+#tools.izmirdl.cmd.path.linux={runtime.ide.path}/hardware/tools/x86/bin/lsz.exe
+#tools.izmirdl.config.path.linux={runtime.ide.path}/hardware/tools/izmirdl.conf
+
+#todo: pass extra args to shell script
+tools.izmirdl.upload.params.verbose=-vvvvvv
+tools.izmirdl.upload.params.quiet=-q
+
+#tools.izmirdl.upload.pattern=bash --verbose --noprofile "{cmd.path}" "{runtime.ide.path}/hardware/tools/x86/bin/i" {build.path}/{build.project_name}.elf {serial.port}
+
+# NOTE: this cannot work unless {cmd.path} expands without any spaces...
+#tools.izmirdl.upload.pattern= bash -c "{cmd.path}  {upload.verbose} --overwrite --escape --binary {build.path}/{build.project_name}.elf  < {serial.port}  >  {serial.port} ; {cmd.path} --escape -c 'mv {build.project_name}.elf /sketch/sketch.elf' < {serial.port} > {serial.port}"
+
+tools.izmirdl.upload.pattern=/bin/bash --verbose --noprofile "{cmd.path}" "{runtime.ide.path}/hardware/tools/x86/bin" {build.path}/{build.project_name}.elf {serial.port}
+tools.izmirdl.upload.pattern.windows={runtime.hardware.path}/tools/x86/bin/bash --verbose  --noprofile {cmd.path} {runtime.ide.path}/hardware/tools/x86/bin {build.path}/{build.project_name}.elf {serial.port}
+#------------------------------------------------------
+
+
+
+tools.izmirdl.program.params.verbose=-v -v -v -v
+tools.izmirdl.program.params.quiet=-q -q
+tools.izmirdl.program.pattern="{cmd.path}" "-C{config.path}" {program.verbose} -p{build.mcu} -c{protocol} {program.extra_params} "-Uflash:w:{build.path}/{build.project_name}.hex:i"
+
+tools.izmirdl.erase.params.verbose=-v -v -v -v
+tools.izmirdl.erase.params.quiet=-q -q
+tools.izmirdl.erase.pattern="{cmd.path}" "-C{config.path}" {erase.verbose} -p{build.mcu} -c{protocol} {program.extra_params} -e -Ulock:w:{bootloader.unlock_bits}:m -Uefuse:w:{bootloader.extended_fuses}:m -Uhfuse:w:{bootloader.high_fuses}:m -Ulfuse:w:{bootloader.low_fuses}:m
+
+tools.izmirdl.bootloader.params.verbose=-v -v -v -v
+tools.izmirdl.bootloader.params.quiet=-q -q
+tools.izmirdl.bootloader.pattern="{cmd.path}" "-C{config.path}" {bootloader.verbose} -p{build.mcu} -c{protocol} {program.extra_params} "-Uflash:w:{runtime.ide.path}/hardware/arduino/x86/bootloaders/{bootloader.file}:i" -Ulock:w:{bootloader.lock_bits}:m
+

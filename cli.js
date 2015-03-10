@@ -382,6 +382,17 @@ function guessSketch (arduino, options) {
 	return result;
 }
 
+ArduinoCli.prototype.platform = function (options, cb) {
+	var ArduinoPlatform = require ('./platform');
+	if (options._[0] === 'import') {
+		var platformId = options._[1];
+		var folder     = options._[2];
+
+		ArduinoPlatform.importFolder (platformId, folder);
+	}
+}
+
+
 ArduinoCli.prototype.upload = function (options, cb) {
 	var buildMeta = guessSketch (this.arduino, options);
 

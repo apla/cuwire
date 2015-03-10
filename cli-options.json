@@ -61,6 +61,11 @@
 		"run": "showPorts",
 		"arduino": true
 	},
+	"platform": {
+		"description": "platform manipulations: import, install, remove",
+		"run": "platform",
+		"arduino": true
+	},
 	"compile": {
 		"description": "compile sketch in provided dir",
 		"run": "compile",
