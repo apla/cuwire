@@ -419,9 +419,9 @@ ArduinoCli.prototype.upload = function (options, cb) {
 		console.log (paint.yellow (scope) + "\t", message.match (/^done/) ? paint.green (message) : message);
 	});
 
-	compiler.on ('error', this.errorHandler.bind (this, 'compilation'));
+	uploader.on ('error', this.errorHandler.bind (this, 'upload'));
 
-	compiler.on ('warning', function (warning) {
+	uploader.on ('warning', function (warning) {
 		console.log (paint.error (warning));
 	});
 
