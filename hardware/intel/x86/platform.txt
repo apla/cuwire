@@ -1,6 +1,6 @@
 
 # X86 compile variables
-# --------------------- 
+# ---------------------
 
 name=Intel® Galileo Boards
 version=1.5.3
@@ -58,9 +58,9 @@ recipe.size.regex=Total\s+([0-9]+).*
 
 # X86 Uploader/Programmers tools
 # -------------------
-tools.izmirdl.cmd.path.macosx={runtime.hardware.path}/tools/izmir/clupload_osx.sh
-tools.izmirdl.cmd.path.linux={runtime.hardware.path}/tools/izmir/clupload_linux.sh
-tools.izmirdl.cmd.path.windows={runtime.hardware.path}/tools/izmir/clupload_win.sh
+tools.izmirdl.cmd.path.macosx={runtime.platform.path}/tools/izmir/clupload_osx.sh
+tools.izmirdl.cmd.path.linux={runtime.platform.path}/tools/izmir/clupload_linux.sh
+tools.izmirdl.cmd.path.windows={runtime.platform.path}/tools/izmir/clupload_win.sh
 #tools.izmirdl.cmd.path={runtime.ide.path}/hardware/tools/x86/bin/lsz
 #tools.izmirdl.cmd.dir={runtime.ide.path}/hardware/tools/x86/bin/
 
@@ -73,13 +73,13 @@ tools.izmirdl.cmd.path.windows={runtime.hardware.path}/tools/izmir/clupload_win.
 tools.izmirdl.upload.params.verbose=-vvvvvv
 tools.izmirdl.upload.params.quiet=-q
 
-#tools.izmirdl.upload.pattern=bash --verbose --noprofile "{cmd.path}" "{runtime.ide.path}/hardware/tools/x86/bin/i" {build.path}/{build.project_name}.elf {serial.port}  
+#tools.izmirdl.upload.pattern=bash --verbose --noprofile "{cmd.path}" "{runtime.ide.path}/hardware/tools/x86/bin/i" {build.path}/{build.project_name}.elf {serial.port}
 
 # NOTE: this cannot work unless {cmd.path} expands without any spaces...
-#tools.izmirdl.upload.pattern= bash -c "{cmd.path}  {upload.verbose} --overwrite --escape --binary {build.path}/{build.project_name}.elf  < {serial.port}  >  {serial.port} ; {cmd.path} --escape -c 'mv {build.project_name}.elf /sketch/sketch.elf' < {serial.port} > {serial.port}"  
+#tools.izmirdl.upload.pattern= bash -c "{cmd.path}  {upload.verbose} --overwrite --escape --binary {build.path}/{build.project_name}.elf  < {serial.port}  >  {serial.port} ; {cmd.path} --escape -c 'mv {build.project_name}.elf /sketch/sketch.elf' < {serial.port} > {serial.port}"
 
-tools.izmirdl.upload.pattern=/bin/bash --verbose --noprofile "{cmd.path}" "{runtime.ide.path}/hardware/tools/x86/bin" {build.path}/{build.project_name}.elf {serial.port}
-
+tools.izmirdl.upload.pattern=/bin/bash --verbose --noprofile "{cmd.path}" "{runtime.hardware.path}/tools/x86/bin" {build.path}/{build.project_name}.elf {serial.port}
+tools.izmirdl.upload.pattern.windows={runtime.hardware.path}/tools/x86/bin/bash --verbose  --noprofile {cmd.path} {runtime.hardware.path}/tools/x86/bin {build.path}/{build.project_name}.elf {serial.port}
 #------------------------------------------------------
 
 
