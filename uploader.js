@@ -81,11 +81,11 @@ ArduinoUploader.prototype.prepareCmd = function (tool) {
 
 	this.emit ('log', 'upload', "using port: "+tool['serial.port']);
 
-	console.log (tool, recipe);
+	if (this.debug) console.log (tool, recipe);
 
 	var cmd = common.replaceDict (recipe, tool);
 
-	console.log (cmd);
+	if (this.verbose) console.log (cmd);
 
 	if (tool['upload.use_1200bps_touch']) {
 		this.emit ('log', 'upload', "dancing 1200 bod");
