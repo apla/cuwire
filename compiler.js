@@ -117,7 +117,8 @@ ArduinoCompiler.prototype.buildAll = function (coreMeta) {
 	}).join ("\n"));
 
 	common.pathWalk (sketchFolder, this.setProjectFiles.bind (this), {
-		nameMatch: /[^\/]+\.(c|cpp|h|hpp|S|ino|pde)?$/i
+		nameMatch: /[^\/]+\.(c|cpp|h|hpp|S|ino|pde)?$/i,
+		depth: false
 	});
 
 	if (this.cacheCore && coreMeta && coreMeta.stat && coreMeta.stat.isFile()) {

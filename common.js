@@ -148,12 +148,21 @@ function pathWalk (dir, done, options) {
 				} else if ("nameMatch" in options && file.match (options.nameMatch)) {
 					ok = true;
 				} else if (stat && !stat.isSymbolicLink() && stat.isDirectory()) {
+					var oDeep = Object.create (options);
+					if (options.depth !== undefined) {
+						if (options.depth) {// 0, false and so on
+							oDeep.depth = parseInt (options.depth, 10);
+						} else {
+							if (!--pending) done (null, {});
+							return;
+						}
+					}
 					pathWalk (file, function(err, res) {
 						for (var newFile in res) {
 							results[newFile] = res[newFile];
 						}
 						if (!--pending) done(null, results);
-					}, options);
+					}, oDeep);
 					return;
 				} else if (!("nameMatch" in options)) {
 					ok = true;
