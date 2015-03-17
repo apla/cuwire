@@ -672,7 +672,7 @@ ArduinoCompiler.prototype.filePreProcessor = function (fileName, fileMeta) {
 	if (extname === 'ino' || extname === 'pde') {
 		this.processIno (fileName, fileMeta);
 	} else if (extname.match (/c|cpp|h|hpp/)) {
-		this.processCpp (fileName, fileMeta);
+		this.processCpp (fileName, fileMeta, extname);
 	} else if (extname.match (/S/)) {
 		this.processAsm (fileName, fileMeta);
 	}
@@ -849,14 +849,15 @@ ArduinoCompiler.prototype.processIno = function (inoFile, fileMeta) {
 
 }
 
-ArduinoCompiler.prototype.processCpp = function (cppFile, fileMeta) { // also for a c, h files
+ArduinoCompiler.prototype.processCpp = function (cppFile, fileMeta, extname) { // also for a c, h files
 	// read file
 
 	// TODO: Arduino don't process subdirs. inverstigate need to create subdirs if any
 	var cppRelPath = path.relative (this.sketchFolder, cppFile);
 	var cppFolder = path.join (this.buildFolder, path.dirname (cppRelPath));
 	var sourceFile = path.join (this.buildFolder, cppRelPath);
-	this.setSketchFile (sourceFile);
+	if (extname.match (/^(c|cpp)$/))
+		this.setSketchFile (sourceFile);
 
 	var dict = this.getDict ();
 
