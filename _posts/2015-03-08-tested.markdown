@@ -1,0 +1,24 @@
+---
+layout: post
+title:  "Tests and fixes"
+date:   2015-03-08 03:04:12
+categories: cuwire
+lead: Huge update, I don't know how it works before…
+---
+
+Huge maintenance release, mainly focused on issues and testing framework.
+
+27 files changed, 2356 insertions(+), 706 deletions(-)
+
+CLI:
+
+ * Platform aliases support and new platforms tested: Galileo, STM32, TI, Teensy;
+ * Added test command, you can run examples sketch compilation for all examples or by platform;
+ * Arduino.app folder scanner fixes;
+ * Compilation and upload fixes.
+
+GUI:
+
+ * UI fixes.
+
+Enjoy!
