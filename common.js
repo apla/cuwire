@@ -444,13 +444,35 @@ function buildFolder (sketchFolder, cb) {
 	return buildFolder;
 }
 
+function mkdirParent (dirPath, mode, callback) {
+	//Call the standard fs.mkdir
+	if (!callback) {
+		callback = mode;
+		mode = undefined;
+	}
+	fs.mkdir(dirPath, mode, function(error) {
+		//When it fail in this way, do the custom steps
+		if (error && error.code === 'ENOENT') {
+			//Create all the parents recursively
+			mkdirParent (path.dirname (dirPath), mode, function (err) {
+				//And then the directory
+				mkdirParent (dirPath, mode, callback);
+			});
+			return;
+		}
+		//Manually run the callback since we used our own callback to do all these
+		callback && callback(error);
+	});
+};
+
 module.exports = {
-	pathToVar: pathToVar,
-	replaceDict: replaceDict,
-	createDict: createDict,
-	pathWalk: pathWalk,
-	buildFolder: buildFolder,
+	pathToVar:     pathToVar,
+	replaceDict:   replaceDict,
+	createDict:    createDict,
+	pathWalk:      pathWalk,
+	buildFolder:   buildFolder,
 	prepareEnv:    prepareEnv,
 	prefsFileName: prefsFileName,
 	cacheFileName: cacheFileName,
+	mkdirParent:   mkdirParent
 };
