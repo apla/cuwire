@@ -34,7 +34,7 @@ var Arduino = function (customRuntimeFolders, customSketchesFolder, fromScratch,
 	this.init (customRuntimeFolders, customSketchesFolder);
 
 
-	this.on ('iodone', this.storeBoardsData.bind (this));
+	this.on ('iodone', this.storeHWData.bind (this));
 	this.on ('iodone', this.storeLibraryData.bind (this));
 
 	this.on ('iodone', (function () {
@@ -174,7 +174,7 @@ Arduino.prototype.processDirs = function (type, dirs) {
 
 		common.pathWalk (libFolder, this.librariesFound.bind (this, dir, this.ioDone ('libraries', dir), undefined), {
 			nameMatch:  libWalkRegexp,
-			dataFilter: this.parseLibNames.bind (this)
+			dataFilter: this.parseLibNames.bind (this),
 		});
 
 		if (this.scanExamples) {
@@ -557,16 +557,24 @@ Arduino.prototype.hardwareFound = function (instanceFolder, done, err, files) {
 	done ('hardware');
 }
 
-Arduino.prototype.storeBoardsData = function (evt) {
-	fs.writeFile (
-		path.join (__dirname, "../generated/arduino.json"),
-		JSON.stringify (this.hardware, null, '\t'),
-		function (err) {}
-	);
+Arduino.prototype.storeHWData = function (evt) {
+	var hwCacheFile = common.cacheFileName ('hardware');
+	fs.mkdir (path.dirname (hwCacheFile), function (err) {
+		if (err && err.code !== 'EEXIST') {
+			console.log ("cannot save hardware cache:", err);
+			return;
+		}
+		fs.writeFile (
+			hwCacheFile,
+			JSON.stringify (this.hardware, null, '\t'),
+			function (err) {}
+		);
+	}.bind (this));
+
 }
 
-Arduino.prototype.loadBoardsData = function () {
-	fs.readFile (path.join (__dirname, "../generated/arduino.json"), (function (err, data) {
+Arduino.prototype.loadHWData = function () {
+	fs.readFile (common.cacheFileName ('hardware'), (function (err, data) {
 		if (err) {
 			this.emit ('error', err);
 			return;
@@ -581,15 +589,22 @@ Arduino.prototype.loadBoardsData = function () {
 
 
 Arduino.prototype.storeLibraryData = function (evt) {
-	fs.writeFile (
-		path.join (__dirname, "../generated/libraries.json"),
-		JSON.stringify (this.libraryData, null, '\t'),
-		function (err) {}
-	);
+	var libCacheFile = common.cacheFileName ('libraries');
+	fs.mkdir (path.dirname (libCacheFile), function (err) {
+		if (err && err.code !== 'EEXIST') {
+			console.log ("cannot save library cache:", err);
+			return;
+		}
+		fs.writeFile (
+			libCacheFile,
+			JSON.stringify (this.libraryData, null, '\t'),
+			function (err) {}
+		);
+	}.bind (this));
 }
 
 Arduino.prototype.loadLibraryData = function () {
-	fs.readFile (path.join (__dirname, "../generated/libraries.json"), (function (err, data) {
+	fs.readFile (common.cacheFileName ('libraries'), (function (err, data) {
 		if (err) {
 			this.emit ('error', err);
 			return;
