@@ -28,6 +28,7 @@ var Arduino = function (customRuntimeFolders, customSketchesFolder, fromScratch,
 
 	if (options.verbose) this.verbose = options.verbose;
 	if (options.debug)   this.debug   = options.debug;
+	if (options.scanExamples) this.scanExamples   = options.scanExamples;
 
 	// useful for reloading
 	this.init (customRuntimeFolders, customSketchesFolder);
@@ -165,7 +166,8 @@ Arduino.prototype.processDirs = function (type, dirs) {
 
 		common.pathWalk (hwFolder, this.hardwareFound.bind (this, dir, this.ioDone ('hardware', dir)), {
 			nameMatch: hwWalkRegexp,
-			readFiles: true
+			readFiles: true,
+			depth: 3
 		});
 
 		var libFolder = path.join (dir, 'libraries');
@@ -175,11 +177,13 @@ Arduino.prototype.processDirs = function (type, dirs) {
 			dataFilter: this.parseLibNames.bind (this)
 		});
 
-		var examplesFolder = path.join (dir, 'examples');
+		if (this.scanExamples) {
+			var examplesFolder = path.join (dir, 'examples');
 
-		common.pathWalk (examplesFolder, this.examplesFound.bind (this, dir, this.ioDone ('examples', dir), {}), {
-			nameMatch:  exampleWalkRegexp,
-		});
+			common.pathWalk (examplesFolder, this.examplesFound.bind (this, dir, this.ioDone ('examples', dir), {}), {
+				nameMatch:  exampleWalkRegexp,
+			});
+		}
 
 
 //		if (os.platform () === 'darwin') {
@@ -322,6 +326,10 @@ Arduino.prototype.librariesFound = function (instanceFolder, done, hwRef, err, f
 	Object.keys (files).forEach (function (fileName) {
 		if (fileName.match (/examples$/)) {
 			remains --;
+
+			if (!this.scanExamples) {
+				return;
+			}
 
 			var examplesFolder = fileName;
 

@@ -133,6 +133,27 @@ function FileWithStat (path, stat) {
 function pathWalk (dir, done, options) {
 	options = options || {};
 
+	if (path.basename (dir) === '.git') {
+		done();
+		return;
+	}
+
+//	var errStack = {};
+//	Error.captureStackTrace(errStack);
+//
+//	var _done = done;
+//	done = function (err, files) {
+//		if (err) {
+//			console.error (dir, err);
+//		} else if (Object.keys (files).length) {
+//			if ("/Users/apla/Documents/Arduino/libraries/RTIMULib/RTFusionRTQF.cpp" in files) {
+//				console.log (errStack.stack);
+//			}
+////			console.log (dir, Object.keys (files));
+//		}
+//		_done (err, files);
+//	};
+
 	var results = {};
 	fs.readdir(dir, function(err, list) {
 		if (err) return done(err);
@@ -150,9 +171,9 @@ function pathWalk (dir, done, options) {
 				} else if (stat && !stat.isSymbolicLink() && stat.isDirectory()) {
 					var oDeep = Object.create (options);
 					if (options.depth !== undefined) {
-						if (options.depth) {// 0, false and so on
-							oDeep.depth = parseInt (options.depth, 10);
-						} else {
+						if (options.depth) {
+							oDeep.depth = parseInt (options.depth, 10) - 1;
+						} else { // 0, false and so on
 							if (!--pending) done (null, {});
 							return;
 						}
