@@ -1,13 +1,18 @@
 #!/usr/bin/env node
+
+var fs   = require ('fs');
+var os   = require ('os');
+var path = require ('path');
+
+var yargs = require ("yargs");
+
 var ArduinoData = require ('./data');
 
 var ArduinoCompiler = require ('./compiler');
 var ArduinoUploader = require ('./uploader');
 var CuwireSerial    = require ('./serial');
 
-var fs   = require ('fs');
-var os   = require ('os');
-var path = require ('path');
+var common = require ('./common');
 
 var paint = require ('./color');
 
@@ -15,25 +20,17 @@ paint.error   = paint.bind (paint, "red+white_bg");
 paint.path    = paint.cyan.bind (paint);
 paint.cuwire  = paint.green.bind (paint, "cuwire");
 
-var yargs = require ("yargs");
-
 var cliConfig = require ('./cli-options.json');
-
-function getPrefsFile() {
-	var home = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
-	var prefs = {
-		darwin: 'Library/Application Support/cuwire.json',
-		win32:  'AppData/Local/cuwire.json',
-		linux:  '.cuwire.json'
-	};
-	return path.join (home, prefs[os.platform()]);
-}
 
 var userConfig;
 try {
-	userConfig = require (getPrefsFile ());
+	userConfig = require (common.prefsFileName ());
 } catch (e) {
-	userConfig = {};
+	try {
+		userConfig = require (common.prefsFileName (true));
+	} catch (e) {
+		userConfig = {};
+	}
 }
 
 var sketchDir;

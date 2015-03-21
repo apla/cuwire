@@ -130,6 +130,29 @@ function FileWithStat (path, stat) {
 	this.stat = stat;
 }
 
+var prefsDir = {
+	darwin: 'Library/Application Support/cuwire',
+	win32:  'AppData/Local/cuwire',
+	linux:  '.cuwire'
+};
+
+var homeDir = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
+
+function prefsFileName (old) {
+	var oldPrefsFile = {
+		darwin: 'Library/Application Support/cuwire.json',
+		win32:  'AppData/Local/cuwire.json',
+		linux:  '.cuwire.json'
+	};
+	if (old) return path.join (homeDir, oldPrefsFile[os.platform()]);
+	return path.join (homeDir, prefsDir[os.platform()], 'preferences.json');
+}
+
+function cacheFileName (type) {
+	return path.join (homeDir, prefsDir[os.platform()], type + '.json');
+}
+
+
 function pathWalk (dir, done, options) {
 	options = options || {};
 
@@ -161,6 +184,7 @@ function pathWalk (dir, done, options) {
 		if (!pending) return done(null, results);
 		list.forEach(function(file) {
 			file = path.join (dir, file);
+//			console.log (file);
 			fs.lstat(file, function(err, stat) {
 
 				var ok = false;
@@ -426,5 +450,7 @@ module.exports = {
 	createDict: createDict,
 	pathWalk: pathWalk,
 	buildFolder: buildFolder,
-	prepareEnv: prepareEnv
+	prepareEnv:    prepareEnv,
+	prefsFileName: prefsFileName,
+	cacheFileName: cacheFileName,
 };
