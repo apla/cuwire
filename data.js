@@ -297,6 +297,7 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 	}
 
 	var keyValue = {};
+	var haveRuntimeIde = false;
 
 	data.toString ().split (/[\r\n]+/).forEach (function (line) {
 		if (line.indexOf("#") === 0) return;
@@ -304,9 +305,14 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 		// console.log (line);
 		var ref = line.substring (0, line.indexOf ('='));
 		var value = line.substring (line.indexOf ('=')+1);
+		haveRuntimeIde = haveRuntimeIde || value.match (/\{runtime\.ide\.path\}/);
 		keyValue[ref] = value;
-
 	});
+
+	Object.defineProperty (keyValue, "haveRuntimeIde", {
+		enumerable: false,
+		value: haveRuntimeIde ? true : false
+	})
 //	console.log (Object.keys (boards));
 	cb && cb (null, section, keyValue);
 
@@ -534,6 +540,7 @@ Arduino.prototype.hardwareFound = function (instanceFolder, done, err, files) {
 		var type = localFile.replace ('.txt', '');
 
 		var keyValue = this.parseConfig (fileMeta.contents);
+		var requireArduino = keyValue.haveRuntimeIde;
 
 		var data;
 		if (type === "boards") {
@@ -546,7 +553,7 @@ Arduino.prototype.hardwareFound = function (instanceFolder, done, err, files) {
 		}
 		this.hardware[platformId][type]  = data;
 
-		this.folders[instanceFolder][type][vendor+":"+arch] = true;
+		this.folders[instanceFolder][type][vendor+":"+arch] = requireArduino ? 'require "runtime.ide.path"' : "autonomous";
 
 		var currentHw = this.hardware[platformId][type];
 

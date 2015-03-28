@@ -60,6 +60,7 @@ recipe.size.regex=Total\s+([0-9]+).*
 # -------------------
 tools.izmirdl.cmd.path.macosx={runtime.platform.path}/tools/izmir/clupload_osx.sh
 tools.izmirdl.cmd.path.linux={runtime.platform.path}/tools/izmir/clupload_linux.sh
+tools.izmirdl.cmd.path.linux64={runtime.platform.path}/tools/izmir/clupload_linux.sh
 tools.izmirdl.cmd.path.windows={runtime.platform.path}/tools/izmir/clupload_win.sh
 #tools.izmirdl.cmd.path={runtime.ide.path}/hardware/tools/x86/bin/lsz
 #tools.izmirdl.cmd.dir={runtime.ide.path}/hardware/tools/x86/bin/
@@ -94,5 +95,5 @@ tools.izmirdl.erase.pattern="{cmd.path}" "-C{config.path}" {erase.verbose} -p{bu
 
 tools.izmirdl.bootloader.params.verbose=-v -v -v -v
 tools.izmirdl.bootloader.params.quiet=-q -q
-tools.izmirdl.bootloader.pattern="{cmd.path}" "-C{config.path}" {bootloader.verbose} -p{build.mcu} -c{protocol} {program.extra_params} "-Uflash:w:{runtime.ide.path}/hardware/arduino/x86/bootloaders/{bootloader.file}:i" -Ulock:w:{bootloader.lock_bits}:m
+tools.izmirdl.bootloader.pattern="{cmd.path}" "-C{config.path}" {bootloader.verbose} -p{build.mcu} -c{protocol} {program.extra_params} "-Uflash:w:{runtime.hardware.path}/x86/bootloaders/{bootloader.file}:i" -Ulock:w:{bootloader.lock_bits}:m
 

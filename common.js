@@ -285,9 +285,14 @@ function createDictOld (arduino, platformId, boardId, boardVariant, options, cur
 	// if we have runtimeFolder, it is accessible via arduino.acceptableRuntimes[0]
 	var runtimeFolder = arduino.acceptableRuntimes[0];
 
-	pathToVar (conf, 'runtime.ide.path', runtimeFolder);
-	// TODO: get version from mac os x bundle or from windows revisions.txt
-	pathToVar (conf, 'runtime.ide.version', arduino.acceptableVersions[0].replace (/\./g, ""));
+	if (runtimeFolder) {
+		pathToVar (conf, 'runtime.ide.path', runtimeFolder);
+		// TODO: get version from mac os x bundle or from windows revisions.txt
+		pathToVar (conf, 'runtime.ide.version', arduino.acceptableVersions[0].replace (/\./g, ""));
+	} else {
+		// from 1.6.0 arduino has other version numeration
+		pathToVar (conf, 'runtime.ide.version', "160");
+	}
 	pathToVar (conf, 'software', "ARDUINO");
 
 	//	Preferences.set("runtime.platform.path", platformFolder.getAbsolutePath());
