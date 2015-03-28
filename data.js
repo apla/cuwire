@@ -499,7 +499,7 @@ Arduino.prototype.hardwareFound = function (instanceFolder, done, err, files) {
 		if (vendor === 'arduino' && pathChunks.length === 2) {
 			console.log ('found Arduino 1.0.x file:', fullPath, relativePath);
 			filesToProcess = [];
-			done ('hardware');
+			// done ('hardware');
 			return true;
 		}
 	});
