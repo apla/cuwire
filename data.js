@@ -70,7 +70,14 @@ Arduino.runtimeFolders = {
 
 Arduino.prototype.init = function (customRuntimeFolders, customSketchesFolder) {
 	customRuntimeFolders = appendStandardLocations ('runtime',  customRuntimeFolders);
+
+	if (this.debug)
+		console.log ('runtime folders:', customRuntimeFolders);
+
 	customSketchesFolder = appendStandardLocations ('sketches', customSketchesFolder);
+
+	if (this.debug)
+		console.log ('sketches folders:', customSketchesFolder);
 
 	// actually, there is two types of runtimes: builtin into app and standalone.
 	// TODO: if we found in description platform inheritance or runtime.ide expansion,
@@ -234,7 +241,7 @@ function appendStandardLocations (type, locations) {
 	// cuwire doesn't need to support multiple runtimes
 	if (type === 'runtime') {
 		if (!locations.length)
-			locations = Arduino.runtimeFolders [os.platform()];
+			locations = JSON.parse (JSON.stringify (Arduino.runtimeFolders[os.platform()]));
 
 		// postprocessing
 		locations.forEach (function (location, idx) {
