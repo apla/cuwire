@@ -7,6 +7,16 @@
 <meta name="author" content="{{ site.name }}" />
 <meta name="description" content="{{ site.description }}">
 
+<script>
+	var redirect = window.location.href.replace (/^https?\:\/\/apla\.github\.io\/cuwire/, 'http://cuwire.io');
+	if (redirect)
+		window.location.href = redirect;
+}
+</script>
+<!--{{ page.url | replace_first:site.baseurl,'' }}-->
+<link rel="canonical" href="http://cuwire.io{{ page.url | replace_first:site.baseurl,'' }}"/>
+
+
 <!--[if lt IE 9]>
 <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
 <![endif]-->
