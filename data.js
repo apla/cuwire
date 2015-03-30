@@ -615,10 +615,12 @@ Arduino.prototype.hardwareFound = function (instanceFolder, done, forceVendor, e
 		var arch      = fileMeta.arch;
 		var fileName  = fileMeta.fileName;
 
-		var platformId = [vendor, arch].join (':');
+		var platformId   = [vendor, arch].join (':');
+		var platformRoot = fileMeta.vendorArchFolder ? path.join (fullPath, fileMeta.vendorArchFolder) : path.join (fullPath, vendor, arch);
+		var hardwareRoot = fileMeta.vendorArchFolder ? fullPath : path.dirname (platformRoot);
 		if (!this.hardware[platformId])
 			this.hardware[platformId] = new KeyValue ({
-				"folders.root": fileMeta.vendorArchFolder ? path.join (fullPath, fileMeta.vendorArchFolder) : path.join (fullPath, vendor, arch),
+				"folders.root": platformRoot,
 				"folders.arch": arch,
 				"folders.vendor": vendor,
 				libraryData: {}
@@ -656,12 +658,9 @@ Arduino.prototype.hardwareFound = function (instanceFolder, done, forceVendor, e
 		var currentHw = this.hardware[platformId][type];
 
 		if (type === 'platform') {
-			currentHw["build.system.path"] =
-				path.join (fullPath, vendor, arch, 'system');
-			currentHw["runtime.platform.path"] =
-				path.join (fullPath, vendor, arch);
-			currentHw["runtime.hardware.path"] =
-				path.join (fullPath, vendor);
+			currentHw["build.system.path"]     = path.join (platformRoot, 'system');
+			currentHw["runtime.platform.path"] = platformRoot;
+			currentHw["runtime.hardware.path"] = hardwareRoot;
 		}
 
 	}.bind (this));
