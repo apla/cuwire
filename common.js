@@ -152,11 +152,20 @@ function cacheFileName (type) {
 	return path.join (homeDir, prefsDir[os.platform()], type + '.json');
 }
 
+function userLibraryFolder () {
+	var libFolder = {
+		darwin: 'Library/Arduino15',
+		win32:  'AppData/Roaming/Arduino15',
+		linux:  '.arduino15'
+	};
+	return path.join (homeDir, libFolder[os.platform()]);
+}
 
 function pathWalk (dir, done, options) {
 	options = options || {};
 
 	if (path.basename (dir) === '.git') {
+		// TODO: get a remote + revision
 		done();
 		return;
 	}
@@ -193,6 +202,11 @@ function pathWalk (dir, done, options) {
 				} else if ("nameMatch" in options && file.match (options.nameMatch)) {
 					ok = true;
 				} else if (stat && !stat.isSymbolicLink() && stat.isDirectory()) {
+					if (options.mtime && stat.mtime && parseInt (stat.mtime / 1000) === options.mtime[file]) {
+						results[file] = {stat: stat, folder: true, modified: false};
+						return;
+					}
+					results[file] = {stat: stat, folder: true};
 					var oDeep = Object.create (options);
 					if (options.depth !== undefined) {
 						if (options.depth) {
@@ -382,6 +396,13 @@ function createDict (arduino, platformId, boardId, boardModel, options, currentS
 	dict['runtime.ide.version'] = arduino.acceptableVersions[0].replace (/\./g, "");
 	dict['software'] = "ARDUINO"; // found this key in RFduino
 
+	if (arduino.tools) {
+		Object.keys (arduino.tools).forEach (function (toolName) {
+			dict['runtime.tools.'+toolName+'.path'] = arduino.tools[toolName].path;
+		});
+
+	}
+
 	//	Preferences.set("runtime.platform.path", platformFolder.getAbsolutePath());
 	//	Preferences.set("runtime.hardware.path", platformFolder.getParentFile().getAbsolutePath());
 
@@ -479,5 +500,6 @@ module.exports = {
 	prepareEnv:    prepareEnv,
 	prefsFileName: prefsFileName,
 	cacheFileName: cacheFileName,
-	mkdirParent:   mkdirParent
+	mkdirParent:   mkdirParent,
+	userLibraryFolder: userLibraryFolder
 };

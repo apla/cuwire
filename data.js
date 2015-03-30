@@ -69,6 +69,10 @@ Arduino.runtimeFolders = {
 };
 
 Arduino.prototype.init = function (customRuntimeFolders, customSketchesFolder) {
+
+	if (this.debug)
+		console.log ('runtime folders:', customRuntimeFolders);
+
 	customRuntimeFolders = appendStandardLocations ('runtime',  customRuntimeFolders);
 
 	if (this.debug)
@@ -86,6 +90,9 @@ Arduino.prototype.init = function (customRuntimeFolders, customSketchesFolder) {
 
 	this.processDirs ('runtime', customRuntimeFolders);
 	this.processDirs ('sketches', customSketchesFolder);
+	var packagesFolder = path.join (common.userLibraryFolder(), 'packages');
+	fs.readdir (packagesFolder, this.processPackages.bind (this, packagesFolder));
+
 }
 
 var ioWait = [];
@@ -156,6 +163,37 @@ var libWalkRegexp = new RegExp ('.*\\'+path.sep+'('+libFileNames+')$', 'i');
 var exampleFileNames = ".+\\.ino|.+\\.pde";
 var exampleWalkRegexp = new RegExp ('.*\\'+path.sep+'('+exampleFileNames+')$', 'i');
 
+
+Arduino.prototype.processPackages = function (root, err, vendorFolders) {
+
+	vendorFolders.forEach (function (dirStr) {
+		var dir = path.join (root, dirStr);
+		this.folders[dir] = {
+			platform: {},
+			boards: {},
+			programmers: {}
+		};
+
+		var hwFolder = path.join (dir, 'hardware');
+
+		common.pathWalk (hwFolder, this.hardwareFound.bind (this, dir, this.ioDone ('hardware', dir), dirStr), {
+			nameMatch: hwWalkRegexp,
+			readFiles: true,
+			depth: 3
+		});
+
+		var toolsFolder = path.join (dir, 'tools');
+
+		common.pathWalk (toolsFolder, this.toolsFound.bind (this, dir, this.ioDone ('tools', dir), undefined), {
+			depth: 2
+		});
+
+		return;
+
+	}.bind (this));
+}
+
+
 Arduino.prototype.processDirs = function (type, dirs) {
 
 	var self = this;
@@ -171,7 +209,7 @@ Arduino.prototype.processDirs = function (type, dirs) {
 
 		var hwFolder = path.join (dir, 'hardware');
 
-		common.pathWalk (hwFolder, this.hardwareFound.bind (this, dir, this.ioDone ('hardware', dir)), {
+		common.pathWalk (hwFolder, this.hardwareFound.bind (this, dir, this.ioDone ('hardware', dir), undefined), {
 			nameMatch: hwWalkRegexp,
 			readFiles: true,
 			depth: 3
@@ -319,6 +357,47 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 	return keyValue;
 }
 
+Arduino.prototype.toolsFound = function (instanceFolder, done, hwRef, err, files) {
+	if (err && !files) {
+		this.folders[instanceFolder].tools = {
+			error: err.code
+		};
+		done ('tools');
+		return;
+	}
+
+	if (hwRef === undefined) {
+		hwRef = this;
+	}
+
+	var fullPath = path.join (instanceFolder, 'tools');
+
+	var remains = Object.keys (files).length;
+
+	this.tools = this.tools || {};
+
+	Object.keys (files).forEach (function (fileName) {
+		if (files[fileName].folder) {
+
+			var relPath = path.relative (fullPath, fileName);
+			if (path.dirname (relPath) === '.') {
+				return;
+			}
+
+			this.tools[path.dirname (relPath)] = {
+				path: fileName,
+				mtime: files[fileName].stat.mtime / 1000
+			};
+			return;
+		}
+	}.bind (this));
+
+	console.log (this.tools);
+
+	done ('tools');
+}
+
+
 Arduino.prototype.librariesFound = function (instanceFolder, done, hwRef, err, files) {
 	if (err && !files) {
 		this.folders[instanceFolder].libraries = {
@@ -337,6 +416,10 @@ Arduino.prototype.librariesFound = function (instanceFolder, done, hwRef, err, f
 	var remains = Object.keys (files).length;
 
 	Object.keys (files).forEach (function (fileName) {
+		if (files[fileName].folder) {
+			remains --;
+			return;
+		}
 		if (fileName.match (/examples$/)) {
 			remains --;
 
@@ -369,11 +452,13 @@ Arduino.prototype.librariesFound = function (instanceFolder, done, hwRef, err, f
 
 		// TODO: user and runtime can have libraries with same name. prefer user ones
 		if (!libData) {
+			var libRoot = path.join (fullPath, libName);
 			libData = hwRef.libraryData[libName] = {
 				files: {},
 				requirements: {},
-				root: path.join (fullPath, libName),
-				name: libName
+				root: libRoot,
+				name: libName,
+				mtime: files[libRoot] ? files[libRoot].stat.mtime / 1000 : null
 			};
 		}
 
@@ -400,7 +485,7 @@ Arduino.prototype.librariesFound = function (instanceFolder, done, hwRef, err, f
 
 		// console.log ('library: relpath', relativePath, 'libname', libName, 'root', libData.root);
 		var relativeSrcPath = relativePath.substr (libName.length+1);
-		libData.files[relativeSrcPath] = true;
+		libData.files[relativeSrcPath] = parseInt(files[fileName].stat.mtime / 1000);
 		var libNames = files[fileName].filteredData || [];
 
 		// TODO: remove obvious requirements from same directory
@@ -437,6 +522,9 @@ Arduino.prototype.examplesFound = function (instanceFolder, done, options, err, 
 
 	var withLibraryRegexp = new RegExp ('libraries\\'+path.sep+'([^\\'+path.sep+']+)\\'+path.sep+'examples\\'+path.sep+'(.*)');
 	Object.keys (files).forEach (function (fileName) {
+		if (files[fileName].folder) {
+			return;
+		}
 		var fileExt = path.extname (fileName).substr(1);
 		var dirName = path.basename (path.dirname (fileName));
 		if (fileExt !== 'ino' && fileExt !== 'pde') {
@@ -469,7 +557,7 @@ Arduino.prototype.examplesFound = function (instanceFolder, done, options, err, 
 	done ('examples');
 }
 
-Arduino.prototype.hardwareFound = function (instanceFolder, done, err, files) {
+Arduino.prototype.hardwareFound = function (instanceFolder, done, forceVendor, err, files) {
 	if (err && !files) {
 		this.folders[instanceFolder].hardware = {
 			error: err.code
@@ -484,10 +572,17 @@ Arduino.prototype.hardwareFound = function (instanceFolder, done, err, files) {
 	var filesToProcess = [];
 
 	Object.keys (files).some (function (fileName) {
+		if (files[fileName].folder) {
+			return;
+		}
 		var relativePath = fileName.substr (fullPath.length + 1);
 		var pathChunks = relativePath.split (path.sep);
 		var vendor     = pathChunks[0];
 		var arch       = pathChunks[1];
+		if (forceVendor) {
+			vendor = forceVendor;
+			arch   = pathChunks[0];
+		}
 		var localFile  = pathChunks[2];
 		if (pathChunks.length === 3) {
 			filesToProcess.push ({

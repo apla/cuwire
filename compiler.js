@@ -551,6 +551,10 @@ ArduinoCompiler.prototype.setCoreFiles = function (err, coreFileList) {
 	}
 
 	Object.keys (coreFileList).forEach ((function (srcFile) {
+		if (coreFileList[srcFile].folder) {
+			return;
+		}
+
 		var baseName  = path.basename (srcFile);
 		var ext       = path.extname (srcFile).substr (1);
 		var localName = path.basename (baseName, '.'+ext);
@@ -652,6 +656,9 @@ ArduinoCompiler.prototype.setProjectFiles = function (err, files, dontCompile) {
 
 	Object.keys (files).forEach ((function (fileName) {
 		var fileObject = files[fileName];
+		if (fileObject.folder) {
+			return;
+		}
 		var extname = path.extname (fileName).substring (1);
 		if (extname.match (/^(c|cpp|h|hpp|S|ino|pde)$/)) {
 			this.filePreProcessor (fileName, files[fileName]);
