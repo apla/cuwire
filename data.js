@@ -570,6 +570,7 @@ Arduino.prototype.hardwareFound = function (instanceFolder, done, forceVendor, e
 
 	// boards.txt and platform.txt is required
 	var filesToProcess = [];
+	var vendorArchFolder;
 
 	Object.keys (files).some (function (fileName) {
 		if (files[fileName].folder) {
@@ -582,6 +583,7 @@ Arduino.prototype.hardwareFound = function (instanceFolder, done, forceVendor, e
 		if (forceVendor) {
 			vendor = forceVendor;
 			arch   = pathChunks[0];
+			vendorArchFolder = path.dirname (path.relative (fullPath, fileName));
 		}
 		var localFile  = pathChunks[2];
 		if (pathChunks.length === 3) {
@@ -590,7 +592,8 @@ Arduino.prototype.hardwareFound = function (instanceFolder, done, forceVendor, e
 				arch:      arch,
 				localFile: localFile,
 				fileName:  fileName,
-				contents:  files[fileName].contents
+				contents:  files[fileName].contents,
+				vendorArchFolder: vendorArchFolder
 			});
 			return;
 		}
@@ -615,7 +618,7 @@ Arduino.prototype.hardwareFound = function (instanceFolder, done, forceVendor, e
 		var platformId = [vendor, arch].join (':');
 		if (!this.hardware[platformId])
 			this.hardware[platformId] = new KeyValue ({
-				"folders.root": path.join (fullPath, vendor, arch),
+				"folders.root": fileMeta.vendorArchFolder ? path.join (fullPath, fileMeta.vendorArchFolder) : path.join (fullPath, vendor, arch),
 				"folders.arch": arch,
 				"folders.vendor": vendor,
 				libraryData: {}
