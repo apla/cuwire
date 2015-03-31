@@ -88,11 +88,15 @@ Arduino.prototype.init = function (customRuntimeFolders, customSketchesFolder) {
 	// then count this hardware platform as dependent and in that case builtin runtime
 	// is required
 
+	this.loadHWData (this.loadLibraryData.bind (this, this.cacheLoaded.bind (this, customRuntimeFolders, customSketchesFolder)));
+
+}
+
+Arduino.prototype.cacheLoaded = function (customRuntimeFolders, customSketchesFolder, libErr) {
 	this.processDirs ('runtime', customRuntimeFolders);
 	this.processDirs ('sketches', customSketchesFolder);
 	var packagesFolder = path.join (common.userLibraryFolder(), 'packages');
 	fs.readdir (packagesFolder, this.processPackages.bind (this, packagesFolder));
-
 }
 
 var ioWait = [];
@@ -217,10 +221,21 @@ Arduino.prototype.processDirs = function (type, dirs) {
 
 		var libFolder = path.join (dir, 'libraries');
 
-		common.pathWalk (libFolder, this.librariesFound.bind (this, dir, this.ioDone ('libraries', dir), undefined), {
+		var libWalk = {
 			nameMatch:  libWalkRegexp,
 			dataFilter: this.parseLibNames.bind (this),
-		});
+		};
+
+		if (this.libraryDataCached) {
+			var mtime = {};
+			Object.keys (this.libraryDataCached).forEach (function (libName) {
+				if (this.libraryDataCached[libName].root.indexOf (dir) === 0)
+					mtime[this.libraryDataCached[libName].root] = this.libraryDataCached[libName].mtime;
+			}.bind (this));
+			libWalk.mtime = mtime;
+		}
+
+		common.pathWalk (libFolder, this.librariesFound.bind (this, dir, this.ioDone ('libraries', dir), undefined), libWalk);
 
 		if (this.scanExamples) {
 			var examplesFolder = path.join (dir, 'examples');
@@ -411,12 +426,29 @@ Arduino.prototype.librariesFound = function (instanceFolder, done, hwRef, err, f
 		hwRef = this;
 	}
 
+	var cachedLibFolders = {};
+	if (hwRef.libraryDataCached) {
+		Object.keys (hwRef.libraryDataCached).forEach (function (libName) {
+			cachedLibFolders[hwRef.libraryDataCached[libName].root] = hwRef.libraryDataCached[libName];
+		});
+	}
+
 	var fullPath = path.join (instanceFolder, 'libraries');
 
 	var remains = Object.keys (files).length;
 
+//	console.log ("found %d libs", remains);
+
 	Object.keys (files).forEach (function (fileName) {
 		if (files[fileName].folder) {
+
+			if (cachedLibFolders[fileName]) {
+				if (files[fileName].modified === false) {
+					hwRef.libraryData[cachedLibFolders[fileName].name] = cachedLibFolders[fileName];
+				} else {
+					console.log (fileName, 'is modified');
+				}
+			}
 			remains --;
 			return;
 		}
@@ -618,21 +650,37 @@ Arduino.prototype.hardwareFound = function (instanceFolder, done, forceVendor, e
 		var platformId   = [vendor, arch].join (':');
 		var platformRoot = fileMeta.vendorArchFolder ? path.join (fullPath, fileMeta.vendorArchFolder) : path.join (fullPath, vendor, arch);
 		var hardwareRoot = fileMeta.vendorArchFolder ? fullPath : path.dirname (platformRoot);
+		var libraryDataCached;
+		if (this.hardwareCached && this.hardwareCached[platformId]) {
+			libraryDataCached = this.hardwareCached[platformId].libraryData || {};
+		}
 		if (!this.hardware[platformId])
 			this.hardware[platformId] = new KeyValue ({
 				"folders.root": platformRoot,
 				"folders.arch": arch,
 				"folders.vendor": vendor,
-				libraryData: {}
+				libraryData: {},
+				libraryDataCached: libraryDataCached
 			});
 
 		if (localFile === 'libraries') {
 			var parentDir = path.dirname (fileName);
 
-			common.pathWalk (fileName, this.librariesFound.bind (this, parentDir, this.ioDone ('libraries', parentDir), this.hardware[platformId]), {
+			var libWalk = {
 				nameMatch: libWalkRegexp,
 				dataFilter: this.parseLibNames.bind (this)
-			});
+			};
+
+			if (libraryDataCached) {
+				var mtime = {};
+				Object.keys (libraryDataCached).forEach (function (libName) {
+					if (libraryDataCached[libName].root.indexOf (parentDir) === 0)
+						mtime[libraryDataCached[libName].root] = libraryDataCached[libName].mtime;
+				}.bind (this));
+				libWalk.mtime = mtime;
+			}
+
+			common.pathWalk (fileName, this.librariesFound.bind (this, parentDir, this.ioDone ('libraries', parentDir), this.hardware[platformId]), libWalk);
 
 			return;
 		}
@@ -670,6 +718,18 @@ Arduino.prototype.hardwareFound = function (instanceFolder, done, forceVendor, e
 
 Arduino.prototype.storeHWData = function (evt) {
 	var hwCacheFile = common.cacheFileName ('hardware');
+
+//	var paint = require ('./color');
+//
+//	console.log (paint.error ('HW DATA STORE'), Object.keys (this.hardware).map (function (platformId) {
+//		return "platformId: " + platformId + " => " + Object.keys (this.hardware[platformId].libraryData).join (', ');
+//	}.bind (this)));
+
+	var hwCopy = JSON.parse (JSON.stringify (this.hardware));
+	for (var platformId in hwCopy) {
+		delete hwCopy[platformId].libraryDataCached;
+	}
+
 	fs.mkdir (path.dirname (hwCacheFile), function (err) {
 		if (err && err.code !== 'EEXIST') {
 			console.log ("cannot save hardware cache:", err);
@@ -677,30 +737,40 @@ Arduino.prototype.storeHWData = function (evt) {
 		}
 		fs.writeFile (
 			hwCacheFile,
-			JSON.stringify (this.hardware, null, '\t'),
+			JSON.stringify (hwCopy, null, '\t'),
 			function (err) {}
 		);
 	}.bind (this));
 
 }
 
-Arduino.prototype.loadHWData = function () {
+Arduino.prototype.loadHWData = function (cb) {
 	fs.readFile (common.cacheFileName ('hardware'), (function (err, data) {
 		if (err) {
-			this.emit ('error', err);
+			cb && cb (err);
+			// not an error, actually
+			this.emit ('warning', err);
 			return;
 		}
 		try {
-			this.hardware = JSON.parse (data.toString());
-		} catch (e) {
-			this.emit ('error', e);
+			this.hardwareCached = JSON.parse (data.toString());
+			cb && cb ();
+		} catch (err) {
+			cb && cb (err);
+			this.emit ('warning', err);
 		}
 	}).bind (this));
 }
 
-
 Arduino.prototype.storeLibraryData = function (evt) {
 	var libCacheFile = common.cacheFileName ('libraries');
+
+//	var paint = require ('./color');
+//
+//	console.log (paint.error ('LIBRARY DATA STORE'), Object.keys (this.libraryData).map (function (libName) {
+//		return this.libraryData[libName].root;
+//	}.bind (this)));
+
 	fs.mkdir (path.dirname (libCacheFile), function (err) {
 		if (err && err.code !== 'EEXIST') {
 			console.log ("cannot save library cache:", err);
@@ -714,16 +784,20 @@ Arduino.prototype.storeLibraryData = function (evt) {
 	}.bind (this));
 }
 
-Arduino.prototype.loadLibraryData = function () {
+Arduino.prototype.loadLibraryData = function (cb) {
 	fs.readFile (common.cacheFileName ('libraries'), (function (err, data) {
 		if (err) {
-			this.emit ('error', err);
+			cb && cb (err);
+			// not an error, actually
+			this.emit ('warning', err);
 			return;
 		}
 		try {
-			this.libraryData = JSON.parse (data.toString());
-		} catch (e) {
-			this.emit ('error', e);
+			this.libraryDataCached = JSON.parse (data.toString());
+			cb && cb();
+		} catch (err) {
+			cb && cb (err);
+			this.emit ('warning', err);
 		}
 	}).bind (this));
 }

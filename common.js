@@ -202,20 +202,24 @@ function pathWalk (dir, done, options) {
 				} else if ("nameMatch" in options && file.match (options.nameMatch)) {
 					ok = true;
 				} else if (stat && !stat.isSymbolicLink() && stat.isDirectory()) {
-					if (options.mtime && stat.mtime && parseInt (stat.mtime / 1000) === options.mtime[file]) {
-						results[file] = {stat: stat, folder: true, modified: false};
-						return;
+					if (options.mtime && stat.mtime) {
+						if (parseInt (stat.mtime / 1000) === options.mtime[file]) {
+							results[file] = {stat: stat, folder: true, modified: false};
+							if (!--pending) done (null, results);
+							return;
+
+						}
 					}
-					results[file] = {stat: stat, folder: true};
 					var oDeep = Object.create (options);
 					if (options.depth !== undefined) {
 						if (options.depth) {
 							oDeep.depth = parseInt (options.depth, 10) - 1;
 						} else { // 0, false and so on
-							if (!--pending) done (null, {});
+							if (!--pending) done (null, results);
 							return;
 						}
 					}
+					results[file] = {stat: stat, folder: true};
 					pathWalk (file, function(err, res) {
 						for (var newFile in res) {
 							results[newFile] = res[newFile];
