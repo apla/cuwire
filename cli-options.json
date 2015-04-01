@@ -16,6 +16,9 @@
 		"description": "compilation defines",
 		"default": false
 	},
+	"file": {
+		"description": "file for upload"
+	},
 	"sketch": {
 		"description": "sketch folder, config file or template name",
 		"alias": "s"

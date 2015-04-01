@@ -54,6 +54,18 @@ function ArduinoUploader (compiler, platformId, boardId, boardVariant, options) 
 //		return;
 //	}
 
+
+	if (options.haveCompiledHex) {
+		var uploadFileRegexp = /\{build\.path\}\/\{build\.project_name\}\.hex/;
+		if (tool['upload.pattern'].match (uploadFileRegexp)) {
+			tool['upload.pattern'] = tool['upload.pattern'].replace (uploadFileRegexp, '{upload.precompiled_hex}');
+			tool['upload.precompiled_hex'] = options.haveCompiledHex;
+		} else {
+			this.emit ('error', 'upload', new Error ('Current platform doesn\'t support precompiled hex upload. "upload.pattern"='+tool['upload.pattern']));
+			return;
+		}
+	}
+
 	// have event subscription issues without this
 	process.nextTick (this.prepareCmd.bind (this, tool));
 }

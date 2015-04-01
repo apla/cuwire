@@ -414,11 +414,14 @@ ArduinoCli.prototype.platform = function (options, cb) {
 
 
 ArduinoCli.prototype.upload = function (options, cb) {
+
 	var buildMeta = guessSketch (this.arduino, options);
+
+	var hexFile = options.file;
 
 	console.log (
 		paint.cuwire(),
-		'upload', paint.path (buildMeta.folder),
+		'upload', paint.path (hexFile || buildMeta.folder),
 		'using port', paint.path (options.port)
 	);
 
@@ -431,7 +434,8 @@ ArduinoCli.prototype.upload = function (options, cb) {
 			serial: {
 				port: options.port
 			},
-			verbose: options.verbose
+			verbose: options.verbose,
+			haveCompiledHex: hexFile
 		}
 	);
 
