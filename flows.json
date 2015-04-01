@@ -1,0 +1,39 @@
+{
+	"flows": {
+		"installFromZip": {
+			"tasks": [{
+				"$class":"remoteResource",
+				"$method": "toFile",
+				"url": "{$url}",
+				"$set": "archiveFile"
+			}, {
+				"$promise":"unzip",
+				"$args": [
+					"{$archiveFile.filePath}",
+					"{$folder}",
+					{
+						"replacePath": ["RFduino-master", "RFduino"]
+					}
+				],
+				"$set": "indexPage"
+			}]
+		},
+		"arduinoSiteData": {
+			"tasks": [{
+				"$class":"remoteResource",
+				"$method": "toBuffer",
+				"url": "{$libraries}",
+				"$set": "libraries"
+			}, {
+				"$class":"remoteResource",
+				"$method": "toBuffer",
+				"url": "{$packages}",
+				"$set": "packages"
+			}]
+		},
+		"installFromGit": {
+			"tasks": []
+		}
+	},
+	"templates": {}
+}
