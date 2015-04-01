@@ -11,6 +11,11 @@
 		"description": "debug messages",
 		"default": false
 	},
+	"define": {
+		"alias": "D",
+		"description": "compilation defines",
+		"default": false
+	},
 	"sketch": {
 		"description": "sketch folder, config file or template name",
 		"alias": "s"

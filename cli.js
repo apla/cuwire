@@ -465,7 +465,8 @@ ArduinoCli.prototype.compile = function (options, cb) {
 //			buildFolder: "/Users/apla/work/mcu/brackets-arduino/build",
 			buildFolder: options.buildFolder,
 			includes:    options.inc || buildMeta.includes,
-			cacheCore:   options.cacheCore
+			cacheCore:   options.cacheCore,
+			"define":    options.define ? [].concat (options.define) : []
 		}
 	);
 

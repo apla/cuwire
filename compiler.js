@@ -41,6 +41,13 @@ function ArduinoCompiler (sketchFolder, platformId, boardId, boardModel, options
 		this.coreIncludes.push (dict['build.variant.path']);
 	}
 
+	if (options.define && options.define.length) {
+		if (!dict["build.extra_flags"]) {
+			this.emit ('warning', "extra flags not supported by platform, --define ");
+		}
+		dict["build.extra_flags"] = dict["build.extra_flags"] + " -D " + options.define.join (" -D ") + " ";
+	}
+
 	if (options.includes) {
 		this.coreIncludes = this.coreIncludes.concat (options.includes);
 	}
