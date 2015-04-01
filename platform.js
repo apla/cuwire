@@ -21,29 +21,10 @@ var Arduino;
 function ArduinoPlatform () {
 }
 
-// TODO: avoid copypaste from compiler.js
-function mkdirParent (dirPath, mode, callback) {
-	//Call the standard fs.mkdir
-	if (!callback) {
-		callback = mode;
-		mode = undefined;
-	}
-	fs.mkdir(dirPath, mode, function(error) {
-		//When it fail in this way, do the custom steps
-		if (error && error.code === 'ENOENT') {
-			//Create all the parents recursively
-			mkdirParent (path.dirname (dirPath), mode, function (err) {
-				//And then the directory
-				mkdirParent (dirPath, mode, callback);
-			});
-			return;
-		}
-		//Manually run the callback since we used our own callback to do all these
-		callback && callback(error);
-	});
-};
+util.inherits (ArduinoPlatform, EventEmitter);
 
-ArduinoPlatform.importFolder = function (platformId, folder) {
+
+ArduinoPlatform.prototype.importFolder = function (platformId, folder) {
 
 	var arduino = new ArduinoData ();
 
@@ -63,44 +44,52 @@ ArduinoPlatform.importFolder = function (platformId, folder) {
 	// var version = versionBuf.toString ().match (/\d+\.\d+\.\d+/);
 	// var modern  = version[0].match (/^1\.[56]\./);
 
+	var self = this;
 
 	if (platformId === 'energia') {
 		var energiaUserFolder = path.join (userSketchDir, 'hardware', 'energia');
-		mkdirParent (energiaUserFolder, function (err) {
+		common.mkdirParent (energiaUserFolder, function (err) {
 			if (err && err.code !== 'EEXIST') {
-				return console.error(err);
+				self.emit ('error', err);
+				return;
 			}
 			ncp (path.join (folder, 'hardware'), energiaUserFolder, function (err) {
 				if (err) {
-					return console.error(err);
+					self.emit ('error', err);
+					return;
 				}
 				ncp (path.join ('.', 'hardware', 'energia'), energiaUserFolder, function (err) {
 					if (err) {
-						return console.error(err);
+						self.emit ('error', err);
+						return;
 					}
-					console.log('done!');
+					self.emit ('done');
 				});
 			});
 		});
 	} else if (platformId === 'intel') {
 		var intelToolsFolder = path.join (userSketchDir, 'hardware', 'intel', 'tools');
-		mkdirParent (intelToolsFolder, function (err) {
+		common.mkdirParent (intelToolsFolder, function (err) {
 			if (err && err.code !== 'EEXIST') {
-				return console.error(err);
+				self.emit ('error', err);
+				return;
 			}
 			ncp (path.join (folder, 'hardware', 'arduino'), path.dirname (intelToolsFolder), function (err) {
 				if (err) {
-					return console.error(err);
+					self.emit ('error', err);
+					return;
 				}
 				ncp (path.join (folder, 'hardware', 'tools'), intelToolsFolder, function (err) {
 					if (err) {
-						return console.error(err);
+						self.emit ('error', err);
+						return;
 					}
 					ncp (path.join ('.', 'hardware', 'intel'), path.dirname (intelToolsFolder), function (err) {
 						if (err) {
-							return console.error(err);
+							self.emit ('error', err);
+							return;
 						}
-						console.log('done!');
+						self.emit ('done');
 					});
 				});
 
@@ -112,6 +101,7 @@ ArduinoPlatform.importFolder = function (platformId, folder) {
 
 	}
 }
+
 
 ArduinoPlatform.importFolderEnergia = function (folder) {
 

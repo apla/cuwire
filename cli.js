@@ -401,7 +401,14 @@ ArduinoCli.prototype.platform = function (options, cb) {
 		var platformId = options._[1];
 		var folder     = options._[2];
 
-		ArduinoPlatform.importFolder (platformId, folder);
+		var cuplatform = new ArduinoPlatform ();
+
+		cuplatform.on ('error', function (err) {
+			console.log (paint.error ("import failed: err"));
+		});
+
+		cuplatform.on ('done', console.log.bind (console, paint.yellow ('import'), paint.green ('done')));
+		cuplatform.importFolder (platformId, folder);
 	}
 }
 
