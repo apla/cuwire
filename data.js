@@ -93,6 +93,11 @@ Arduino.prototype.init = function (customRuntimeFolders, customSketchesFolder) {
 }
 
 Arduino.prototype.cacheLoaded = function (customRuntimeFolders, customSketchesFolder, libErr) {
+
+	if (this.cacheError) {
+		this.emit ('longOperation', 'cache');
+	}
+
 	this.processDirs ('runtime', customRuntimeFolders);
 	this.processDirs ('sketches', customSketchesFolder);
 	var packagesFolder = path.join (common.userLibraryFolder(), 'packages');
@@ -747,6 +752,7 @@ Arduino.prototype.storeHWData = function (evt) {
 Arduino.prototype.loadHWData = function (cb) {
 	fs.readFile (common.cacheFileName ('hardware'), (function (err, data) {
 		if (err) {
+			this.cacheError = true;
 			cb && cb (err);
 			// not an error, actually
 			this.emit ('warning', err);
@@ -787,6 +793,7 @@ Arduino.prototype.storeLibraryData = function (evt) {
 Arduino.prototype.loadLibraryData = function (cb) {
 	fs.readFile (common.cacheFileName ('libraries'), (function (err, data) {
 		if (err) {
+			this.cacheError = true;
 			cb && cb (err);
 			// not an error, actually
 			this.emit ('warning', err);

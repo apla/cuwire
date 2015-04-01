@@ -151,6 +151,21 @@ var ArduinoCli = function (args) {
 		scanExamples: options.test ? true : false
 	});
 
+	var longOp = {
+		cache: "populating cache, this can take some time"
+	};
+
+	this.arduino.on ('longOperation', function (scope) {
+		var message = "please wait for "+scope;
+		if (longOp[scope])
+			message = longOp[scope];
+		console.log (
+			paint.cuwire (),
+			paint.yellow (message)
+		);
+
+	});
+
 	this.arduino.on ('done', (function () {
 
 		var runtimeFound = [];
