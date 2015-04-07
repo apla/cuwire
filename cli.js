@@ -16,9 +16,12 @@ var common = require ('./common');
 
 var paint = require ('./color');
 
+var package_json = require ('./package.json');
+var version = package_json.version;
+
 paint.error   = paint.bind (paint, "red+white_bg");
 paint.path    = paint.cyan.bind (paint);
-paint.cuwire  = paint.green.bind (paint, "cuwire");
+paint.cuwire  = paint.green.bind (paint, "cuwire "+version);
 
 var cliConfig = require ('./cli-options.json');
 

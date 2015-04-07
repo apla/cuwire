@@ -5,6 +5,9 @@ var fs   = require('fs');
 var path = require ('path');
 var util = require ('util');
 
+var package_json = require ('./package.json');
+var version = package_json.version;
+
 var EventEmitter = require('events').EventEmitter;
 
 var common = require ('./common');
@@ -88,7 +91,11 @@ Arduino.prototype.init = function (customRuntimeFolders, customSketchesFolder) {
 	// then count this hardware platform as dependent and in that case builtin runtime
 	// is required
 
-	this.loadHWData (this.loadLibraryData.bind (this, this.cacheLoaded.bind (this, customRuntimeFolders, customSketchesFolder)));
+	if (this.debug) {
+		this.cacheLoaded (customRuntimeFolders, customSketchesFolder);
+	} else {
+		this.loadHWData (this.loadLibraryData.bind (this, this.cacheLoaded.bind (this, customRuntimeFolders, customSketchesFolder)));
+	}
 
 }
 
@@ -742,7 +749,10 @@ Arduino.prototype.storeHWData = function (evt) {
 		}
 		fs.writeFile (
 			hwCacheFile,
-			JSON.stringify (hwCopy, null, '\t'),
+			JSON.stringify ({
+				hardware: hwCopy,
+				cuwire: {version: version}
+			}, null, '\t'),
 			function (err) {}
 		);
 	}.bind (this));
@@ -759,12 +769,22 @@ Arduino.prototype.loadHWData = function (cb) {
 			return;
 		}
 		try {
-			this.hardwareCached = JSON.parse (data.toString());
-			cb && cb ();
+			var parsed = JSON.parse (data.toString());
+			var err;
+			if (parsed.cuwire && parsed.cuwire.version === version) {
+				this.hardwareCached = parsed.hardware;
+			} else {
+				err = new Error ("old hardware cache format or cuwire version mismatch");
+			}
+
+			cb && cb (err);
+			if (err)
+				this.emit ('warning', err);
 		} catch (err) {
 			cb && cb (err);
 			this.emit ('warning', err);
 		}
+
 	}).bind (this));
 }
 
@@ -777,6 +797,11 @@ Arduino.prototype.storeLibraryData = function (evt) {
 //		return this.libraryData[libName].root;
 //	}.bind (this)));
 
+	var libDataCopy = JSON.parse (JSON.stringify (this.libraryData));
+	for (var libName in libDataCopy) {
+		// delete libDataCopy[libName].headers;
+	}
+
 	fs.mkdir (path.dirname (libCacheFile), function (err) {
 		if (err && err.code !== 'EEXIST') {
 			console.log ("cannot save library cache:", err);
@@ -784,7 +809,12 @@ Arduino.prototype.storeLibraryData = function (evt) {
 		}
 		fs.writeFile (
 			libCacheFile,
-			JSON.stringify (this.libraryData, null, '\t'),
+			JSON.stringify ({
+				libData: libDataCopy,
+				cuwire: {
+					version: version
+				}
+			}, null, '\t'),
 			function (err) {}
 		);
 	}.bind (this));
@@ -800,8 +830,17 @@ Arduino.prototype.loadLibraryData = function (cb) {
 			return;
 		}
 		try {
-			this.libraryDataCached = JSON.parse (data.toString());
-			cb && cb();
+			var parsed = JSON.parse (data.toString());
+			var err;
+			if (parsed.cuwire && parsed.cuwire.version === version) {
+				this.libraryDataCached = parsed.libData;
+			} else {
+				err = new Error ("old library cache format or cuwire version mismatch");
+			}
+
+			cb && cb (err);
+			if (err)
+				this.emit ('warning', err);
 		} catch (err) {
 			cb && cb (err);
 			this.emit ('warning', err);
