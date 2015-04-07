@@ -36,14 +36,12 @@ var Arduino = function (customRuntimeFolders, customSketchesFolder, fromScratch,
 	// useful for reloading
 	this.init (customRuntimeFolders, customSketchesFolder);
 
-
-	this.on ('iodone', this.storeHWData.bind (this));
-	this.on ('iodone', this.storeLibraryData.bind (this));
-
 	this.on ('iodone', (function () {
 		Arduino.instance = this;
 
 		this.createAccessors ();
+
+		this.postprocess ();
 
 		this.acceptableRuntimes = [];
 		this.acceptableVersions = [];
@@ -60,6 +58,9 @@ var Arduino = function (customRuntimeFolders, customSketchesFolder, fromScratch,
 
 		if (this.debug) console.log ('debug', "folders information", this.folders);
 	}).bind (this));
+
+	this.on ('iodone', this.storeHWData.bind (this));
+	this.on ('iodone', this.storeLibraryData.bind (this));
 
 }
 
@@ -109,6 +110,72 @@ Arduino.prototype.cacheLoaded = function (customRuntimeFolders, customSketchesFo
 	this.processDirs ('sketches', customSketchesFolder);
 	var packagesFolder = path.join (common.userLibraryFolder(), 'packages');
 	fs.readdir (packagesFolder, this.processPackages.bind (this, packagesFolder));
+}
+
+/**
+ * After library and hardware info load we need to get rid of cached data and enumerate library headers
+ */
+Arduino.prototype.postprocess = function () {
+
+	delete this.libraryDataCached;
+	delete this.hardwareCached;
+
+	var hwRefs = [this];
+	for (var platformId in this.hardware) {
+		if (this.hardware[platformId].libraryData) {
+			hwRefs.push (this.hardware[platformId]);
+		}
+		if (this.hardware[platformId].libraryDataCached) {
+			delete this.hardware[platformId].libraryDataCached;
+		}
+	}
+
+	hwRefs.forEach (function (hwRef) {
+		hwRef.headers = hwRef.headers || {};
+		for (var libName in hwRef.libraryData) {
+			var libData = hwRef.libraryData[libName];
+			if (!libData) {
+				continue;
+			}
+			var libRoot = libData.root;
+			var libVer  = libData.version;
+			var srcPath = libData.version === '1.5' ? 'src' : '.';
+			console.log (libData.requirements);
+			for (var fileName in libData.files) {
+
+				if (path.extname (fileName) !== '.h') {
+					continue;
+				}
+
+				var srcFileName = path.relative (srcPath, fileName);
+
+				// console.log (libName, fileName, srcFileName, libData.requirements && libData.requirements[srcFileName]);
+
+				if (libData.requirements && libData.requirements[srcFileName]) {
+					// TODO: some requirements not deleted
+					delete libData.requirements[srcFileName];
+					console.log ('deleted', srcFileName, "from requirements of", libName);
+				}
+
+				// function outside of main library folder (1.0) or src folder (1.5)
+				// cannot be used as library interface
+				if (path.dirname (srcFileName) !== '.') {
+					continue;
+				}
+
+				var headerNameData = hwRef.headers[srcFileName] = hwRef.headers[srcFileName] || [];
+				headerNameData.push (libData);
+
+			}
+			if (libData.requirements) {
+				delete libData.requirements["Arduino.h"];
+				delete libData.requirements["WProgram.h"];
+			}
+			console.log (libData.requirements);
+		}
+
+	});
+
 }
 
 var ioWait = [];
