@@ -350,6 +350,34 @@ Arduino.prototype.getAlias = function (alias, arch) {
 	return {hw: this.hardware[[aliasVendor, arch].join (':')], key: aliasSplit[1]};
 }
 
+// https://github.com/arduino/Arduino/blob/master/hardware/platform.keys.rewrite.txt
+var confReplacements = {
+	"compiler.path": [[
+		"{runtime.ide.path}/hardware/tools/avr/bin/",
+		"{runtime.tools.avr-gcc.path}/bin/"
+	], [
+		"{runtime.ide.path}/hardware/tools/gcc-arm-none-eabi-4.8.3-2014q1/bin/",
+		"{runtime.tools.arm-none-eabi-gcc.path}/bin/"
+	]],
+	"tools.avrdude.cmd.path": [
+		"{runtime.ide.path}/hardware/tools/avr/bin/avrdude",
+		"{path}/bin/avrdude"
+	],
+	"tools.avrdude.config.path": [
+		"{runtime.ide.path}/hardware/tools/avr/etc/avrdude.conf",
+		"{path}/etc/avrdude.conf"
+	],
+	"tools.bossac.path": [
+		"{runtime.ide.path}/hardware/tools",
+		"{runtime.tools.bossac.path}"
+	]
+
+};
+
+var confAdditions = {
+	"tools.avrdude": ["tools.avrdude.path", "{runtime.tools.avrdude.path}"]
+};
+
 Arduino.prototype.parseConfig = function (cb, section, err, data) {
 	if (arguments.length === 1 && cb && typeof cb !== "function") {
 		data = cb;
@@ -363,6 +391,7 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 
 	var keyValue = {};
 	var haveRuntimeIde = false;
+	var stringsAdded = {};
 
 	data.toString ().split (/[\r\n]+/).forEach (function (line) {
 		if (line.indexOf("#") === 0) return;
@@ -370,9 +399,31 @@ Arduino.prototype.parseConfig = function (cb, section, err, data) {
 		// console.log (line);
 		var ref = line.substring (0, line.indexOf ('='));
 		var value = line.substring (line.indexOf ('=')+1);
+
+		var oldvalue = value;
+		if (ref in confReplacements) {
+			var fixup = confReplacements[ref];
+			if (fixup[0].constructor !== Array) {
+				fixup = [fixup];
+			}
+			for (var fixupId = 0; fixupId < fixup.length; fixupId ++) {
+				// console.log (ref+':', value.match (fixup[fixupId][0]), value, fixup[fixupId][0]);
+				value = value.replace (fixup[fixupId][0], fixup[fixupId][1]);
+			}
+			// console.log (ref+':', oldvalue, '=>', value);
+		}
+
 		haveRuntimeIde = haveRuntimeIde || value.match (/\{runtime\.ide\.path\}/);
 		keyValue[ref] = value;
+		for (var matchStart in confAdditions) {
+			if (ref.indexOf (matchStart) === 0 && !stringsAdded[matchStart]) {
+				stringsAdded[matchStart] = true;
+				keyValue[confAdditions[matchStart][0]] = confAdditions[matchStart][1];
+			}
+		}
 	});
+
+//	console.log (keyValue);
 
 	Object.defineProperty (keyValue, "haveRuntimeIde", {
 		enumerable: false,
