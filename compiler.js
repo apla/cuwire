@@ -361,8 +361,7 @@ ArduinoCompiler.prototype.clear = function (leaveCoreAlone, cb) {
 		leaveCoreAlone = undefined;
 	}
 
-	// TODO: check for build preferences and
-	// clear core.a only if new core need to be built
+	// TODO: check for build preferences and clear core.a only if new core need to be built
 	// and leaveCoreAlone === undefined
 
 	common.pathWalk (this.buildFolder, function (err, files) {
@@ -379,6 +378,9 @@ ArduinoCompiler.prototype.clear = function (leaveCoreAlone, cb) {
 		}
 
 		for (var fileName in files) {
+			if (files[fileName].folder) {
+				continue;
+			}
 
 			if (path.join (this.buildFolder, 'core.a') === fileName && leaveCoreAlone) {
 				// skip
