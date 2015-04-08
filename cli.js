@@ -21,7 +21,7 @@ var version = package_json.version;
 
 paint.error   = paint.bind (paint, "red+white_bg");
 paint.path    = paint.cyan.bind (paint);
-paint.cuwire  = paint.green.bind (paint, "cuwire "+version);
+paint.cuwire  = paint.green.bind (paint, "cuwire");
 
 var cliConfig = require ('./cli-options.json');
 
@@ -138,6 +138,8 @@ var ArduinoCli = function (args) {
 		yargs.showHelp();
 		return;
 	}
+
+//	console.log (paint.cuwire (version));
 
 	if (!cliConfig[haveCommand].arduino) {
 //		console.log (cliConfig[haveCommand].run, this, this[cliConfig[haveCommand].run]);
@@ -320,6 +322,10 @@ ArduinoCli.prototype.console = function (options) {
 		console.log (paint.cuwire ('port error:'), paint.error (err));
 		process.exit (1);
 	});
+}
+
+ArduinoCli.prototype.version = function () {
+	console.log (paint.cuwire (version));
 }
 
 ArduinoCli.prototype.showBoards = function () {

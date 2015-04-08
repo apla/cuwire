@@ -5,6 +5,10 @@
 		"description": "verbose output",
 		"default": false
 	},
+	"version": {
+		"description": "package version",
+		"run": "version"
+	},
 	"debug": {
 		"alias": "d",
 		"boolean": true,
