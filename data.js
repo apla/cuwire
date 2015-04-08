@@ -156,7 +156,7 @@ Arduino.prototype.postprocess = function () {
 				if (libData.requirements && libData.requirements[srcFileName]) {
 					// TODO: some requirements not deleted
 					delete libData.requirements[srcFileName];
-					console.log ('deleted', srcFileName, "from requirements of", libName);
+					// console.log ('deleted', srcFileName, "from requirements of", libName);
 				}
 
 				// function outside of main library folder (1.0) or src folder (1.5)
