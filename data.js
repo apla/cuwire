@@ -27,6 +27,8 @@ var Arduino = function (customRuntimeFolders, customSketchesFolder, fromScratch,
 	this.folders = {};
 	this.examples = {};
 
+	this.tools = {};
+
 	options = options || {};
 
 	if (options.verbose) this.verbose = options.verbose;
@@ -140,7 +142,7 @@ Arduino.prototype.postprocess = function () {
 			var libRoot = libData.root;
 			var libVer  = libData.version;
 			var srcPath = libData.version === '1.5' ? 'src' : '.';
-			console.log (libData.requirements);
+
 			for (var fileName in libData.files) {
 
 				if (path.extname (fileName) !== '.h') {
@@ -171,7 +173,7 @@ Arduino.prototype.postprocess = function () {
 				delete libData.requirements["Arduino.h"];
 				delete libData.requirements["WProgram.h"];
 			}
-			console.log (libData.requirements);
+
 		}
 
 	});
@@ -225,12 +227,36 @@ Arduino.prototype.getRuntimeVersion = function (runtimeFolder, done, err, versio
 
 	// linux sometime have mad strings, like "1:1.0.5+dfsg2-2"
 	var version = versionBuf.toString ().match (/\d+\.\d+\.\d+/);
+	var numVer  = parseInt (version[0].split (/\./).map (function (num) {return num > 10 ? num : "0"+num}).join (''), 10);
 	var modern  = version[0].match (/^1\.[56]\./);
 
 	this.folders[runtimeFolder].runtime = version[0];
 	this.folders[runtimeFolder].modern  = modern ? true : false;
 
-	if (this.debug) console.log ('debug', runtimeFolder, 'version:', version[0], 'modern:', modern ? true : false);
+	// console.log ("version", version, numVer, runtimeFolder);
+
+	if (numVer > 10500 && numVer <= 10601) {
+		this.tools.bossac = {
+			path: path.join (runtimeFolder, "hardware", "tools")
+		};
+		this.tools["arm-none-eabi-gcc"] = {
+			path: path.join (runtimeFolder, "hardware", "tools", "gcc-arm-none-eabi-4.8.3-2014q1")
+		};
+	}
+
+	if ((numVer > 10500 && numVer <= 10601) || numVer > 10602) {
+		this.tools.avrdude = {
+			path: path.join (runtimeFolder, "hardware", "tools", "avr")
+		};
+		this.tools["avr-gcc"] = {
+			path: path.join (runtimeFolder, "hardware", "tools", "avr")
+		};
+	}
+
+
+	if (this.debug) {
+		console.log ('debug', runtimeFolder, 'version:', version[0], 'modern:', modern ? true : false);
+	}
 
 	done ('version');
 
@@ -537,7 +563,7 @@ Arduino.prototype.toolsFound = function (instanceFolder, done, hwRef, err, files
 		}
 	}.bind (this));
 
-	console.log (this.tools);
+	// console.log (this.tools);
 
 	done ('tools');
 }
